@@ -9,7 +9,7 @@ class HubClient {
 
   // ── WebSocket ────────────────────────────────────────────────────────────
 
-  HubSocket? _socket;
+  WebSocketChannel? _socket;
   int _socketGeneration = 0;
   String? _currentToken;
   bool _shouldReconnect = true;
@@ -130,8 +130,7 @@ class HubClient {
 
   // ── 管理员工具 ────────────────────────────────────────────────────────────
 
-  bool get isConnected =>
-      _socket != null && _socket!.readyState == HubSocket.open;
+  bool get isConnected => _socket != null && _socket!.closeCode == null;
 
   bool isRoomAdminOf(String? roomId) {
     if (roomId == null) return false;
@@ -260,14 +259,14 @@ class HubClient {
   // ── 连接 ──────────────────────────────────────────────────────────────────
 
   /// 建立 WebSocket 连接；wss 时若开启「允许自签名证书」则信任自签名。
-  Future<HubSocket> _connectSocket(String url) async {
+  Future<WebSocketChannel> _connectSocket(String url) async {
     if (!url.startsWith('wss://')) {
       final channel = IOWebSocketChannel.connect(
         url,
         connectTimeout: const Duration(seconds: 10),
       );
       await channel.ready;
-      return HubSocket(channel);
+      return channel;
     }
     final client = HttpClient()
       ..badCertificateCallback = (cert, host, port) => allowSelfSignedCert;
@@ -278,7 +277,7 @@ class HubClient {
         connectTimeout: const Duration(seconds: 10),
       );
       await channel.ready;
-      return HubSocket(channel);
+      return channel;
     } finally {
       client.close(force: true);
     }
@@ -300,7 +299,7 @@ class HubClient {
     _socket = socket;
     HubLog.info('HubClient', '✅ 已连接，发送鉴权...');
 
-    socket.add(
+    socket.sink.add(
       jsonEncode({
         'type': 'auth',
         'token': token,
@@ -311,7 +310,7 @@ class HubClient {
       }),
     );
 
-    socket.listen(
+    socket.stream.listen(
       _handleRaw,
       onDone: () {
         // 只处理最新一代 socket 的断开，避免旧 socket 回调清掉新连接
@@ -365,7 +364,7 @@ class HubClient {
     _pongTimeoutTimer?.cancel();
     _stopHeartbeat();
     HubKeepAlive.stop();
-    await _socket?.close();
+    await _socket?.sink.close();
     _socket = null;
     HubCrypto.clear();
     _ref.read(hubProvider.notifier).state = const HubState();
@@ -406,7 +405,7 @@ class HubClient {
         _pongTimeoutTimer?.cancel();
         _pongTimeoutTimer = Timer(const Duration(seconds: 10), () {
           HubLog.warning('HubClient', '💀 pong 超时，断线重连');
-          _socket?.close();
+          _socket?.sink.close();
         });
       } else {
         _heartbeatTimer?.cancel();

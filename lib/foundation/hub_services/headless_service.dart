@@ -12,7 +12,7 @@ class HeadlessService extends BaseHttpService {
     // 版本信息（公开）
     addGet(
       '/api/version',
-      (req) => sendJson(req, {
+      (req, params) => sendJson(req, {
         'app': 'Kostori',
         'version': App.version,
         'headless': true,
@@ -28,7 +28,7 @@ class HeadlessService extends BaseHttpService {
     // 观看统计（需用户层鉴权，受 --no-auth 影响）
     addGet(
       '/api/stats',
-      (req) async {
+      (req, params) async {
         final manager = StatsManager();
         if (!manager.isInitialized) await manager.init();
         final all = await manager.getStatsAll();
@@ -41,7 +41,7 @@ class HeadlessService extends BaseHttpService {
           }
         }
         final liked = all.where((s) => s.liked).length;
-        await sendJson(req, {
+        return sendJson(req, {
           'count': all.length,
           'liked': liked,
           'watchMinutes': totalMs ~/ 60000,
@@ -60,9 +60,9 @@ class HeadlessService extends BaseHttpService {
     // 观看历史（需鉴权）
     addGet(
       '/api/history',
-      (req) async {
+      (req, params) async {
         final limit =
-            int.tryParse(req.uri.queryParameters['limit'] ?? '') ?? 50;
+            int.tryParse(req.requestedUri.queryParameters['limit'] ?? '') ?? 50;
         final manager = HistoryManager();
         if (!manager.isInitialized) await manager.init();
         final all = await manager.getAll();
@@ -80,7 +80,7 @@ class HeadlessService extends BaseHttpService {
               },
             )
             .toList();
-        await sendJson(req, {'total': all.length, 'items': items});
+        return sendJson(req, {'total': all.length, 'items': items});
       },
       middlewares: _hubAuthMiddleware,
       doc: RouteDoc(
@@ -102,8 +102,8 @@ class HeadlessService extends BaseHttpService {
     // 收藏列表（需鉴权）
     addGet(
       '/api/favorites',
-      (req) async {
-        final name = req.uri.queryParameters['name'];
+      (req, params) async {
+        final name = req.requestedUri.queryParameters['name'];
         var items = LocalFavoritesManager().allAnimes();
         if (name != null && name.isNotEmpty) {
           items = items.where((f) => f.name.contains(name)).toList();
@@ -120,7 +120,7 @@ class HeadlessService extends BaseHttpService {
               },
             )
             .toList();
-        await sendJson(req, {'count': items.length, 'items': list});
+        return sendJson(req, {'count': items.length, 'items': list});
       },
       middlewares: _hubAuthMiddleware,
       doc: RouteDoc(
@@ -142,10 +142,10 @@ class HeadlessService extends BaseHttpService {
     // 最近日志（管理层鉴权）
     addGet(
       '/api/logs',
-      (req) async {
+      (req, params) async {
         final limit =
-            int.tryParse(req.uri.queryParameters['limit'] ?? '') ?? 50;
-        final level = req.uri.queryParameters['level'];
+            int.tryParse(req.requestedUri.queryParameters['limit'] ?? '') ?? 50;
+        final level = req.requestedUri.queryParameters['level'];
         var logs = Log.logs;
         if (level != null && level.isNotEmpty) {
           logs = logs.where((l) => l.level.name == level).toList();
@@ -164,7 +164,7 @@ class HeadlessService extends BaseHttpService {
               },
             )
             .toList();
-        await sendJson(req, {'count': recent.length, 'logs': list});
+        return sendJson(req, {'count': recent.length, 'logs': list});
       },
       middlewares: [adminAuthMiddleware],
       doc: RouteDoc(

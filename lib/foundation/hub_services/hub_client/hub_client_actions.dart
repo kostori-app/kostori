@@ -8,7 +8,7 @@ extension HubClientActions on HubClient {
       if (v is String && v.isNotEmpty) logData[key] = '***';
     }
     HubLog.info('send', '客户端发送: ${jsonEncode(logData)}');
-    _socket?.add(jsonEncode(data));
+    _socket?.sink.add(jsonEncode(data));
   }
 
   // ── 消息 ──────────────────────────────────────────────────────────────────

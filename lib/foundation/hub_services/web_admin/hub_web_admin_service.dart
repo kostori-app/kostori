@@ -63,17 +63,17 @@ class HubWebAdminService extends BaseHttpService {
     // ── 房间 ──
     addGet('/api/admin/rooms', _rooms, middlewares: [authMiddleware]);
     addGet(
-      '/api/admin/rooms/<roomId>/messages',
+      '/api/admin/rooms/:roomId/messages',
       _roomMessages,
       middlewares: [authMiddleware],
     );
     addPost(
-      '/api/admin/rooms/<roomId>/message',
+      '/api/admin/rooms/:roomId/message',
       _sendRoomMessage,
       middlewares: [adminAuthMiddleware],
     );
     addDelete(
-      '/api/admin/rooms/<roomId>',
+      '/api/admin/rooms/:roomId',
       _deleteRoom,
       middlewares: [adminAuthMiddleware],
     );
@@ -83,32 +83,32 @@ class HubWebAdminService extends BaseHttpService {
 
     // ── 客户端管理（管理层） ──
     addPost(
-      '/api/admin/clients/<id>/mute',
+      '/api/admin/clients/:id/mute',
       _muteClient,
       middlewares: [adminAuthMiddleware],
     );
     addPost(
-      '/api/admin/clients/<id>/unmute',
+      '/api/admin/clients/:id/unmute',
       _unmuteClient,
       middlewares: [adminAuthMiddleware],
     );
     addPost(
-      '/api/admin/clients/<id>/kick',
+      '/api/admin/clients/:id/kick',
       _kickClient,
       middlewares: [adminAuthMiddleware],
     );
     addPost(
-      '/api/admin/clients/<id>/ban',
+      '/api/admin/clients/:id/ban',
       _banClient,
       middlewares: [adminAuthMiddleware],
     );
     addPost(
-      '/api/admin/clients/<id>/unban',
+      '/api/admin/clients/:id/unban',
       _unbanClient,
       middlewares: [adminAuthMiddleware],
     );
     addPost(
-      '/api/admin/clients/<id>/admin',
+      '/api/admin/clients/:id/admin',
       _setClientAdmin,
       middlewares: [adminAuthMiddleware],
     );
@@ -147,7 +147,7 @@ class HubWebAdminService extends BaseHttpService {
       middlewares: [adminAuthMiddleware],
     );
     addDelete(
-      '/api/admin/subscriptions/<id>',
+      '/api/admin/subscriptions/:id',
       _deleteSubscription,
       middlewares: [adminAuthMiddleware],
     );
@@ -173,22 +173,28 @@ class HubWebAdminService extends BaseHttpService {
   //  页面
   // ═══════════════════════════════════════════════════════════════
 
-  Future<void> _serveAdminPage(HubRequest request) async {
+  Future<shelf.Response> _serveAdminPage(
+    shelf.Request request,
+    Map<String, String> params,
+  ) async {
     String html;
     try {
       html = await rootBundle.loadString('assets/hub_admin.html');
     } catch (_) {
       html = '<!DOCTYPE html><html><body><h1>Hub Admin</h1><p>页面资源缺失</p></body></html>';
     }
-    await sendHtml(request, html);
+    return sendHtml(request, html);
   }
 
   // ═══════════════════════════════════════════════════════════════
   //  API 实现
   // ═══════════════════════════════════════════════════════════════
 
-  Future<void> _overview(HubRequest req) async {
-    await sendJson(req, {
+  Future<shelf.Response> _overview(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    return sendJson(req, {
       'app': 'Kostori',
       'version': App.version,
       'uptime': DateTime.now().difference(_hub.startedAt).inSeconds,
@@ -201,7 +207,10 @@ class HubWebAdminService extends BaseHttpService {
     });
   }
 
-  Future<void> _stats(HubRequest req) async {
+  Future<shelf.Response> _stats(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     final rooms = _hub.rooms;
     final clients = _hub.clients;
     final now = DateTime.now();
@@ -281,7 +290,7 @@ class HubWebAdminService extends BaseHttpService {
             .toList()
           ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
-    await sendJson(req, {
+    return sendJson(req, {
       'summary': {
         'totalMessages': totalMessages,
         'userMessages': userMessages,
@@ -305,7 +314,10 @@ class HubWebAdminService extends BaseHttpService {
     });
   }
 
-  Future<void> _rooms(HubRequest req) async {
+  Future<shelf.Response> _rooms(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     final list = _hub.rooms
         .map(
           (r) => {
@@ -335,16 +347,19 @@ class HubWebAdminService extends BaseHttpService {
           },
         )
         .toList();
-    await sendJson(req, {'count': list.length, 'items': list});
+    return sendJson(req, {'count': list.length, 'items': list});
   }
 
-  Future<void> _roomMessages(HubRequest req) async {
-    final roomId = pathParams(req)['roomId'] ?? '';
-    final limit = int.tryParse(req.uri.queryParameters['limit'] ?? '') ?? 50;
+  Future<shelf.Response> _roomMessages(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final roomId = params['roomId'] ?? '';
+    final limit =
+        int.tryParse(req.requestedUri.queryParameters['limit'] ?? '') ?? 50;
     final room = _hub.findRoom(roomId);
     if (room == null) {
-      await sendJson(req, {'error': 'Room not found'}, status: 404);
-      return;
+      return sendJson(req, {'error': 'Room not found'}, status: 404);
     }
     final hist = room.messageHistory;
     final recent = hist.length > limit
@@ -360,26 +375,26 @@ class HubWebAdminService extends BaseHttpService {
           },
         )
         .toList();
-    await sendJson(req, {'count': list.length, 'messages': list});
+    return sendJson(req, {'count': list.length, 'messages': list});
   }
 
-  Future<void> _sendRoomMessage(HubRequest req) async {
-    final roomId = pathParams(req)['roomId'] ?? '';
+  Future<shelf.Response> _sendRoomMessage(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final roomId = params['roomId'] ?? '';
     final body = await readJson(req);
     if (body == null) {
-      await sendJson(req, {'error': 'Invalid body'}, status: 400);
-      return;
+      return sendJson(req, {'error': 'Invalid body'}, status: 400);
     }
     final text = body['text'] as String?;
     final asBot = body['asBot'] as bool? ?? false;
     if (text == null || text.isEmpty) {
-      await sendJson(req, {'error': 'text required'}, status: 400);
-      return;
+      return sendJson(req, {'error': 'text required'}, status: 400);
     }
     final room = _hub.findRoom(roomId);
     if (room == null) {
-      await sendJson(req, {'error': 'Room not found'}, status: 404);
-      return;
+      return sendJson(req, {'error': 'Room not found'}, status: 404);
     }
     if (asBot) {
       final bot = HubClientInfo(
@@ -410,16 +425,22 @@ class HubWebAdminService extends BaseHttpService {
         ),
       );
     }
-    await sendJson(req, {'sent': true});
+    return sendJson(req, {'sent': true});
   }
 
-  Future<void> _deleteRoom(HubRequest req) async {
-    final roomId = pathParams(req)['roomId'] ?? '';
+  Future<shelf.Response> _deleteRoom(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final roomId = params['roomId'] ?? '';
     final ok = _hub.deleteRoomByAdmin(roomId);
-    await sendJson(req, {'deleted': ok});
+    return sendJson(req, {'deleted': ok});
   }
 
-  Future<void> _clients(HubRequest req) async {
+  Future<shelf.Response> _clients(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     final list = _hub.clients
         .map(
           (c) => {
@@ -445,51 +466,73 @@ class HubWebAdminService extends BaseHttpService {
           },
         )
         .toList();
-    await sendJson(req, {'count': list.length, 'items': list});
+    return sendJson(req, {'count': list.length, 'items': list});
   }
 
-  Future<void> _muteClient(HubRequest req) async {
-    final id = pathParams(req)['id'] ?? '';
+  Future<shelf.Response> _muteClient(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final id = params['id'] ?? '';
     final body = await readJson(req);
     final seconds = (body?['seconds'] as num?)?.toInt() ?? 300;
     await _hub.muteClient(id, seconds: seconds);
-    await sendJson(req, {'ok': true});
+    return sendJson(req, {'ok': true});
   }
 
-  Future<void> _unmuteClient(HubRequest req) async {
-    final id = pathParams(req)['id'] ?? '';
+  Future<shelf.Response> _unmuteClient(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final id = params['id'] ?? '';
     await _hub.unmuteClient(id);
-    await sendJson(req, {'ok': true});
+    return sendJson(req, {'ok': true});
   }
 
-  Future<void> _kickClient(HubRequest req) async {
-    final id = pathParams(req)['id'] ?? '';
+  Future<shelf.Response> _kickClient(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final id = params['id'] ?? '';
     await _hub.kickClient(id, operatorName: 'Web 管理');
-    await sendJson(req, {'ok': true});
+    return sendJson(req, {'ok': true});
   }
 
-  Future<void> _banClient(HubRequest req) async {
-    final id = pathParams(req)['id'] ?? '';
+  Future<shelf.Response> _banClient(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final id = params['id'] ?? '';
     _hub.addToBlacklist(id);
-    await sendJson(req, {'ok': true});
+    return sendJson(req, {'ok': true});
   }
 
-  Future<void> _unbanClient(HubRequest req) async {
-    final id = pathParams(req)['id'] ?? '';
+  Future<shelf.Response> _unbanClient(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final id = params['id'] ?? '';
     _hub.removeFromBlacklist(id);
-    await sendJson(req, {'ok': true});
+    return sendJson(req, {'ok': true});
   }
 
-  Future<void> _setClientAdmin(HubRequest req) async {
-    final id = pathParams(req)['id'] ?? '';
+  Future<shelf.Response> _setClientAdmin(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final id = params['id'] ?? '';
     final body = await readJson(req);
     await _hub.setClientGlobalAdmin(id, body?['value'] as bool? ?? true);
-    await sendJson(req, {'ok': true});
+    return sendJson(req, {'ok': true});
   }
 
-  Future<void> _logs(HubRequest req) async {
-    final limit = int.tryParse(req.uri.queryParameters['limit'] ?? '') ?? 100;
-    final level = req.uri.queryParameters['level'];
+  Future<shelf.Response> _logs(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final limit =
+        int.tryParse(req.requestedUri.queryParameters['limit'] ?? '') ?? 100;
+    final level = req.requestedUri.queryParameters['level'];
     var logs = Log.logs;
     if (level != null && level.isNotEmpty) {
       logs = logs.where((l) => l.level.name == level).toList();
@@ -507,11 +550,14 @@ class HubWebAdminService extends BaseHttpService {
           },
         )
         .toList();
-    await sendJson(req, {'count': recent.length, 'logs': list});
+    return sendJson(req, {'count': recent.length, 'logs': list});
   }
 
-  Future<void> _getConfig(HubRequest req) async {
-    await sendJson(req, {
+  Future<shelf.Response> _getConfig(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    return sendJson(req, {
       'hubPort': savedHubPort,
       'hubBindMode': savedHubBindMode.name,
       'hubNoAuth': hubNoAuth,
@@ -534,11 +580,13 @@ class HubWebAdminService extends BaseHttpService {
     });
   }
 
-  Future<void> _setConfig(HubRequest req) async {
+  Future<shelf.Response> _setConfig(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     final body = await readJson(req);
     if (body == null) {
-      await sendJson(req, {'error': 'Invalid body'}, status: 400);
-      return;
+      return sendJson(req, {'error': 'Invalid body'}, status: 400);
     }
     final changed = <String>[];
     if (body['pingIntervalMs'] != null) {
@@ -593,12 +641,15 @@ class HubWebAdminService extends BaseHttpService {
       setTlsPassword(body['tlsPassword'].toString());
       changed.add('tlsPassword');
     }
-    await sendJson(req, {'saved': true, 'changed': changed});
+    return sendJson(req, {'saved': true, 'changed': changed});
   }
 
-  Future<void> _getAiConfig(HubRequest req) async {
+  Future<shelf.Response> _getAiConfig(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     final c = _hub.aiBotConfig;
-    await sendJson(req, {
+    return sendJson(req, {
       'enabled': c.enabled,
       'provider': c.provider,
       'model': c.model,
@@ -614,11 +665,13 @@ class HubWebAdminService extends BaseHttpService {
     });
   }
 
-  Future<void> _setAiConfig(HubRequest req) async {
+  Future<shelf.Response> _setAiConfig(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     final body = await readJson(req);
     if (body == null) {
-      await sendJson(req, {'error': 'Invalid body'}, status: 400);
-      return;
+      return sendJson(req, {'error': 'Invalid body'}, status: 400);
     }
     final c = _hub.aiBotConfig;
     final updated = c.copyWith(
@@ -640,10 +693,13 @@ class HubWebAdminService extends BaseHttpService {
       replyDm: body['replyDm'] is bool ? body['replyDm'] as bool : c.replyDm,
     );
     updated.save();
-    await sendJson(req, {'saved': true});
+    return sendJson(req, {'saved': true});
   }
 
-  Future<void> _getSubscriptions(HubRequest req) async {
+  Future<shelf.Response> _getSubscriptions(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     final m = HubSubscriptionManager.instance;
     final list = m
         .load()
@@ -663,14 +719,16 @@ class HubWebAdminService extends BaseHttpService {
           },
         )
         .toList();
-    await sendJson(req, {'count': list.length, 'items': list});
+    return sendJson(req, {'count': list.length, 'items': list});
   }
 
-  Future<void> _addSubscription(HubRequest req) async {
+  Future<shelf.Response> _addSubscription(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     final body = await readJson(req);
     if (body == null) {
-      await sendJson(req, {'error': 'Invalid body'}, status: 400);
-      return;
+      return sendJson(req, {'error': 'Invalid body'}, status: 400);
     }
     final type =
         HubSubscriptionType.values.asNameMap()[body['type']] ??
@@ -693,24 +751,33 @@ class HubWebAdminService extends BaseHttpService {
     );
     HubSubscriptionManager.instance.add(sub);
     await HubSubscriptionService.instance.start(sub);
-    await sendJson(req, {'created': true, 'id': sub.id});
+    return sendJson(req, {'created': true, 'id': sub.id});
   }
 
-  Future<void> _deleteSubscription(HubRequest req) async {
-    final id = pathParams(req)['id'] ?? '';
+  Future<shelf.Response> _deleteSubscription(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
+    final id = params['id'] ?? '';
     HubSubscriptionManager.instance.delete(id);
     await HubSubscriptionService.instance.stop(id);
-    await sendJson(req, {'deleted': true});
+    return sendJson(req, {'deleted': true});
   }
 
-  Future<void> _restartHub(HubRequest req) async {
-    await sendJson(req, {'restarting': true});
+  Future<shelf.Response> _restartHub(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     unawaited(_hub.restart());
+    return sendJson(req, {'restarting': true});
   }
 
   // ── 公网 IP 探测 ─────────────────────────────────────────────────────────
 
-  Future<void> _detectPublicIp(HubRequest req) async {
+  Future<shelf.Response> _detectPublicIp(
+    shelf.Request req,
+    Map<String, String> params,
+  ) async {
     String? ip;
     // IPv4 优先
     for (final api in const [
@@ -761,12 +828,13 @@ class HubWebAdminService extends BaseHttpService {
     }
 
     if (ip == null) {
-      await sendJson(req, {'error': 'Failed to detect public IP'}, status: 502);
-      return;
+      return sendJson(req, {
+        'error': 'Failed to detect public IP',
+      }, status: 502);
     }
 
     final isV6 = ip.contains(':');
     final url = isV6 ? 'http://[$ip]:${_hub.port}' : 'http://$ip:${_hub.port}';
-    await sendJson(req, {'ip': ip, 'url': url});
+    return sendJson(req, {'ip': ip, 'url': url});
   }
 }

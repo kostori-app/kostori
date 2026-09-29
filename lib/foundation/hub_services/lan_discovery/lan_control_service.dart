@@ -12,7 +12,7 @@ class LanControlService {
   static final LanControlService instance = LanControlService._();
 
   HttpServer? _server;
-  final Map<String, HubSocket> _connections = {};
+  final Map<String, WebSocketChannel> _connections = {};
   LanControlServiceState _state = LanControlServiceState.idle;
   String? _lastError;
   Timer? _statusBroadcastTimer;
@@ -22,7 +22,7 @@ class LanControlService {
 
   bool _pinEnabled = false;
   String _pinCode = '';
-  final _pendingPinConnections = <String, HubSocket>{};
+  final _pendingPinConnections = <String, WebSocketChannel>{};
   final _pinAttempts = <String, int>{};
   final _pinTimeouts = <String, Timer>{};
 
@@ -179,21 +179,21 @@ class LanControlService {
     _pinTimeouts.clear();
     _pinAttempts.clear();
 
-    final connections = List<HubSocket>.of(_connections.values);
+    final connections = List<WebSocketChannel>.of(_connections.values);
     _connections.clear();
     for (final ws in connections) {
       try {
-        await ws.close();
+        closeWebSocket(ws);
       } catch (_) {
         // 忽略已断开的连接
       }
     }
 
-    final pendingPin = List<HubSocket>.of(_pendingPinConnections.values);
+    final pendingPin = List<WebSocketChannel>.of(_pendingPinConnections.values);
     _pendingPinConnections.clear();
     for (final ws in pendingPin) {
       try {
-        await ws.close();
+        closeWebSocket(ws);
       } catch (_) {
         // 忽略未验证的连接
       }
@@ -212,7 +212,7 @@ class LanControlService {
     final json = jsonEncode(message.toJson());
     for (final ws in _connections.values) {
       try {
-        ws.add(json);
+        ws.sink.add(json);
       } catch (e) {
         HubLog.warning('LanControlService', '发送消息失败: $e');
       }
@@ -223,7 +223,7 @@ class LanControlService {
     final ws = _connections[deviceId];
     if (ws != null) {
       try {
-        ws.add(jsonEncode(message.toJson()));
+        ws.sink.add(jsonEncode(message.toJson()));
       } catch (e) {
         HubLog.warning('LanControlService', '发送消息失败: $e');
       }
@@ -232,14 +232,13 @@ class LanControlService {
 
   void _serve() {
     final handler = webSocketHandler(
-      (WebSocketChannel channel, String? protocol) =>
-          _handleWebSocket(HubSocket(channel)),
+      (WebSocketChannel channel, String? protocol) => _handleWebSocket(channel),
       pingInterval: const Duration(seconds: 30),
     );
     shelf_io.serveRequests(_server!, handler);
   }
 
-  void _handleWebSocket(HubSocket ws) {
+  void _handleWebSocket(WebSocketChannel ws) {
     _lastAnimeSignature = null;
 
     final deviceId = _generateDeviceId();
@@ -253,7 +252,7 @@ class LanControlService {
         if (_pendingPinConnections.remove(deviceId) != null) {
           _pinAttempts.remove(deviceId);
           _pinTimeouts.remove(deviceId);
-          ws.close();
+          closeWebSocket(ws);
           HubLog.info('LanControlService', 'PIN 验证超时，已关闭连接: $deviceId');
         }
       });
@@ -261,7 +260,7 @@ class LanControlService {
       _registerConnection(deviceId, ws);
     }
 
-    ws.listen(
+    ws.stream.listen(
       (data) => _pendingPinConnections.containsKey(deviceId)
           ? _handlePendingPinMessage(deviceId, ws, data)
           : _handleMessage(deviceId, data),
@@ -270,9 +269,9 @@ class LanControlService {
     );
   }
 
-  void _registerConnection(String deviceId, HubSocket ws) {
+  void _registerConnection(String deviceId, WebSocketChannel ws) {
     for (final existingWs in _connections.values) {
-      existingWs.close();
+      closeWebSocket(existingWs);
     }
     _connections.clear();
 
@@ -301,15 +300,19 @@ class LanControlService {
     },
   );
 
-  void _sendToSocket(HubSocket ws, LanControlMessage message) {
+  void _sendToSocket(WebSocketChannel ws, LanControlMessage message) {
     try {
-      ws.add(jsonEncode(message.toJson()));
+      ws.sink.add(jsonEncode(message.toJson()));
     } catch (e) {
       HubLog.warning('LanControlService', '发送消息失败: $e');
     }
   }
 
-  void _handlePendingPinMessage(String deviceId, HubSocket ws, dynamic data) {
+  void _handlePendingPinMessage(
+    String deviceId,
+    WebSocketChannel ws,
+    dynamic data,
+  ) {
     try {
       final json = jsonDecode(data as String) as Map<String, dynamic>;
       final message = LanControlMessage.fromJson(json);
@@ -353,7 +356,7 @@ class LanControlService {
         _pinTimeouts.remove(deviceId);
         _pinAttempts.remove(deviceId);
         _pendingPinConnections.remove(deviceId);
-        ws.close();
+        closeWebSocket(ws);
       }
     } catch (e, stack) {
       HubLog.warning('LanControlService', 'PIN 验证消息解析失败: $e\n$stack');
@@ -461,7 +464,7 @@ class LanControlService {
     if (ws != null) {
       _connections.remove(deviceId);
       _commandQueues.remove(deviceId);
-      ws.close();
+      closeWebSocket(ws);
       _cleanupDisconnect(deviceId);
     } else if (_pendingPinConnections.remove(deviceId) != null) {
       _pinTimeouts[deviceId]?.cancel();
@@ -542,7 +545,9 @@ class LanControlService {
         case LanControlMessageType.disconnect:
           HubLog.info('LanControlService', '收到 disconnect 消息，执行 pop');
           App.pop();
-          _connections[deviceId]?.close();
+          if (_connections[deviceId] != null) {
+            closeWebSocket(_connections[deviceId]!);
+          }
           return;
 
         case LanControlMessageType.pong:

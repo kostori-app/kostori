@@ -1,11 +1,11 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-// ── HubClientInfo（服务端专用，保留 HubSocket）──────────
+// ── HubClientInfo（服务端专用，保留 WebSocketChannel）──────────
 
 class HubClientInfo {
   final String userId;
   String? displayName;
-  final HubSocket? connection;
+  final WebSocketChannel? connection;
   final DateTime connectedAt;
   String? avatarUrl;
   String? biography;
@@ -57,7 +57,7 @@ class HubClientInfo {
     if (connection == null) return; // 机器人无连接
     try {
       HubLog.info('send', '服务端发送: ${jsonEncode(data)}');
-      connection!.add(jsonEncode(data));
+      connection!.sink.add(jsonEncode(data));
     } catch (_) {}
   }
 }

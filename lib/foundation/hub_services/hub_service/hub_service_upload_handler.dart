@@ -61,9 +61,9 @@ extension HubServiceUploadHandler on HubService {
       _parseMultipart(Stream.value(body), boundary);
 
   /// Satori 适配层使用：收集请求体原始字节
-  Future<Uint8List> collectRequestBodyBytes(HubRequest request) async {
+  Future<Uint8List> collectRequestBodyBytes(shelf.Request request) async {
     final builder = BytesBuilder(copy: false);
-    await for (final chunk in request) {
+    await for (final chunk in request.read()) {
       builder.add(chunk);
     }
     return builder.takeBytes();
@@ -89,66 +89,66 @@ extension HubServiceUploadHandler on HubService {
   //  POST /hub/upload
   // ═══════════════════════════════════════════════════════
 
-  Future<void> _handleUpload(HubRequest request) async {
+  Future<shelf.Response> _handleUpload(
+    shelf.Request request,
+    Map<String, String> params,
+  ) async {
     try {
       final config = uploadConfig;
 
       // 客户端直传模式，服务端不接受上传
       if (config.mode == HubUploadMode.clientOss) {
-        await sendJson(request, {
+        return sendJson(request, {
           'error': 'Server does not accept uploads in clientOss mode',
         }, status: HttpStatus.badRequest);
-        return;
       }
 
       // 检查 Content-Type
-      final contentType = request.headers.contentType;
+      final rawContentType = request.headers['content-type'];
+      final contentType = rawContentType == null
+          ? null
+          : ContentType.parse(rawContentType);
       if (contentType == null ||
           contentType.primaryType != 'multipart' ||
           contentType.subType != 'form-data') {
-        await sendJson(request, {
+        return sendJson(request, {
           'error': 'Expected multipart/form-data',
         }, status: HttpStatus.badRequest);
-        return;
       }
 
       final boundary = contentType.parameters['boundary'];
       if (boundary == null || boundary.isEmpty) {
-        await sendJson(request, {
+        return sendJson(request, {
           'error': 'Missing boundary',
         }, status: HttpStatus.badRequest);
-        return;
       }
 
       // 流式解析 multipart，超过上限立即中止，避免超大请求占满内存
       _MultipartFile? parsed;
       try {
         parsed = await _parseMultipart(
-          request,
+          request.read(),
           boundary,
           maxBytes: config.maxSizeBytes,
         );
       } on _UploadTooLarge {
         final maxMb = (config.maxSizeBytes / (1024 * 1024)).toStringAsFixed(0);
-        await sendJson(request, {
+        return sendJson(request, {
           'error': 'File too large (max ${maxMb}MB)',
         }, status: HttpStatus.requestEntityTooLarge);
-        return;
       }
       if (parsed == null || parsed.bytes.isEmpty) {
-        await sendJson(request, {
+        return sendJson(request, {
           'error': 'No file found in request',
         }, status: HttpStatus.badRequest);
-        return;
       }
 
       // 仅接受图片类型（防上传非图片文件被存储/分发）
       final allowedMime = _isAllowedImageMime(parsed.mimeType);
       if (!allowedMime) {
-        await sendJson(request, {
+        return sendJson(request, {
           'error': 'Only image uploads are allowed',
         }, status: HttpStatus.unsupportedMediaType);
-        return;
       }
 
       // ── 缓存命中直接返回 ──────────────────────────────────────────────
@@ -156,12 +156,11 @@ extension HubServiceUploadHandler on HubService {
       final cached = _uploadCache[hash];
       if (cached != null) {
         HubLog.info('HubUpload', 'cache hit: $hash → $cached');
-        await sendJson(request, {'url': cached});
-        return;
+        return sendJson(request, {'url': cached});
       }
 
       // ── 存储 ──────────────────────────────────────────────────────────
-      String url;
+      final String url;
       switch (config.mode) {
         case HubUploadMode.serverLocal:
           url = await _storeLocal(parsed.filename, parsed.bytes);
@@ -169,10 +168,9 @@ extension HubServiceUploadHandler on HubService {
         case HubUploadMode.serverOss:
           final oss = config.ossConfig;
           if (oss == null || !oss.isValid) {
-            await sendJson(request, {
+            return sendJson(request, {
               'error': 'Server OSS not configured',
             }, status: HttpStatus.internalServerError);
-            return;
           }
           url = await _storeOss(
             oss,
@@ -182,7 +180,9 @@ extension HubServiceUploadHandler on HubService {
           );
 
         case HubUploadMode.clientOss:
-          return; // 不会走到这里
+          return sendJson(request, {
+            'error': 'Server does not accept uploads in clientOss mode',
+          }, status: HttpStatus.badRequest);
       }
 
       // ── 写缓存（限量，防内存膨胀） & 返回 ──────────────────────────────
@@ -195,10 +195,10 @@ extension HubServiceUploadHandler on HubService {
         'HubUpload',
         '✅ ${parsed.filename} (${parsed.bytes.length}B) $hash → $url',
       );
-      await sendJson(request, {'url': url});
+      return sendJson(request, {'url': url});
     } catch (e, st) {
       HubLog.error('HubUpload', 'upload failed: $e\n$st');
-      await sendJson(request, {
+      return sendJson(request, {
         'error': 'Upload failed: $e',
       }, status: HttpStatus.internalServerError);
     }
@@ -208,53 +208,56 @@ extension HubServiceUploadHandler on HubService {
   //  GET /hub/files/<filename>
   // ═══════════════════════════════════════════════════════
 
-  Future<void> _handleServeFile(HubRequest request) async {
-    final params = request.requestedUri.pathSegments;
-    // /hub/files/<filename> → 最后一段
-    final filename = params.isNotEmpty ? params.last : '';
+  Future<shelf.Response> _handleServeFile(
+    shelf.Request request,
+    Map<String, String> params,
+  ) async {
+    final filename = params['filename'] ?? '';
 
     if (filename.isEmpty ||
         filename.contains('..') ||
         filename.contains('/') ||
         filename.contains('\\')) {
-      await sendJson(request, {
+      return sendJson(request, {
         'error': 'Invalid filename',
       }, status: HttpStatus.badRequest);
-      return;
     }
 
     final file = File(p.join(_uploadDir, filename));
     if (!await file.exists()) {
-      await sendJson(request, {
+      return sendJson(request, {
         'error': 'File not found',
       }, status: HttpStatus.notFound);
-      return;
     }
 
     final mime = _guessMimeType(filename);
 
-    request.response
-      ..statusCode = HttpStatus.ok
-      ..headers.set('Content-Type', mime)
-      ..headers.set('X-Content-Type-Options', 'nosniff')
-      // SVG 可内联脚本，作为附件下载 + 禁止嗅探，防存储型 XSS
-      ..headers.set(
-        'Content-Disposition',
-        mime == 'image/svg+xml' ? 'attachment' : 'inline',
-      )
-      ..headers.set('Cache-Control', 'public, max-age=31536000');
-
-    await request.response.addStream(file.openRead());
+    return shelf.Response(
+      HttpStatus.ok,
+      body: file.openRead(),
+      headers: {
+        'content-type': mime,
+        'x-content-type-options': 'nosniff',
+        // SVG 可内联脚本，作为附件下载 + 禁止嗅探，防存储型 XSS
+        'content-disposition': mime == 'image/svg+xml'
+            ? 'attachment'
+            : 'inline',
+        'cache-control': 'public, max-age=31536000',
+      },
+    );
   }
 
   // ═══════════════════════════════════════════════════════
   //  GET /hub/upload/config
   // ═══════════════════════════════════════════════════════
 
-  Future<void> _handleGetUploadConfig(HubRequest request) async {
+  Future<shelf.Response> _handleGetUploadConfig(
+    shelf.Request request,
+    Map<String, String> params,
+  ) async {
     final config = uploadConfig;
     // 只返回客户端需要的信息，不泄露密钥
-    await sendJson(request, {
+    return sendJson(request, {
       'mode': config.mode.name,
       'maxSizeBytes': config.maxSizeBytes,
     });

@@ -1,6 +1,22 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-typedef MiddlewareHandler = Future<bool> Function(HubRequest request);
+/// 路由级中间件：返回 null 表示继续，返回 Response 表示短路。
+typedef MiddlewareHandler = FutureOr<shelf.Response?> Function(
+  shelf.Request request,
+);
+
+HttpConnectionInfo? _connectionInfo(shelf.Request request) =>
+    request.context['shelf.io.connection_info'] as HttpConnectionInfo?;
+
+String _remoteAddress(shelf.Request request) =>
+    _connectionInfo(request)?.remoteAddress.address ?? '';
+
+shelf.Response _jsonResponse(Object? data, {int status = HttpStatus.ok}) =>
+    shelf.Response(
+      status,
+      body: jsonEncode(data),
+      headers: {'content-type': 'application/json'},
+    );
 
 class Middleware {
   // ─────────────────────────────────────────
@@ -9,12 +25,12 @@ class Middleware {
 
   /// 从 Authorization header 或 query 参数取 Key 校验
   static MiddlewareHandler auth({bool admin = false}) {
-    return (HubRequest request) async {
-      final header = request.headers.value('Authorization');
+    return (shelf.Request request) {
+      final header = request.headers['authorization'];
       final bearerToken = header != null && header.startsWith('Bearer ')
           ? header.substring(7)
           : null;
-      final queryToken = request.uri.queryParameters['token'];
+      final queryToken = request.requestedUri.queryParameters['token'];
       final token = bearerToken ?? queryToken;
 
       final valid =
@@ -27,22 +43,15 @@ class Middleware {
                     ApiKeyManager().validateAdmin(token)));
 
       if (!valid) {
-        request.response
-          ..statusCode = HttpStatus.unauthorized
-          ..headers.contentType = ContentType.json
-          ..write(
-            jsonEncode({
-              'error': 'Unauthorized',
-              'message': token == null
-                  ? 'Missing token (Authorization: Bearer <key> or ?token=)'
-                  : 'Invalid token',
-            }),
-          );
-        await request.response.close();
-        return false;
+        return _jsonResponse({
+          'error': 'Unauthorized',
+          'message': token == null
+              ? 'Missing token (Authorization: Bearer <key> or ?token=)'
+              : 'Invalid token',
+        }, status: HttpStatus.unauthorized);
       }
 
-      return true;
+      return null;
     };
   }
 
@@ -51,16 +60,16 @@ class Middleware {
   // ─────────────────────────────────────────
 
   static MiddlewareHandler localBypass(MiddlewareHandler next) {
-    return (HubRequest request) async {
-      final ip = request.connectionInfo?.remoteAddress.address ?? '';
+    return (shelf.Request request) {
+      final ip = _remoteAddress(request);
       final isLocal =
           ip == '127.0.0.1' || ip == '::1' || ip == '0:0:0:0:0:0:0:1';
       // 浏览器发起的跨源请求（带 Origin 头且非本站）即使来自本机也要求鉴权，
       // 防止恶意网页对 localhost 服务做 CSRF / DNS-rebinding 攻击。
-      final origin = request.headers.value('Origin');
+      final origin = request.headers['origin'];
       final isCrossOriginBrowserRequest =
           origin != null && !origin.startsWith('http://localhost');
-      if (isLocal && !isCrossOriginBrowserRequest) return true;
+      if (isLocal && !isCrossOriginBrowserRequest) return null;
       return next(request);
     };
   }
@@ -75,8 +84,10 @@ class Middleware {
   }) {
     final counts = <String, List<DateTime>>{};
 
-    return (HubRequest request) async {
-      final ip = request.connectionInfo?.remoteAddress.address ?? 'unknown';
+    return (shelf.Request request) {
+      final ip = _remoteAddress(request).isEmpty
+          ? 'unknown'
+          : _remoteAddress(request);
       final now = DateTime.now();
       final windowStart = now.subtract(window);
 
@@ -85,47 +96,44 @@ class Middleware {
           .toList();
 
       if (counts[ip]!.length >= maxRequests) {
-        request.response
-          ..statusCode = 429
-          ..headers.contentType = ContentType.json
-          ..headers.set('Retry-After', '60')
-          ..write(
-            jsonEncode({
-              'error': 'Too Many Requests',
-              'message': '请求过于频繁，请稍后再试',
-              'retryAfter': 60,
-            }),
-          );
-        await request.response.close();
-        return false;
+        return shelf.Response(
+          429,
+          body: jsonEncode({
+            'error': 'Too Many Requests',
+            'message': '请求过于频繁，请稍后再试',
+            'retryAfter': 60,
+          }),
+          headers: {'content-type': 'application/json', 'Retry-After': '60'},
+        );
       }
 
       counts[ip]!.add(now);
-      return true;
+      return null;
     };
   }
 
   // ─────────────────────────────────────────
-  // CORS
+  // CORS（shelf 管道中间件，作用于所有响应）
   // ─────────────────────────────────────────
 
-  static MiddlewareHandler cors({
+  static shelf.Middleware cors({
     String allowOrigin = '*',
     String allowMethods = 'GET, POST, PUT, DELETE, OPTIONS',
     String allowHeaders = 'Content-Type, Authorization',
   }) {
-    return (HubRequest request) async {
-      request.response.headers
-        ..set('Access-Control-Allow-Origin', allowOrigin)
-        ..set('Access-Control-Allow-Methods', allowMethods)
-        ..set('Access-Control-Allow-Headers', allowHeaders);
-
-      if (request.method == 'OPTIONS') {
-        request.response.statusCode = HttpStatus.noContent;
-        await request.response.close();
-        return false;
-      }
-      return true;
+    final corsHeaders = {
+      'Access-Control-Allow-Origin': allowOrigin,
+      'Access-Control-Allow-Methods': allowMethods,
+      'Access-Control-Allow-Headers': allowHeaders,
+    };
+    return (shelf.Handler inner) {
+      return (shelf.Request request) async {
+        if (request.method == 'OPTIONS') {
+          return shelf.Response(HttpStatus.noContent, headers: corsHeaders);
+        }
+        final response = await inner(request);
+        return response.change(headers: {...corsHeaders, ...response.headers});
+      };
     };
   }
 
@@ -140,24 +148,18 @@ class Middleware {
         : const HubUploadConfig();
     final maxBytes = config.maxSizeBytes;
 
-    return (HubRequest request) async {
-      final contentLength = request.contentLength;
-
-      if (contentLength != -1 && contentLength > maxBytes) {
-        request.response
-          ..statusCode = HttpStatus.requestEntityTooLarge
-          ..headers.contentType = ContentType.json
-          ..write(
-            jsonEncode({
-              'error': 'Request Entity Too Large',
-              'maxBytes': maxBytes,
-              'receivedBytes': contentLength,
-            }),
-          );
-        await request.response.close();
-        return false;
+    return (shelf.Request request) {
+      final contentLength = int.tryParse(
+        request.headers['content-length'] ?? '',
+      );
+      if (contentLength != null && contentLength > maxBytes) {
+        return _jsonResponse({
+          'error': 'Request Entity Too Large',
+          'maxBytes': maxBytes,
+          'receivedBytes': contentLength,
+        }, status: HttpStatus.requestEntityTooLarge);
       }
-      return true;
+      return null;
     };
   }
 
@@ -166,28 +168,21 @@ class Middleware {
   // ─────────────────────────────────────────
 
   static MiddlewareHandler ipWhitelist(List<String> allowedIps) {
-    return (HubRequest request) async {
-      final ip = request.connectionInfo?.remoteAddress.address ?? '';
+    return (shelf.Request request) {
+      final ip = _remoteAddress(request);
 
       // 本地永远放行
       final isLocal = ip == '127.0.0.1' || ip == '::1';
-      if (isLocal) return true;
+      if (isLocal) return null;
 
       if (!allowedIps.contains(ip)) {
-        request.response
-          ..statusCode = HttpStatus.forbidden
-          ..headers.contentType = ContentType.json
-          ..write(
-            jsonEncode({
-              'error': 'Forbidden',
-              'message': 'IP $ip is not allowed',
-            }),
-          );
-        await request.response.close();
-        return false;
+        return _jsonResponse({
+          'error': 'Forbidden',
+          'message': 'IP $ip is not allowed',
+        }, status: HttpStatus.forbidden);
       }
 
-      return true;
+      return null;
     };
   }
 }

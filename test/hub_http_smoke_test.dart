@@ -26,9 +26,9 @@ class _TestWsService extends BaseHttpService {
   @override
   void registerRoutes() {
     addWs('/ws', (socket, req) async {
-      socket.add('hi');
-      await for (final msg in socket) {
-        socket.add('echo:$msg');
+      socket.sink.add('hi');
+      await for (final msg in socket.stream) {
+        socket.sink.add('echo:$msg');
       }
     });
   }
@@ -71,9 +71,9 @@ void main() {
     final channel = IOWebSocketChannel.connect('ws://127.0.0.1:$port/ws');
     try {
       final received = <String>[];
-      final done = channel.stream.listen((data) {
-        received.add(data as String);
-      }).asFuture<void>();
+      final done = channel.stream
+          .listen((data) => received.add(data as String))
+          .asFuture<void>();
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(received, contains('hi'));
 

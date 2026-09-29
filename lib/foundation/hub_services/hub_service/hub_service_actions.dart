@@ -755,10 +755,10 @@ extension HubServiceActions on HubService {
     if (isGlobalAdmin) {
       // 全局管理员：给客户端一帧时间收到事件后关闭连接
       await Future.delayed(const Duration(milliseconds: 120));
-      await kickTarget.connection?.close(
-        WebSocketStatus.policyViolation,
-        'Kicked',
-      );
+      final c = kickTarget.connection;
+      if (c != null) {
+        closeWebSocket(c, WebSocketStatus.policyViolation, 'Kicked');
+      }
       _rooms[targetRoomId]?.participants.remove(targetId);
       _clients.remove(targetId);
       _logEvent('⚡ ${_name(fromId)} kicked $targetName from server');

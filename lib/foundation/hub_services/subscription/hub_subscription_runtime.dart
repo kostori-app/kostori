@@ -81,10 +81,10 @@ class _SubRuntime {
   Timer? _heartbeat;
 
   /// ws-forward：已连接的客户端
-  final Set<HubSocket> _clients = {};
+  final Set<WebSocketChannel> _clients = {};
 
   /// ws-reverse：出站 socket
-  HubSocket? _outSocket;
+  WebSocketChannel? _outSocket;
 
   /// http：监听服务器
   HttpServer? _httpServer;
@@ -163,27 +163,30 @@ class _SubRuntime {
     final authenticatedByQuery =
         sub.token?.isNotEmpty == true && queryToken != null;
     final handler = webSocketHandler((
-      WebSocketChannel channel,
+      WebSocketChannel socket,
       String? protocol,
     ) {
-      final socket = HubSocket(channel);
       _clients.add(socket);
-      socket.done.whenComplete(() => _clients.remove(socket));
+      socket.sink.done.whenComplete(() => _clients.remove(socket));
       if (authenticatedByQuery) return;
       // 监听认证消息（token 未通过 query 传入时）
-      socket.listen(
+      socket.stream.listen(
         (data) {
           try {
             final map = data is String ? jsonDecode(data) : data;
             if (map is Map && map['type'] == 'auth') {
               final t = map['token']?.toString();
               if (sub.token?.isNotEmpty == true && t != sub.token) {
-                socket.add(
+                socket.sink.add(
                   jsonEncode({'type': 'error', 'message': 'Unauthorized'}),
                 );
-                socket.close(WebSocketStatus.policyViolation, 'Unauthorized');
+                closeWebSocket(
+                  socket,
+                  WebSocketStatus.policyViolation,
+                  'Unauthorized',
+                );
               } else {
-                socket.add(jsonEncode({'type': 'auth_ok'}));
+                socket.sink.add(jsonEncode({'type': 'auth_ok'}));
               }
             }
           } catch (_) {}
@@ -217,13 +220,13 @@ class _SubRuntime {
         await channel.sink.close();
         return;
       }
-      final socket = HubSocket(channel);
+      final socket = channel;
       _outSocket = socket;
       _reconnectAttempts = 0;
       error = null;
       // 握手携带 token
       if (sub.token?.isNotEmpty == true) {
-        socket.add(
+        socket.sink.add(
           jsonEncode({
             'type': 'hub_subscription_handshake',
             'source': 'kostori-hub',
@@ -232,7 +235,7 @@ class _SubRuntime {
           }),
         );
       }
-      socket.listen(
+      socket.stream.listen(
         (_) {},
         onDone: () {
           _outSocket = null;
@@ -350,12 +353,12 @@ class _SubRuntime {
           });
           for (final c in _clients.toList()) {
             try {
-              c.add(pingMsg);
+              c.sink.add(pingMsg);
             } catch (_) {
               _clients.remove(c);
             }
           }
-          _outSocket?.add(pingMsg);
+          _outSocket?.sink.add(pingMsg);
         case HubSubscriptionType.webhook:
           final url = sub.url;
           if (url != null && url.isNotEmpty) {
@@ -398,13 +401,13 @@ class _SubRuntime {
           if (sub.wsDirection == HubWsDirection.forward) {
             for (final c in _clients.toList()) {
               try {
-                c.add(body);
+                c.sink.add(body);
               } catch (_) {
                 _clients.remove(c);
               }
             }
           } else {
-            _outSocket?.add(body);
+            _outSocket?.sink.add(body);
           }
         case HubSubscriptionType.webhook:
           final url = sub.url;
@@ -438,12 +441,12 @@ class _SubRuntime {
     _heartbeat = null;
     for (final c in _clients.toList()) {
       try {
-        await c.close(WebSocketStatus.goingAway, 'Closed');
+        closeWebSocket(c, WebSocketStatus.goingAway, 'Closed');
       } catch (_) {}
     }
     _clients.clear();
     try {
-      await _outSocket?.close();
+      if (_outSocket != null) closeWebSocket(_outSocket!);
     } catch (_) {}
     _outSocket = null;
     try {

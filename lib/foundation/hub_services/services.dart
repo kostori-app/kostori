@@ -55,8 +55,6 @@ part 'base/base_http_service.dart';
 
 part 'base/base_service.dart';
 
-part 'base/hub_http.dart';
-
 part 'base/docs_html.dart';
 
 part 'base/middleware.dart';

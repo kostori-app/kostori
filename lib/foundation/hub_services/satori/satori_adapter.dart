@@ -4,7 +4,7 @@
 // 参考 https://satori.chat/zh-CN/protocol/
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-/// Satori HubSocket Gateway opcode
+/// Satori WebSocket Gateway opcode
 class SatoriOpcode {
   static const int event = 0;
   static const int ping = 1;
@@ -16,7 +16,7 @@ class SatoriOpcode {
 
 /// Satori 适配层（单例）。在 HubService 启动时 attach，负责：
 /// - 注册 REST 方法路由（POST /v1/:method）
-/// - 注册 Gateway HubSocket（/v1/events）
+/// - 注册 Gateway WebSocket（/v1/events）
 /// - 桥接 Hub 房间消息 / 系统事件 → Satori Event，维护全局 sn 支持断线续传
 class SatoriServer {
   SatoriServer._();
@@ -36,7 +36,7 @@ class SatoriServer {
   static const int _maxBuffer = 5000;
 
   /// 已鉴权的 Satori 网关连接 → 该连接绑定的 bot 档案
-  final Map<HubSocket, SatoriBotProfile> _clients = {};
+  final Map<WebSocketChannel, SatoriBotProfile> _clients = {};
 
   /// 默认身份（未用专属令牌连接时的回退，向后兼容旧版）
   SatoriBotProfile get _defaultProfile {
@@ -68,7 +68,7 @@ class SatoriServer {
     hub.onSystemBroadcast = null;
     for (final socket in _clients.keys.toList()) {
       try {
-        socket.close();
+        closeWebSocket(socket);
       } catch (_) {}
     }
     _clients.clear();
@@ -90,24 +90,24 @@ class SatoriServer {
         requiresAuth: true,
       ),
     );
-    hub.addGet('/v1/:name', (req) async {
-      req.response
-        ..statusCode = HttpStatus.methodNotAllowed
-        ..headers.set('Allow', 'POST')
-        ..headers.contentType = ContentType.json
-        ..write('{"error":"Please use POST method to send requests."}');
-      await req.response.close();
-    });
+    hub.addGet(
+      '/v1/:name',
+      (req, params) => shelf.Response(
+        HttpStatus.methodNotAllowed,
+        body: '{"error":"Please use POST method to send requests."}',
+        headers: {'allow': 'POST', 'content-type': 'application/json'},
+      ),
+    );
     hub.addWs('/v1/events', _handleGateway);
   }
 
   /// Satori REST 鉴权：接受专属 bot 令牌或用户/管理层 Key。
-  Future<bool> _satoriAuth(HubRequest request) async {
-    final header = request.headers.value('Authorization');
+  FutureOr<shelf.Response?> _satoriAuth(shelf.Request request) {
+    final header = request.headers['authorization'];
     final bearerToken = header != null && header.startsWith('Bearer ')
         ? header.substring(7)
         : null;
-    final queryToken = request.uri.queryParameters['token'];
+    final queryToken = request.requestedUri.queryParameters['token'];
     final token = bearerToken ?? queryToken;
     final valid =
         token != null &&
@@ -115,27 +115,27 @@ class SatoriServer {
             ApiKeyManager().validate(token) ||
             ApiKeyManager().validateAdmin(token));
     if (!valid) {
-      request.response
-        ..statusCode = HttpStatus.unauthorized
-        ..headers.contentType = ContentType.json
-        ..write(
-          jsonEncode({
-            'error': 'Unauthorized',
-            'message': 'Invalid or missing token',
-          }),
-        );
-      await request.response.close();
-      return false;
+      return shelf.Response(
+        HttpStatus.unauthorized,
+        body: jsonEncode({
+          'error': 'Unauthorized',
+          'message': 'Invalid or missing token',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     }
-    return true;
+    return null;
   }
 
-  // ── Gateway HubSocket ───────────────────────────────────
+  // ── Gateway WebSocketChannel ───────────────────────────────────
 
-  Future<void> _handleGateway(HubSocket socket, HubRequest request) async {
+  Future<void> _handleGateway(
+    WebSocketChannel socket,
+    shelf.Request request,
+  ) async {
     bool authorized = false;
     SatoriBotProfile? profile;
-    await for (final raw in socket) {
+    await for (final raw in socket.stream) {
       try {
         final payload = jsonDecode(raw as String) as Map<String, dynamic>;
         final op = payload['op'] as int;
@@ -153,7 +153,8 @@ class SatoriServer {
                   (ApiKeyManager().validate(token) ||
                       ApiKeyManager().validateAdmin(token)));
           if (byToken == null && !valid) {
-            await socket.close(
+            closeWebSocket(
+              socket,
               WebSocketStatus.policyViolation,
               'invalid token',
             );
@@ -169,7 +170,7 @@ class SatoriServer {
             avatarUrl: _resolveAvatar(profile.avatarUrl),
           );
           _clients[socket] = profile;
-          socket.add(
+          socket.sink.add(
             jsonEncode({'op': SatoriOpcode.ready, 'body': _meta(profile)}),
           );
           final sn = body['sn'] as int?;
@@ -179,14 +180,14 @@ class SatoriServer {
                 final replay = {...ev};
                 replay['selfId'] = profile.id;
                 replay['login'] = _login(profile);
-                socket.add(
+                socket.sink.add(
                   jsonEncode({'op': SatoriOpcode.event, 'body': replay}),
                 );
               }
             }
           }
         } else if (op == SatoriOpcode.ping) {
-          socket.add(jsonEncode({'op': SatoriOpcode.pong, 'body': {}}));
+          socket.sink.add(jsonEncode({'op': SatoriOpcode.pong, 'body': {}}));
         }
       } catch (_) {}
     }
@@ -258,7 +259,7 @@ class SatoriServer {
         final ev = {...baseEvent, 'sn': sn};
         ev['selfId'] = profile.id;
         ev['login'] = _login(profile);
-        socket.add(jsonEncode({'op': SatoriOpcode.event, 'body': ev}));
+        socket.sink.add(jsonEncode({'op': SatoriOpcode.event, 'body': ev}));
       } catch (_) {
         _clients.remove(entry.key);
       }
@@ -291,7 +292,7 @@ class SatoriServer {
         final ev = {...event, 'sn': sn};
         ev['selfId'] = profile.id;
         ev['login'] = _login(profile);
-        socket.add(jsonEncode({'op': SatoriOpcode.event, 'body': ev}));
+        socket.sink.add(jsonEncode({'op': SatoriOpcode.event, 'body': ev}));
       } catch (_) {
         _clients.remove(entry.key);
       }
@@ -470,13 +471,15 @@ class SatoriServer {
 
   // ── REST 方法分发 ───────────────────────────────────────
 
-  Future<void> _handleRest(HubRequest request) async {
-    final segments = request.uri.pathSegments;
+  Future<shelf.Response> _handleRest(
+    shelf.Request request,
+    Map<String, String> params,
+  ) async {
+    final segments = request.requestedUri.pathSegments;
     final name = segments.isNotEmpty ? segments.last : '';
     final hub = _hub;
     if (hub == null) {
-      await _sendJson(request, {'error': 'satori not enabled'}, status: 503);
-      return;
+      return _sendJson(request, {'error': 'satori not enabled'}, status: 503);
     }
     // upload.create 的请求体是 multipart，不能先按 JSON 读取
     final body = name == 'upload.create'
@@ -484,15 +487,15 @@ class SatoriServer {
         : await _readJsonBody(request) ?? <String, dynamic>{};
     try {
       final result = await _invoke(name, body, request);
-      await _sendJsonValue(request, result);
+      return _sendJsonValue(request, result);
     } catch (e) {
-      await _sendJson(request, {'error': e.toString()}, status: 400);
+      return _sendJson(request, {'error': e.toString()}, status: 400);
     }
   }
 
   /// 从 REST 请求头解析调用方 bot 档案（Koishi 会带 Satori-User-ID）。
-  SatoriBotProfile _profileFromRequest(HubRequest request) {
-    final userId = request.headers.value('Satori-User-ID');
+  SatoriBotProfile _profileFromRequest(shelf.Request request) {
+    final userId = request.headers['satori-user-id'];
     if (userId != null && userId.isNotEmpty) {
       final byId = SatoriBotProfileStore.instance.findById(userId);
       if (byId != null) return byId;
@@ -503,7 +506,7 @@ class SatoriServer {
   Future<Object?> _invoke(
     String name,
     Map<String, dynamic> body,
-    HubRequest request,
+    shelf.Request request,
   ) async {
     final hub = _hub;
     if (hub == null) throw StateError('satori not enabled');
@@ -863,9 +866,9 @@ class SatoriServer {
 
   // ── 响应工具 ────────────────────────────────────────────
 
-  Future<Map<String, dynamic>?> _readJsonBody(HubRequest request) async {
+  Future<Map<String, dynamic>?> _readJsonBody(shelf.Request request) async {
     try {
-      final body = await utf8.decoder.bind(request).join();
+      final body = await request.readAsString();
       if (body.isEmpty) return {};
       final decoded = jsonDecode(body);
       return decoded is Map<String, dynamic> ? decoded : {};
@@ -874,39 +877,34 @@ class SatoriServer {
     }
   }
 
-  Future<void> _sendJson(
-    HubRequest request,
+  shelf.Response _sendJson(
+    shelf.Request request,
     Map<String, dynamic> data, {
     int status = 200,
-  }) async {
-    final bytes = utf8.encode(jsonEncode(data));
-    request.response
-      ..statusCode = status
-      ..headers.contentType = ContentType.json
-      ..headers.set('Content-Length', bytes.length.toString())
-      ..add(bytes);
-    await request.response.close();
-  }
+  }) => shelf.Response(
+    status,
+    body: jsonEncode(data),
+    headers: {'content-type': 'application/json'},
+  );
 
-  Future<void> _sendJsonValue(
-    HubRequest request,
+  shelf.Response _sendJsonValue(
+    shelf.Request request,
     Object? value, {
     int status = 200,
-  }) async {
-    final bytes = utf8.encode(jsonEncode(value));
-    request.response
-      ..statusCode = status
-      ..headers.contentType = ContentType.json
-      ..headers.set('Content-Length', bytes.length.toString())
-      ..add(bytes);
-    await request.response.close();
-  }
+  }) => shelf.Response(
+    status,
+    body: jsonEncode(value),
+    headers: {'content-type': 'application/json'},
+  );
 
   // ── upload.create：复用 Hub 上传能力 ────────────────────
 
-  Future<Object?> _handleSatoriUpload(HubRequest request) async {
+  Future<Object?> _handleSatoriUpload(shelf.Request request) async {
     final hub = _hub!;
-    final contentType = request.headers.contentType;
+    final rawContentType = request.headers['content-type'];
+    final contentType = rawContentType == null
+        ? null
+        : ContentType.parse(rawContentType);
     if (contentType == null ||
         contentType.primaryType != 'multipart' ||
         contentType.subType != 'form-data') {

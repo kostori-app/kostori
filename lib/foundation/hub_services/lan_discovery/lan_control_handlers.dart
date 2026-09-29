@@ -5,7 +5,7 @@ class LanControlClient {
 
   static final LanControlClient instance = LanControlClient._();
 
-  HubSocket? _socket;
+  WebSocketChannel? _socket;
   String? _serverUrl;
   LanControlServiceState _state = LanControlServiceState.idle;
   Timer? _reconnectTimer;
@@ -44,10 +44,10 @@ class LanControlClient {
         const Duration(seconds: 5),
         onTimeout: () => throw TimeoutException('连接超时'),
       );
-      _socket = HubSocket(channel);
+      _socket = channel;
       _reconnectAttempts = 0;
       _helloCompleter = Completer<bool>();
-      _socket!.listen(
+      _socket!.stream.listen(
         _handleMessage,
         onError: (error) => _handleError('连接错误: $error'),
         onDone: _handleDisconnect,
@@ -133,15 +133,15 @@ class LanControlClient {
     }
     _pendingRequests.clear();
 
-    if (_socket != null && _socket!.readyState == HubSocket.open) {
+    if (_socket != null && _socket!.closeCode == null) {
       final msg = LanControlMessage(
         type: LanControlMessageType.disconnect,
         requestId: LanControlMessage.generateRequestId(),
       );
-      _socket!.add(msg.toJson());
+      _socket!.sink.add(msg.toJson());
     }
 
-    _socket?.close();
+    _socket?.sink.close();
     _socket = null;
     _setState(LanControlServiceState.idle);
     HubLog.info('LanControlClient', '已断开连接');
@@ -246,10 +246,10 @@ class LanControlClient {
       _onErrorListeners.remove(listener);
 
   Future<void> _send(LanControlMessage message) async {
-    if (_socket == null || _socket!.readyState != HubSocket.open) {
+    if (_socket == null || _socket!.closeCode != null) {
       throw StateError('未连接到服务器，无法发送消息');
     }
-    _socket!.add(jsonEncode(message.toJson()));
+    _socket!.sink.add(jsonEncode(message.toJson()));
   }
 
   Future<Map<String, dynamic>?> _sendAndWait(LanControlMessage message) async {
@@ -323,7 +323,7 @@ class LanControlClient {
           _reconnectTimer?.cancel();
           _serverUrl = null;
           _connectedDevice = null;
-          _socket?.close();
+          _socket?.sink.close();
           _socket = null;
           _setState(LanControlServiceState.idle);
           return;

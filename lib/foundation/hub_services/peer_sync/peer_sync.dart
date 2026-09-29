@@ -38,7 +38,7 @@ Future<List<String>> collectLanCandidates(
 /// 连接失败时成员自动回退到服务器的广播通道。
 class HubPeerServer {
   HttpServer? _server;
-  final Set<HubSocket> _peers = {};
+  final Set<WebSocketChannel> _peers = {};
   int? _port;
   bool _disposed = false;
 
@@ -70,11 +70,10 @@ class HubPeerServer {
     _server = server;
     _port = port;
 
-    final ws = webSocketHandler((WebSocketChannel channel, String? protocol) {
-      final socket = HubSocket(channel);
+    final ws = webSocketHandler((WebSocketChannel socket, String? protocol) {
       _peers.add(socket);
       HubLog.info('HubPeerServer', '🔗 直连成员接入，当前 ${_peers.length} 个');
-      socket.listen(
+      socket.stream.listen(
         (_) {},
         onDone: () {
           _peers.remove(socket);
@@ -98,7 +97,7 @@ class HubPeerServer {
   void broadcastSync(String frame) {
     for (final ws in _peers.toList()) {
       try {
-        ws.add(frame);
+        ws.sink.add(frame);
       } catch (_) {
         _peers.remove(ws);
       }
@@ -108,9 +107,7 @@ class HubPeerServer {
   Future<void> stop() async {
     _disposed = false; // 允许再次 start()
     for (final ws in _peers.toList()) {
-      try {
-        await ws.close();
-      } catch (_) {}
+      closeWebSocket(ws);
     }
     _peers.clear();
     await _server?.close(force: true);
@@ -122,14 +119,13 @@ class HubPeerServer {
 
 /// 成员侧的直连客户端：尝试直连房主，成功则返回同步帧流，失败返回 null。
 class HubPeerClient {
-  HubSocket? _socket;
+  WebSocketChannel? _socket;
   final _frames = StreamController<String>.broadcast();
   bool _closed = false;
 
   Stream<String> get frames => _frames.stream;
 
-  bool get isConnected =>
-      _socket != null && _socket!.readyState == HubSocket.open;
+  bool get isConnected => _socket != null && _socket!.closeCode == null;
 
   /// 依次尝试每个候选地址，首个连通即返回；全部失败返回 null。
   static Future<HubPeerClient?> connect(
@@ -146,13 +142,13 @@ class HubPeerClient {
   }
 
   Future<bool> _tryConnect(String url, Duration timeout) async {
-    HubSocket? socket;
+    WebSocketChannel? socket;
     try {
       final channel = IOWebSocketChannel.connect(url, connectTimeout: timeout);
       await channel.ready.timeout(timeout);
-      socket = HubSocket(channel);
+      socket = channel;
       _socket = socket;
-      socket.listen(
+      socket.stream.listen(
         (data) {
           if (data is String && !_closed) {
             _frames.add(data);
@@ -166,7 +162,7 @@ class HubPeerClient {
     } catch (_) {
       // 超时/连接失败：清理可能已建立的 socket，避免泄漏
       try {
-        await socket?.close();
+        if (socket != null) closeWebSocket(socket);
       } catch (_) {}
       _socket = null;
       return false;
@@ -176,7 +172,7 @@ class HubPeerClient {
   void dispose() {
     _closed = true;
     try {
-      _socket?.close();
+      if (_socket != null) closeWebSocket(_socket!);
     } catch (_) {}
     _socket = null;
     _frames.close();

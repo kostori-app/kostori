@@ -9,8 +9,6 @@ extension HubServiceRoutes on HubService {
     );
 
     addWs('/hub', (socket, req) async {
-      socket.pingInterval = pingInterval;
-
       bool authed = false;
       String? clientId;
       String? clientName;
@@ -19,7 +17,7 @@ extension HubServiceRoutes on HubService {
       int msgCount = 0;
       DateTime windowStart = DateTime.now();
 
-      await for (final raw in socket) {
+      await for (final raw in socket.stream) {
         try {
           // ── 消息大小限制：64KB ────────────────────────────────────────────
           if ((raw as String).length > 64 * 1024) {
@@ -62,7 +60,8 @@ extension HubServiceRoutes on HubService {
                       ApiKeyManager().validateAdmin(token));
               if (!validKey) {
                 HubLog.warning('HubService', '❌ 鉴权失败');
-                await socket.close(
+                closeWebSocket(
+                  socket,
                   WebSocketStatus.policyViolation,
                   'Unauthorized',
                 );
@@ -82,7 +81,8 @@ extension HubServiceRoutes on HubService {
               if (!_hubNoAuth &&
                   (token == null || !ApiKeyManager().validateAdmin(token))) {
                 HubLog.warning('HubService', '🚫 尝试伪装管理员账号：$deviceId');
-                await socket.close(
+                closeWebSocket(
+                  socket,
                   WebSocketStatus.policyViolation,
                   'Forbidden',
                 );
@@ -101,12 +101,14 @@ extension HubServiceRoutes on HubService {
                 '🚫 黑名单用户尝试连接：$clientName ($clientId)',
               );
               _logEvent('🚫 Blocked blacklisted user: $clientName');
-              await socket.close(WebSocketStatus.policyViolation, 'Banned');
+              closeWebSocket(socket, WebSocketStatus.policyViolation, 'Banned');
               return;
             }
 
-            if (_clients.containsKey(clientId)) {
-              await _clients[clientId]?.connection?.close(
+            final existingConnection = _clients[clientId]?.connection;
+            if (existingConnection != null) {
+              closeWebSocket(
+                existingConnection,
                 WebSocketStatus.policyViolation,
                 'Replaced by new connection',
               );
@@ -209,12 +211,10 @@ extension HubServiceRoutes on HubService {
 
     addGet(
       '/hub/clients',
-      (req) async {
-        await sendJson(req, {
-          'count': _clients.length,
-          'clients': _clients.values.map((c) => c.toJson()).toList(),
-        });
-      },
+      (req, params) => sendJson(req, {
+        'count': _clients.length,
+        'clients': _clients.values.map((c) => c.toJson()).toList(),
+      }),
       middlewares: _hubAuthMiddleware,
       doc: RouteDoc(
         summary: '在线客户端列表',
@@ -234,12 +234,10 @@ extension HubServiceRoutes on HubService {
 
     addGet(
       '/hub/rooms',
-      (req) async {
-        await sendJson(req, {
-          'count': _rooms.length,
-          'rooms': _rooms.values.map((r) => r.toJson()).toList(),
-        });
-      },
+      (req, params) => sendJson(req, {
+        'count': _rooms.length,
+        'rooms': _rooms.values.map((r) => r.toJson()).toList(),
+      }),
       middlewares: _hubAuthMiddleware,
       doc: RouteDoc(
         summary: '房间列表',
@@ -259,16 +257,15 @@ extension HubServiceRoutes on HubService {
 
     addGet(
       '/hub/history',
-      (req) async {
-        final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
+      (req, params) {
+        final roomId = req.requestedUri.queryParameters['room'] ?? _lobbyId;
         final room = _rooms[roomId];
         if (room == null) {
-          await sendJson(req, {
+          return sendJson(req, {
             'error': 'Room not found',
           }, status: HttpStatus.notFound);
-          return;
         }
-        await sendJson(req, {
+        return sendJson(req, {
           'count': room.messageHistory.length,
           'messages': room.messageHistory.map((m) => m.toJson()).toList(),
         });
@@ -298,13 +295,17 @@ extension HubServiceRoutes on HubService {
 
     addPost(
       '/hub/broadcast',
-      (req) async {
+      (req, params) async {
         final body = await readJson(req);
-        if (body == null) return;
+        if (body == null) {
+          return sendJson(req, {
+            'error': 'Invalid JSON body',
+          }, status: HttpStatus.badRequest);
+        }
         final roomId = body['room'] as String? ?? _lobbyId;
         final payload = body['payload'] ?? body;
         broadcast(payload, roomId: roomId);
-        await sendJson(req, {
+        return sendJson(req, {
           'sent': true,
           'to': _rooms[roomId]?.participants.length ?? 0,
         });
@@ -340,14 +341,14 @@ extension HubServiceRoutes on HubService {
 
     addGet(
       '/hub/pinned',
-      (req) async {
-        final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
+      (req, params) {
+        final roomId = req.requestedUri.queryParameters['room'] ?? _lobbyId;
         final pinned =
             _rooms[roomId]?.messageHistory
                 .where((m) => m.messageType == HubMessageType.pin)
                 .toList() ??
             [];
-        await sendJson(req, {
+        return sendJson(req, {
           'count': pinned.length,
           'messages': pinned.map((m) => m.toJson()).toList(),
         });
@@ -377,14 +378,13 @@ extension HubServiceRoutes on HubService {
 
     addGet(
       '/hub/search',
-      (req) async {
-        final keyword = req.uri.queryParameters['q'] ?? '';
-        final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
+      (req, params) {
+        final keyword = req.requestedUri.queryParameters['q'] ?? '';
+        final roomId = req.requestedUri.queryParameters['room'] ?? _lobbyId;
         if (keyword.isEmpty) {
-          await sendJson(req, {
+          return sendJson(req, {
             'error': 'keyword required',
           }, status: HttpStatus.badRequest);
-          return;
         }
         final results =
             _rooms[roomId]?.messageHistory
@@ -394,7 +394,7 @@ extension HubServiceRoutes on HubService {
                 )
                 .toList() ??
             [];
-        await sendJson(req, {
+        return sendJson(req, {
           'keyword': keyword,
           'count': results.length,
           'results': results.map((m) => m.toJson()).toList(),
@@ -433,36 +433,32 @@ extension HubServiceRoutes on HubService {
     // POST /hub/webhook/<token>
     addPost(
       '/hub/webhook/:token',
-      (req) async {
-        final token = pathParams(req)['token'] ?? '';
+      (req, params) async {
+        final token = params['token'] ?? '';
         final webhook = HubWebhookManager.instance.findByToken(token);
         if (webhook == null) {
-          await sendJson(req, {
+          return sendJson(req, {
             'error': 'Invalid webhook token',
           }, status: HttpStatus.forbidden);
-          return;
         }
         final body = await readJson(req);
         if (body == null) {
-          await sendJson(req, {
+          return sendJson(req, {
             'error': 'Invalid JSON body',
           }, status: HttpStatus.badRequest);
-          return;
         }
         final room = _rooms[webhook.roomId];
         if (room == null) {
-          await sendJson(req, {
+          return sendJson(req, {
             'error': 'Room not found',
           }, status: HttpStatus.notFound);
-          return;
         }
 
         final text = body['text'] as String? ?? body['message'] as String?;
         if (text == null || text.isEmpty) {
-          await sendJson(req, {
+          return sendJson(req, {
             'error': 'text/message required',
           }, status: HttpStatus.badRequest);
-          return;
         }
 
         // 构造机器人发送者（持久的内存客户端，不占连接数）
@@ -482,7 +478,7 @@ extension HubServiceRoutes on HubService {
           segments: _parseSegments(text),
         );
         _broadcastToRoom(webhook.roomId, message);
-        await sendJson(req, {'sent': true, 'room': room.roomName});
+        return sendJson(req, {'sent': true, 'room': room.roomName});
       },
       doc: RouteDoc(
         summary: '入站 Webhook',

@@ -17,30 +17,33 @@ class _IntegrationService extends BaseHttpService {
   void registerRoutes() {
     addGet(
       '/protected',
-      (req) async => sendJson(req, {'ok': true}),
+      (req, params) async => sendJson(req, {'ok': true}),
       middlewares: [authMiddleware],
     );
     addGet(
       '/admin',
-      (req) async => sendJson(req, {'ok': true}),
+      (req, params) async => sendJson(req, {'ok': true}),
       middlewares: [adminAuthMiddleware],
     );
-    addPost('/json', (req) async {
+    addPost('/json', (req, params) async {
       final data = await readJson(req);
-      await sendJson(req, {'x': data?['x']});
+      if (data == null) {
+        return sendJson(req, {'error': 'Invalid JSON body'}, status: 400);
+      }
+      return sendJson(req, {'x': data['x']});
     });
     addGet(
       '/item/:id',
-      (req) async => sendJson(req, {'id': pathParams(req)['id']}),
+      (req, params) async => sendJson(req, {'id': params['id']}),
     );
     addWs('/wsauth', (socket, req) async {
-      if (req.uri.queryParameters['token'] != 'secret') {
-        await socket.close(WebSocketStatus.policyViolation, 'Unauthorized');
+      if (req.requestedUri.queryParameters['token'] != 'secret') {
+        closeWebSocket(socket, WebSocketStatus.policyViolation, 'Unauthorized');
         return;
       }
-      socket.add('ok');
-      await for (final msg in socket) {
-        socket.add('echo:$msg');
+      socket.sink.add('ok');
+      await for (final msg in socket.stream) {
+        socket.sink.add('echo:$msg');
       }
     });
   }

@@ -1,6 +1,21 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-typedef WsHandler = Future<void> Function(HubSocket socket, HubRequest request);
+/// WebSocket 处理器：shelf_web_socket 升级后回调
+typedef WsHandler = Future<void> Function(
+  WebSocketChannel socket,
+  shelf.Request request,
+);
+
+/// 把 dart:io 风格的 close code 映射到 web_socket_channel 允许的区间
+/// （只接受 1000 或 3000-4999，否则底层会抛异常）。
+void closeWebSocket(WebSocketChannel socket, [int? code, String? reason]) {
+  final safe = (code == null || code == 1000 || (code >= 3000 && code <= 4999))
+      ? code
+      : code + 3000;
+  try {
+    socket.sink.close(safe, reason);
+  } catch (_) {}
+}
 
 abstract class BaseHttpService implements BaseService {
   final _binder = ServerBinder();
@@ -163,23 +178,15 @@ abstract class BaseHttpService implements BaseService {
 
   // ── WebSocket ─────────────────────────────────
   final Map<String, WsHandler> _wsRoutes = {};
-  final Map<String, Set<HubSocket>> _wsClients = {};
+  final Map<String, Set<WebSocketChannel>> _wsClients = {};
 
   void addWs(String path, WsHandler handler) {
     _wsRoutes[path] = handler;
   }
 
-  void _addWsClient(String path, HubSocket socket) {
+  void _addWsClient(String path, WebSocketChannel socket) {
     _wsClients.putIfAbsent(path, () => {}).add(socket);
-    socket.done.then((_) => _wsClients[path]?.remove(socket));
-  }
-
-  /// 为某个 WS 路径构建 shelf 处理器（升级时回调我们的 [WsHandler]）
-  shelf.Handler _wsShelfHandler(String path, shelf.Request raw) {
-    final handler = _wsRoutes[path]!;
-    return webSocketHandler((WebSocketChannel channel, String? protocol) {
-      unawaited(handler(HubSocket(channel), HubRequest(raw)));
-    }, pingInterval: pingInterval);
+    socket.sink.done.then((_) => _wsClients[path]?.remove(socket));
   }
 
   void broadcastWs(String path, dynamic data) {
@@ -187,18 +194,26 @@ abstract class BaseHttpService implements BaseService {
     final message = data is String ? data : jsonEncode(data);
     for (final client in clients.toList()) {
       try {
-        client.add(message);
+        client.sink.add(message);
       } catch (_) {
         _wsClients[path]?.remove(client);
       }
     }
   }
 
+  /// 为某个 WS 路径构建 shelf 处理器（升级时回调 [WsHandler]）
+  shelf.Handler _wsShelfHandler(String path, shelf.Request raw) {
+    final handler = _wsRoutes[path]!;
+    return webSocketHandler((WebSocketChannel channel, String? protocol) {
+      unawaited(handler(channel, raw));
+    }, pingInterval: pingInterval);
+  }
+
   // 对外连接的 WebSocket 客户端
-  final Map<String, HubSocket> _wsConnections = {};
+  final Map<String, WebSocketChannel> _wsConnections = {};
 
   /// 主动连接另一个 WebSocket 服务
-  Future<HubSocket?> connectTo(
+  Future<WebSocketChannel?> connectTo(
     String url, {
     void Function(dynamic data)? onMessage,
     void Function()? onDone,
@@ -229,18 +244,16 @@ abstract class BaseHttpService implements BaseService {
         headers: headers,
         connectTimeout: const Duration(seconds: 10),
       );
-      final socket = HubSocket(channel);
       await channel.ready;
-      _wsConnections[url] = socket;
+      _wsConnections[url] = channel;
 
-      socket.listen(
+      channel.stream.listen(
         (data) => onMessage?.call(data),
         onDone: () async {
           HubLog.info('$runtimeType', '🔌 断开连接：${safeUrl()}');
           _wsConnections.remove(url);
           onDone?.call();
 
-          // 自动重连
           if (autoReconnect) {
             HubLog.info(
               '$runtimeType',
@@ -265,7 +278,7 @@ abstract class BaseHttpService implements BaseService {
       );
 
       HubLog.info('$runtimeType', '✅ 已连接到 ${safeUrl()}');
-      return socket;
+      return channel;
     } catch (e) {
       HubLog.error('$runtimeType', '连接失败：${safeUrl()}  $e');
       if (autoReconnect) {
@@ -288,25 +301,22 @@ abstract class BaseHttpService implements BaseService {
       HubLog.warning('$runtimeType', '⚠️ 未连接到 $url');
       return;
     }
-    socket.add(data is String ? data : jsonEncode(data));
+    socket.sink.add(data is String ? data : jsonEncode(data));
   }
 
   /// 断开指定连接
   Future<void> disconnectFrom(String url) async {
-    await _wsConnections[url]?.close();
+    await _wsConnections[url]?.sink.close();
     _wsConnections.remove(url);
   }
-
-  // ── 路由参数 ──────────────────────────────────
-  Map<String, String> pathParams(HubRequest request) => request.params;
 
   // ── 子类实现 ──────────────────────────────────
   void registerRoutes();
 
   // ── WebSocket 鉴权工具 ────────────────────────
   /// 从 WebSocket 请求中提取 token 并校验
-  bool _validateWsToken(HubRequest req, {bool admin = false}) {
-    final token = req.uri.queryParameters['token'];
+  bool _validateWsToken(shelf.Request req, {bool admin = false}) {
+    final token = req.requestedUri.queryParameters['token'];
     if (token == null) return false;
     return admin
         ? ApiKeyManager().validateAdmin(token)
@@ -317,7 +327,7 @@ abstract class BaseHttpService implements BaseService {
   void _registerCommonRoutes() {
     addGet(
       '/hello',
-      (req) => sendAuto(req, {
+      (req, params) => sendAuto(req, {
         'message': 'Hello World',
         'port': port,
         'bound': boundAddresses,
@@ -332,27 +342,26 @@ abstract class BaseHttpService implements BaseService {
 
     addGet(
       '/icon',
-      (req) async {
+      (req, params) async {
         final bytes = await rootBundle.load('images/app_icon.png');
-        await sendImage(req, bytes.buffer.asUint8List());
+        return sendImage(req, bytes.buffer.asUint8List());
       },
       doc: RouteDoc(summary: '应用图标', description: '返回应用图标', response: '图片 PNG'),
     );
 
     addGet(
       '/bangumi/calendar/screenshot',
-      (req) async {
-        String mode = 'weekly';
+      (req, params) async {
+        final String mode;
         try {
-          mode = req.uri.queryParameters['mode'] ?? 'weekly';
+          mode = req.requestedUri.queryParameters['mode'] ?? 'weekly';
         } on FormatException catch (e) {
-          await sendError(
+          return sendError(
             req,
             HttpStatus.badRequest,
             'INVALID_QUERY',
             'Invalid query string: ${e.message}',
           );
-          return;
         }
         final showWeekly = mode != 'today';
 
@@ -361,15 +370,21 @@ abstract class BaseHttpService implements BaseService {
           // 需要一个 BuildContext 来渲染截图，这里复用应用的 navigator 上下文
           final context = App.mainNavigatorKey?.currentContext;
           if (context == null) {
-            await sendError(
+            return sendError(
               req,
               HttpStatus.serviceUnavailable,
               'NO_CONTEXT',
               'Flutter context not available',
             );
-            return;
           }
-          if (!context.mounted) return;
+          if (!context.mounted) {
+            return sendError(
+              req,
+              HttpStatus.serviceUnavailable,
+              'NO_CONTEXT',
+              'Flutter context not available',
+            );
+          }
           final bytes = await generateBangumiCalendarPng(
             context: context,
             bangumiCalendar: calendar,
@@ -378,19 +393,18 @@ abstract class BaseHttpService implements BaseService {
           );
 
           if (bytes == null) {
-            await sendError(
+            return sendError(
               req,
               HttpStatus.internalServerError,
               'CAPTURE_FAILED',
               'Failed to generate screenshot',
             );
-            return;
           }
 
-          await sendImage(req, bytes);
+          return sendImage(req, bytes);
         } catch (e, s) {
           HubLog.error('$runtimeType', '生成番剧时间表截图失败: $e\n$s');
-          await sendError(
+          return sendError(
             req,
             HttpStatus.internalServerError,
             'SERVER_ERROR',
@@ -423,9 +437,9 @@ abstract class BaseHttpService implements BaseService {
 
     addGet(
       '/health',
-      (req) async {
+      (req, params) {
         final uptime = DateTime.now().difference(_startTime);
-        await sendJson(req, {
+        return sendJson(req, {
           'status': 'ok',
           'uptime':
               '${uptime.inHours}h '
@@ -446,7 +460,7 @@ abstract class BaseHttpService implements BaseService {
 
     addGet(
       '/status',
-      (req) => sendAuto(req, {
+      (req, params) => sendAuto(req, {
         'running': isRunning,
         'port': port,
         'mode': runtimeType.toString(),
@@ -474,9 +488,7 @@ abstract class BaseHttpService implements BaseService {
 
     addGet(
       '/routes',
-      (req) async {
-        await sendJson(req, {'routes': _router.registeredRoutes()});
-      },
+      (req, params) => sendJson(req, {'routes': _router.registeredRoutes()}),
       middlewares: [authMiddleware],
       doc: RouteDoc(
         summary: '路由列表',
@@ -496,10 +508,10 @@ abstract class BaseHttpService implements BaseService {
 
     addGet(
       '/openapi.json',
-      (req) async {
-        final host = req.headers.value('host') ?? 'localhost:$port';
-        final scheme = req.headers.value('x-forwarded-proto') ?? 'http';
-        await sendJson(req, _buildOpenApi(baseUrl: '$scheme://$host'));
+      (req, params) {
+        final host = req.headers['host'] ?? 'localhost:$port';
+        final scheme = req.headers['x-forwarded-proto'] ?? 'http';
+        return sendJson(req, _buildOpenApi(baseUrl: '$scheme://$host'));
       },
       doc: RouteDoc(
         summary: 'OpenAPI 文档',
@@ -510,15 +522,7 @@ abstract class BaseHttpService implements BaseService {
 
     addGet(
       '/docs',
-      (req) async {
-        final bytes = utf8.encode(_buildDocsHtml());
-        req.response
-          ..statusCode = HttpStatus.ok
-          ..headers.contentType = ContentType.html
-          ..headers.set('Content-Length', bytes.length.toString())
-          ..add(bytes);
-        await req.response.close();
-      },
+      (req, params) => sendHtml(req, _buildDocsHtml()),
       doc: RouteDoc(
         summary: 'Swagger UI',
         description: '在浏览器中查看接口文档',
@@ -529,7 +533,7 @@ abstract class BaseHttpService implements BaseService {
     // ── WebSocket：日志推送（管理层鉴权） ──────
     addWs('/logs/ws', (socket, req) async {
       if (!_validateWsToken(req, admin: true)) {
-        await socket.close(WebSocketStatus.policyViolation, 'Unauthorized');
+        closeWebSocket(socket, WebSocketStatus.policyViolation, 'Unauthorized');
         return;
       }
 
@@ -537,7 +541,7 @@ abstract class BaseHttpService implements BaseService {
 
       for (final entry in Log.logs) {
         try {
-          socket.add(
+          socket.sink.add(
             jsonEncode({
               'level': entry.level.name,
               'title': entry.title,
@@ -551,7 +555,7 @@ abstract class BaseHttpService implements BaseService {
       final sub = Log.stream.listen((entries) {
         final entry = entries.last;
         try {
-          socket.add(
+          socket.sink.add(
             jsonEncode({
               'level': entry.level.name,
               'title': entry.title,
@@ -562,7 +566,7 @@ abstract class BaseHttpService implements BaseService {
         } catch (_) {}
       });
 
-      await socket.done;
+      await socket.sink.done;
       await sub.cancel();
       _wsClients['/logs/ws']?.remove(socket);
     });
@@ -702,13 +706,15 @@ abstract class BaseHttpService implements BaseService {
 
   Future<void> stopServer() async {
     for (final socket in _wsConnections.values) {
-      await socket.close();
+      try {
+        await socket.sink.close();
+      } catch (_) {}
     }
     _wsConnections.clear();
 
     for (final clients in _wsClients.values) {
       for (final client in clients.toList()) {
-        await client.close();
+        closeWebSocket(client);
       }
     }
     _wsClients.clear();
@@ -747,170 +753,145 @@ abstract class BaseHttpService implements BaseService {
   }) => _router.addDelete(path, handler, middlewares: middlewares, doc: doc);
 
   // ── 请求处理 ──────────────────────────────────
-  Future<shelf.Response> _handleRequest(shelf.Request raw) async {
-    final request = HubRequest(raw);
-    final path = raw.requestedUri.path;
+  shelf.Handler? _corsPipeline;
+
+  Future<shelf.Response> _handleRequest(shelf.Request request) {
+    _corsPipeline ??= Middleware.cors()(_dispatch);
+    return Future.sync(() => _corsPipeline!(request));
+  }
+
+  String _remoteAddressOf(shelf.Request request) =>
+      (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
+          ?.remoteAddress
+          .address ??
+      '?';
+
+  Future<shelf.Response> _dispatch(shelf.Request request) async {
+    final path = request.requestedUri.path;
 
     // WebSocket 路由优先（webSocketHandler 内部会校验升级头）
     if (_wsRoutes.containsKey(path)) {
-      return await _wsShelfHandler(path, raw)(raw);
+      return await _wsShelfHandler(path, request)(request);
     }
 
     try {
-      if (!await Middleware.cors()(request)) {
-        return request.response.toResponse();
-      }
-      if (!await Middleware.bodySizeLimit()(request)) {
-        return request.response.toResponse();
-      }
+      final limit = await Middleware.bodySizeLimit()(request);
+      if (limit != null) return limit;
 
       final method = request.method;
-      final from = request.connectionInfo?.remoteAddress.address ?? '?';
+      final from = _remoteAddressOf(request);
       final watch = Stopwatch()..start();
 
       if (method == 'PROPFIND') {
-        request.response
-          ..statusCode = HttpStatus.methodNotAllowed
-          ..headers.set('Allow', 'GET, POST, PUT, DELETE, OPTIONS')
-          ..headers.contentType = ContentType.json
-          ..write(
-            jsonEncode({
-              'error': 'Method Not Allowed',
-              'message': 'WebDAV is not supported',
-            }),
-          );
-        await request.response.close();
-        return request.response.toResponse();
+        return sendJson(request, {
+          'error': 'Method Not Allowed',
+          'message': 'WebDAV is not supported',
+        }, status: HttpStatus.methodNotAllowed);
       }
 
       HubLog.info('$runtimeType', '→ $method $path  (from $from)');
       final match = _router.resolve(method, path);
 
       if (match == null) {
-        await sendError(
+        return sendError(
           request,
           HttpStatus.notFound,
           'NOT_FOUND',
           'path $path not found',
         );
-        return request.response.toResponse();
       }
 
       for (final middleware in match.entry.middlewares) {
-        if (!await middleware(request)) {
-          return request.response.toResponse();
-        }
+        final response = await middleware(request);
+        if (response != null) return response;
       }
 
-      request.params = match.params;
-      await match.entry.handler(request);
+      final response = await match.entry.handler(request, match.params);
 
       watch.stop();
       HubLog.info(
         '$runtimeType',
         '← $method $path  ${watch.elapsedMilliseconds}ms',
       );
-      return request.response.toResponse();
+      return response;
     } catch (e, stack) {
       HubLog.error('$runtimeType', '❌ $e\n$stack');
-      try {
-        await sendError(
-          request,
-          HttpStatus.internalServerError,
-          'SERVER_ERROR',
-          e.toString(),
-        );
-      } catch (_) {}
-      return request.response.toResponse();
+      return sendError(
+        request,
+        HttpStatus.internalServerError,
+        'SERVER_ERROR',
+        e.toString(),
+      );
     }
   }
 
   // ── 响应工具 ──────────────────────────────────
-  Future<void> sendJson(
-    HubRequest req,
-    Map<String, dynamic> data, {
+  shelf.Response sendJson(
+    shelf.Request req,
+    Object? data, {
     int status = HttpStatus.ok,
-  }) async {
-    final bytes = utf8.encode(jsonEncode(data));
-    req.response
-      ..statusCode = status
-      ..headers.contentType = ContentType.json
-      ..headers.set('Content-Length', bytes.length.toString())
-      ..add(bytes);
-    await req.response.close();
-  }
+  }) => shelf.Response(
+    status,
+    body: jsonEncode(data),
+    headers: {'content-type': 'application/json'},
+  );
 
   /// 发送 HTML 页面
-  Future<void> sendHtml(
-    HubRequest req,
+  shelf.Response sendHtml(
+    shelf.Request req,
     String html, {
     int status = HttpStatus.ok,
-  }) async {
-    final bytes = utf8.encode(html);
-    req.response
-      ..statusCode = status
-      ..headers.contentType = ContentType.html
-      ..headers.set('Content-Length', bytes.length.toString())
-      ..add(bytes);
-    await req.response.close();
-  }
+  }) => shelf.Response(
+    status,
+    body: html,
+    headers: {'content-type': 'text/html; charset=utf-8'},
+  );
 
-  Future<void> sendBytes(
-    HubRequest req,
+  shelf.Response sendBytes(
+    shelf.Request req,
     List<int> bytes,
     ContentType contentType,
-  ) async {
-    req.response
-      ..statusCode = HttpStatus.ok
-      ..headers.contentType = contentType
-      ..headers.set('Content-Length', bytes.length.toString())
-      ..add(bytes);
-    await req.response.close();
-  }
+  ) => shelf.Response(
+    HttpStatus.ok,
+    body: bytes,
+    headers: {'content-type': contentType.toString()},
+  );
 
-  Future<void> sendImage(
-    HubRequest req,
+  shelf.Response sendImage(
+    shelf.Request req,
     Uint8List bytes, {
     String format = 'png',
   }) => sendBytes(req, bytes, ContentType('image', format));
 
-  Future<void> sendFile(
-    HubRequest req,
+  shelf.Response sendFile(
+    shelf.Request req,
     List<int> bytes,
     String filename, {
     String mimeType = 'application/octet-stream',
-  }) async {
-    req.response
-      ..statusCode = HttpStatus.ok
-      ..headers.contentType = ContentType.parse(mimeType)
-      ..headers.set('Content-Disposition', 'attachment; filename="$filename"')
-      ..headers.set('Content-Length', bytes.length.toString())
-      ..add(bytes);
-    await req.response.close();
-  }
+  }) => shelf.Response(
+    HttpStatus.ok,
+    body: bytes,
+    headers: {
+      'content-type': mimeType,
+      'content-disposition': 'attachment; filename="$filename"',
+    },
+  );
 
-  Future<void> sendAuto(
-    HubRequest req,
+  shelf.Response sendAuto(
+    shelf.Request req,
     Map<String, dynamic> data, {
     int status = HttpStatus.ok,
     String? htmlBody,
-  }) async {
-    final accept = req.headers.value('accept') ?? '';
+  }) {
+    final accept = req.headers['accept'] ?? '';
     if (accept.contains('text/html') && htmlBody != null) {
-      final bytes = utf8.encode(htmlBody);
-      req.response
-        ..statusCode = status
-        ..headers.contentType = ContentType.html
-        ..headers.set('Content-Length', bytes.length.toString())
-        ..add(bytes);
-      await req.response.close();
-    } else {
-      await sendJson(req, data, status: status);
+      return sendHtml(req, htmlBody, status: status);
     }
+    return sendJson(req, data, status: status);
   }
 
-  Future<void> sendError(
-    HubRequest req,
+  shelf.Response sendError(
+    shelf.Request req,
     int status,
     String error,
     String message,
@@ -918,60 +899,52 @@ abstract class BaseHttpService implements BaseService {
     'code': status,
     'error': error,
     'message': message,
-    'path': req.uri.path,
+    'path': req.requestedUri.path,
     'timestamp': DateTime.now().toIso8601String(),
   }, status: status);
 
   // ── 请求体解析 ────────────────────────────────
-  Future<Map<String, dynamic>?> readJson(HubRequest req) async {
+  Future<Map<String, dynamic>?> readJson(shelf.Request req) async {
     try {
-      final body = await utf8.decoder.bind(req).join();
+      final body = await req.readAsString();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (_) {
-      await sendError(
-        req,
-        HttpStatus.badRequest,
-        'INVALID_JSON',
-        'Invalid JSON body',
-      );
       return null;
     }
   }
 
-  Future<String> readBody(HubRequest req) => utf8.decoder.bind(req).join();
+  Future<String> readBody(shelf.Request req) => req.readAsString();
 
   // ── 静态文件 ──────────────────────────────────
   void serveStatic(String urlPrefix, String dirPath) {
-    addGet('$urlPrefix/:filename', (req) async {
-      final filename = pathParams(req)['filename'] ?? '';
+    addGet('$urlPrefix/:filename', (req, params) async {
+      final filename = params['filename'] ?? '';
       // 防目录穿越：拒绝路径分隔符、空名与绝对路径
       if (filename.isEmpty ||
           filename.contains('..') ||
           filename.contains('/') ||
           filename.contains('\\') ||
           filename.startsWith('.')) {
-        await sendError(
+        return sendError(
           req,
           HttpStatus.badRequest,
           'INVALID_FILENAME',
           'Invalid filename',
         );
-        return;
       }
       final file = File(p.join(dirPath, filename));
 
       if (!await file.exists()) {
-        await sendError(
+        return sendError(
           req,
           HttpStatus.notFound,
           'NOT_FOUND',
           'File not found',
         );
-        return;
       }
 
       final bytes = await file.readAsBytes();
-      await sendBytes(req, bytes, ContentType.parse(_getMimeType(filename)));
+      return sendBytes(req, bytes, ContentType.parse(_getMimeType(filename)));
     });
   }
 
