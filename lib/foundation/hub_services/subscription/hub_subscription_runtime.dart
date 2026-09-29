@@ -91,11 +91,16 @@ class _SubRuntime {
 
   bool _closed = false;
 
+  /// ws-reverse 断线重连（带退避）
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+
   String? error;
 
   Future<void> start() async {
     _closed = false;
     error = null;
+    _reconnectAttempts = 0;
     try {
       switch (sub.type) {
         case HubSubscriptionType.ws:
@@ -184,21 +189,66 @@ class _SubRuntime {
       error = 'URL 为空';
       return;
     }
-    final socket = await WebSocket.connect(url);
-    _outSocket = socket;
-    // 握手携带 token
-    if (sub.token?.isNotEmpty == true) {
-      socket.add(
-        jsonEncode({
-          'type': 'hub_subscription_handshake',
-          'source': 'kostori-hub',
-          'token': sub.token,
-          'time': DateTime.now().toIso8601String(),
-        }),
+    await _connectWsReverse(url);
+  }
+
+  Future<void> _connectWsReverse(String url) async {
+    if (_closed) return;
+    try {
+      final socket = await WebSocket.connect(url);
+      if (_closed) {
+        await socket.close();
+        return;
+      }
+      _outSocket = socket;
+      _reconnectAttempts = 0;
+      error = null;
+      // 握手携带 token
+      if (sub.token?.isNotEmpty == true) {
+        socket.add(
+          jsonEncode({
+            'type': 'hub_subscription_handshake',
+            'source': 'kostori-hub',
+            'token': sub.token,
+            'time': DateTime.now().toIso8601String(),
+          }),
+        );
+      }
+      socket.listen(
+        (_) {},
+        onDone: () {
+          _outSocket = null;
+          _scheduleWsReconnect();
+        },
+        onError: (_) {
+          _outSocket = null;
+          _scheduleWsReconnect();
+        },
       );
+      HubLog.info('HubSubscription', '✅ WS 反向订阅已连接：$url （${sub.note}）');
+    } catch (e) {
+      _outSocket = null;
+      error = e.toString();
+      HubLog.warning('HubSubscription', 'WS 反向订阅连接失败（${sub.note}）：$e');
+      _scheduleWsReconnect();
     }
-    socket.listen((_) {}, onDone: () => _outSocket = null, onError: (_) {});
-    HubLog.info('HubSubscription', '✅ WS 反向订阅已连接：$url （${sub.note}）');
+  }
+
+  void _scheduleWsReconnect() {
+    if (_closed) return;
+    if (sub.type != HubSubscriptionType.ws ||
+        sub.wsDirection != HubWsDirection.reverse) {
+      return;
+    }
+    final url = sub.url;
+    if (url == null || url.isEmpty) return;
+    _reconnectTimer?.cancel();
+    final secs = (1 << _reconnectAttempts).clamp(1, 30);
+    _reconnectAttempts++;
+    _reconnectTimer = Timer(Duration(seconds: secs), () {
+      if (_closed) return;
+      _connectWsReverse(url);
+    });
   }
 
   // ── webhook：向目标 URL POST 事件 ─────────────────────────────────────────
@@ -384,6 +434,8 @@ class _SubRuntime {
 
   Future<void> stop() async {
     _closed = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _heartbeat?.cancel();
     _heartbeat = null;
     for (final c in _clients.toList()) {

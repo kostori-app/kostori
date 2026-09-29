@@ -627,6 +627,9 @@ class StatsManager with ChangeNotifier {
     if (isInitialized) return;
     _db = _StatsDb();
     isInitialized = true;
+    // 预热 id 缓存：同步 isExist 依赖它，否则会误判“不存在”并用
+    // INSERT OR REPLACE 覆盖已有统计（评论/评分/时长）
+    await _cacheStatsIds();
   }
 
   Future<void> close() async {
@@ -647,6 +650,9 @@ class StatsManager with ChangeNotifier {
 
     _db = _StatsDb();
     isInitialized = true;
+    _cachedStatsIds.clear();
+    _modifiedAfterLastCache = true;
+    await _cacheStatsIds();
     notifyListeners();
   }
 
@@ -716,6 +722,8 @@ class StatsManager with ChangeNotifier {
 
   Future<void> addStats(StatsData newItem) => _guard(() async {
     _modifiedAfterLastCache = true;
+    // 增量维护缓存：同步 isExist 立即能看到新条目，避免重复 addStats 覆盖
+    _cachedStatsIds['${newItem.id}@${newItem.type}'] = true;
     final c = _toCompanion(newItem);
     await _db.customInsert(
       '''INSERT OR REPLACE INTO stats
@@ -1112,7 +1120,8 @@ class StatsManager with ChangeNotifier {
   });
 
   bool isExist(String id, AnimeType type) {
-    // 同步版：依赖缓存，需确保 _cacheStatsIds 已执行
+    // 同步版：依赖启动时预热的缓存；addStats 会增量写入，
+    // 外部整库变更（导入/重建）会在 reinit 时清空缓存重新预热。
     return _cachedStatsIds.containsKey("$id@${type.value}");
   }
 

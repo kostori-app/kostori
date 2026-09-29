@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/secret_vault.dart';
 import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
@@ -14,7 +15,8 @@ const webUA =
 
 // Bangumi API 文档要求的UA格式；已 OAuth 登录时附加 Bearer 鉴权头
 Map<String, String> get bangumiHTTPHeader {
-  final token = appdata.implicitData['bangumi_access_token'] as String?;
+  final raw = appdata.implicitData['bangumi_access_token'] as String?;
+  final token = raw == null ? null : SecretVault.decrypt(raw);
   return {
     'user-agent':
         'axlmly/kostori/${App.version} (Android) (https://github.com/kostori-app/kostori)',

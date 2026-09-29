@@ -2537,6 +2537,10 @@ abstract class _$_HistoryDb extends GeneratedDatabase {
   );
   late final $TextRuleTableTable textRuleTable = $TextRuleTableTable(this);
   late final $MemoTableTable memoTable = $MemoTableTable(this);
+  late final Index progressHistoryIdx = Index(
+    'progress_history_idx',
+    'CREATE INDEX progress_history_idx ON progress (historyId)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2547,6 +2551,7 @@ abstract class _$_HistoryDb extends GeneratedDatabase {
     pluginEventTable,
     textRuleTable,
     memoTable,
+    progressHistoryIdx,
   ];
 }
 

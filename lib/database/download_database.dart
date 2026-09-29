@@ -259,8 +259,9 @@ class DownloadDatabase extends _$DownloadDatabase {
       for (final j in jsons) {
         final id = (jsonDecode(j) as Map)['id']?.toString() ?? '';
         if (id.isEmpty) continue;
-        await into(downloadTaskTable)
-            .insert(DownloadTaskTableCompanion.insert(id: id, data: j));
+        await into(downloadTaskTable).insertOnConflictUpdate(
+          DownloadTaskTableCompanion.insert(id: id, data: j),
+        );
       }
     });
   }
@@ -276,8 +277,9 @@ class DownloadDatabase extends _$DownloadDatabase {
       for (final j in jsons) {
         final id = (jsonDecode(j) as Map)['id']?.toString() ?? '';
         if (id.isEmpty) continue;
-        await into(torrentJobTable)
-            .insert(TorrentJobTableCompanion.insert(id: id, data: j));
+        await into(torrentJobTable).insertOnConflictUpdate(
+          TorrentJobTableCompanion.insert(id: id, data: j),
+        );
       }
     });
   }

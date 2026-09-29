@@ -1,7 +1,20 @@
 import 'package:drift/drift.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/foundation/secret_vault.dart';
 
 part 'ai_custom_provider_dao.g.dart';
+
+/// apiKey 落库前加密、读出后解密（与 [AiApiKeyDao] 一致）。
+AiCustomProvider _plainRow(AiCustomProvider r) => r.apiKey == null
+    ? r
+    : r.copyWith(apiKey: Value(SecretVault.decrypt(r.apiKey!)));
+
+AiCustomProvidersCompanion _secretEntry(AiCustomProvidersCompanion c) =>
+    c.copyWith(
+      apiKey: (c.apiKey.present && c.apiKey.value != null)
+          ? Value(SecretVault.encrypt(c.apiKey.value!))
+          : const Value.absent(),
+    );
 
 @DriftAccessor(tables: [AiCustomProviders])
 class AiCustomProviderDao extends DatabaseAccessor<AiDatabase>
@@ -10,25 +23,34 @@ class AiCustomProviderDao extends DatabaseAccessor<AiDatabase>
 
   // ─── 查询 ──────────────────────────────────
 
-  Stream<List<AiCustomProvider>> watchAll() => (select(
-    aiCustomProviders,
-  )..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).watch();
+  Stream<List<AiCustomProvider>> watchAll() =>
+      (select(aiCustomProviders)
+            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+          .watch()
+          .map((rows) => rows.map(_plainRow).toList());
 
-  Future<List<AiCustomProvider>> getAll() => (select(
-    aiCustomProviders,
-  )..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).get();
+  Future<List<AiCustomProvider>> getAll() async =>
+      (await (select(
+            aiCustomProviders,
+          )..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).get())
+          .map(_plainRow)
+          .toList();
 
-  Future<AiCustomProvider?> getByProvider(String provider) => (select(
-    aiCustomProviders,
-  )..where((t) => t.provider.equals(provider))).getSingleOrNull();
+  Future<AiCustomProvider?> getByProvider(String provider) async {
+    final row = await (select(
+      aiCustomProviders,
+    )..where((t) => t.provider.equals(provider))).getSingleOrNull();
+    return row == null ? null : _plainRow(row);
+  }
 
-  Future<List<AiCustomProvider>> getEnabled() =>
-      (select(aiCustomProviders)..where((t) => t.isEnabled.equals(true))).get();
+  Future<List<AiCustomProvider>> getEnabled() async => (await (select(
+    aiCustomProviders,
+  )..where((t) => t.isEnabled.equals(true))).get()).map(_plainRow).toList();
 
   // ─── 写入 ──────────────────────────────────
 
   Future<void> upsert(AiCustomProvidersCompanion entry) =>
-      into(aiCustomProviders).insertOnConflictUpdate(entry);
+      into(aiCustomProviders).insertOnConflictUpdate(_secretEntry(entry));
 
   Future<void> setEnabled(String provider, {required bool enabled}) {
     return (update(
@@ -46,7 +68,7 @@ class AiCustomProviderDao extends DatabaseAccessor<AiDatabase>
       aiCustomProviders,
     )..where((t) => t.provider.equals(provider))).write(
       AiCustomProvidersCompanion(
-        apiKey: Value(apiKey),
+        apiKey: Value(SecretVault.encrypt(apiKey)),
         updatedAt: Value(DateTime.now()),
       ),
     );

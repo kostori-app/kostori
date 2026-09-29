@@ -437,17 +437,23 @@ class DownloadManager extends ChangeNotifier {
     try {
       final root = Directory(_downloadDir);
       if (!await root.exists()) return;
-      final keepDirs = <String>{
+      final resumable = [
         for (final t in _tasks)
           if (t.status == DownloadStatus.queued ||
               t.status == DownloadStatus.downloading ||
               t.status == DownloadStatus.paused ||
               t.status == DownloadStatus.failed)
-            _taskDirPath(t),
-      };
+            t,
+      ];
+      final keepDirs = <String>{for (final t in resumable) _taskDirPath(t)};
+      // 目录名以 `_<任务id>` 结尾；标题格式变更会让 _taskDirPath 算出旧路径，
+      // 用 id 后缀兜底，避免误删可续传的分片
+      final keepIds = <String>{for (final t in resumable) t.id};
       // 遍历整个下载目录（含分组）可能很多，放后台 isolate，避免启动瞬间卡 UI
       final rootPath = root.path;
-      await Isolate.run(() => _cleanupOrphanSegmentsSync(rootPath, keepDirs));
+      await Isolate.run(
+        () => _cleanupOrphanSegmentsSync(rootPath, keepDirs, keepIds),
+      );
     } catch (e) {
       Log.error('DownloadManager.cleanupOrphanSegments', '$e');
     }
@@ -604,6 +610,10 @@ class DownloadManager extends ChangeNotifier {
 
   static const int _maxAutoRetries = 3;
 
+  /// 自动续传退避截止时间：在此之前 _schedule 不启动该任务，
+  /// 避免 finally 里的补调度把指数退避抵消成“立即重试”
+  final Map<String, DateTime> _pendingRetryAt = {};
+
   /// 临时性错误（连接中断/超时/握手失败等）值得自动续传；
   /// 永久性错误（HTTP 403/404/410、ffmpeg 失败等）需人工重新解析
   bool _isTransient(Object e) {
@@ -624,8 +634,15 @@ class DownloadManager extends ChangeNotifier {
   }
 
   void _schedule() {
+    final now = DateTime.now();
     for (final t in _tasks) {
-      if (t.status == DownloadStatus.queued && _activeCount < _maxConcurrent) {
+      if (t.status != DownloadStatus.queued) continue;
+      final notBefore = _pendingRetryAt[t.id];
+      if (notBefore != null) {
+        if (now.isBefore(notBefore)) continue;
+        _pendingRetryAt.remove(t.id);
+      }
+      if (_activeCount < _maxConcurrent) {
         unawaited(_runTask(t));
       }
     }
@@ -651,21 +668,18 @@ class DownloadManager extends ChangeNotifier {
     notifyListeners();
     _syncKeepAlive(force: true);
 
-    // 仅 WiFi：非 WiFi 网络时等待
     try {
+      // 仅 WiFi：非 WiFi 网络时等待。取消时进入下方统一 catch/finally，
+      // 保证 _runningIds/_cancelTokens 一定被清理（否则并发位永久泄漏）
       await _waitForWifiIfNeeded(cancelToken);
-    } on FfmpegCancelledException {
-      return;
-    }
 
-    // 每个任务一个目录（含分组子目录）：mp4 断点临时文件 / m3u8 分片都在目录内
-    final taskDir = _taskDirPath(task);
-    await Directory(taskDir).create(recursive: true);
-    final tmpPath = p.join(taskDir, 'video.mp4');
-    // 最终文件名用标题基名（不带唯一 id 数字后缀），目录仍按 taskDir 隔离
-    final finalPath = p.join(taskDir, '${_fileBaseName(task)}.mp4');
+      // 每个任务一个目录（含分组子目录）：mp4 断点临时文件 / m3u8 分片都在目录内
+      final taskDir = _taskDirPath(task);
+      await Directory(taskDir).create(recursive: true);
+      final tmpPath = p.join(taskDir, 'video.mp4');
+      // 最终文件名用标题基名（不带唯一 id 数字后缀），目录仍按 taskDir 隔离
+      final finalPath = p.join(taskDir, '${_fileBaseName(task)}.mp4');
 
-    try {
       try {
         if (task.isHls) {
           await _downloadHls(task, cancelToken, taskDir, tmpPath);
@@ -743,6 +757,9 @@ class DownloadManager extends ChangeNotifier {
         final n = (_autoRetryCounts[task.id] ?? 0) + 1;
         if (n <= _maxAutoRetries && _tasks.contains(task)) {
           _autoRetryCounts[task.id] = n;
+          _pendingRetryAt[task.id] = DateTime.now().add(
+            Duration(seconds: n * 3),
+          );
           task.status = DownloadStatus.queued;
           task.error = null;
           task.progress = task.progress.clamp(0.0, 1.0);
@@ -1649,6 +1666,7 @@ class DownloadManager extends ChangeNotifier {
   Future<void> pause(String id) async {
     final t = _tasks.where((e) => e.id == id).firstOrNull;
     if (t == null || t.status != DownloadStatus.downloading) return;
+    _pendingRetryAt.remove(id);
     _cancelTokens[id]?.cancel();
     t.status = DownloadStatus.paused;
     t.error = null;
@@ -1667,6 +1685,7 @@ class DownloadManager extends ChangeNotifier {
     }
     t.status = DownloadStatus.queued;
     t.error = null;
+    _pendingRetryAt.remove(t.id);
     _prioritizeQueued(t);
     _persist();
     notifyListeners();
@@ -1772,6 +1791,7 @@ class DownloadManager extends ChangeNotifier {
     final idx = _tasks.indexWhere((t) => t.id == id);
     if (idx < 0) return;
     final t = _tasks.removeAt(idx);
+    _pendingRetryAt.remove(id);
     _batchRemove(t);
     if (t.filePath != null) {
       await _deleteQuiet(File(t.filePath!));
@@ -2157,6 +2177,7 @@ class DownloadManager extends ChangeNotifier {
   Future<void> renameGroup(String from, String to) async {
     final name = sanitizeGroupName(to.trim());
     if (from == name || name.isEmpty) return;
+    final originalGroups = List<String>.from(groups());
     // 前缀映射：from → name，from/子 → name/子
     final mapping = <String, String>{
       for (final g in groupWithDescendants(from))
@@ -2186,7 +2207,13 @@ class DownloadManager extends ChangeNotifier {
       try {
         await newDir.parent.create(recursive: true);
         await oldDir.rename(newDir.path);
-      } catch (_) {}
+      } catch (e) {
+        // 目录没搬成功就回滚分组名，保持元数据与磁盘一致，
+        // 否则任务/记录会指向一个从未存在的目录
+        Log.error('DownloadManager.renameGroup', '重命名目录失败: $e');
+        _saveGroups(originalGroups);
+        return;
+      }
     }
     for (final t in _tasks) {
       final m = mapping[t.group];
@@ -2423,7 +2450,22 @@ int _filesTotalBytesSync(List<String> paths) {
 
 /// 清理非保留任务目录里的 segments 分片与 video.mp4 半成品（后台 isolate 执行）。
 /// 下载根目录下可能有分组子目录，递归一层处理。
-void _cleanupOrphanSegmentsSync(String rootPath, Set<String> keepDirs) {
+void _cleanupOrphanSegmentsSync(
+  String rootPath,
+  Set<String> keepDirs,
+  Set<String> keepIds,
+) {
+  // 路径精确匹配，或目录名以 `_<任务id>` 结尾（标题格式变更后路径已变，
+  // 但 id 后缀稳定），都视为需要保留
+  bool isKeep(String path) {
+    if (keepDirs.contains(path)) return true;
+    final base = p.basename(path);
+    for (final id in keepIds) {
+      if (base.endsWith('_$id')) return true;
+    }
+    return false;
+  }
+
   void cleanTaskDir(Directory dir) {
     try {
       final video = File(p.join(dir.path, 'video.mp4'));
@@ -2442,7 +2484,7 @@ void _cleanupOrphanSegmentsSync(String rootPath, Set<String> keepDirs) {
     if (!root.existsSync()) return;
     for (final entry in root.listSync()) {
       if (entry is! Directory) continue;
-      if (keepDirs.contains(entry.path)) continue;
+      if (isKeep(entry.path)) continue;
       final hasSeg = Directory(p.join(entry.path, 'segments')).existsSync();
       final hasVideo = File(p.join(entry.path, 'video.mp4')).existsSync();
       if (hasSeg || hasVideo) {
@@ -2451,7 +2493,7 @@ void _cleanupOrphanSegmentsSync(String rootPath, Set<String> keepDirs) {
         // 可能是分组目录：递归清理其下的任务目录
         for (final sub in entry.listSync()) {
           if (sub is! Directory) continue;
-          if (keepDirs.contains(sub.path)) continue;
+          if (isKeep(sub.path)) continue;
           cleanTaskDir(sub);
         }
       }

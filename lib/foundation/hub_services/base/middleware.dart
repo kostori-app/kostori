@@ -66,31 +66,6 @@ class Middleware {
   }
 
   // ─────────────────────────────────────────
-  // 错误处理
-  // ─────────────────────────────────────────
-
-  static MiddlewareHandler errorHandler() {
-    return (HttpRequest request) async {
-      try {
-        return true;
-      } catch (e, stack) {
-        HubLog.error('ErrorHandler', '$e', stack);
-        request.response
-          ..statusCode = HttpStatus.internalServerError
-          ..headers.contentType = ContentType.json
-          ..write(
-            jsonEncode({
-              'error': 'Internal Server Error',
-              'message': e.toString(),
-            }),
-          );
-        await request.response.close();
-        return false;
-      }
-    };
-  }
-
-  // ─────────────────────────────────────────
   // 限流
   // ─────────────────────────────────────────
 

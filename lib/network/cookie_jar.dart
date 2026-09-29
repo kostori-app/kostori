@@ -200,9 +200,9 @@ class CookieJarSql {
     if (cookiePath == null || cookiePath == '/' || cookiePath == uri.path) {
       return true;
     }
-    return uri.path.startsWith(
-      cookiePath.endsWith('/') ? cookiePath : cookiePath,
-    );
+    // RFC-6265：路径前缀必须到分隔符边界，否则 /foo 的 cookie 会发给 /foobar
+    final prefix = cookiePath.endsWith('/') ? cookiePath : '$cookiePath/';
+    return uri.path.startsWith(prefix);
   }
 
   Future<void> saveFromResponseCookieHeader(

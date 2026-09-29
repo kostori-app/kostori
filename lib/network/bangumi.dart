@@ -123,7 +123,7 @@ class Bangumi {
           contentType: 'application/json',
         ),
       );
-      if (res.data['code'] == 404) {
+      if (res.data['code'] == 404 && key.length > 5) {
         await Future.delayed(Duration(seconds: 1));
         key = key.substring(0, 5);
         res = await _dio.get(
@@ -156,14 +156,20 @@ class Bangumi {
 
   Future<List<BangumiItem>> combinedBangumiSearch(String keyword) async {
     try {
-      final results =
-          await Future.wait([
-            bangumiPostSearch(keyword).timeout(const Duration(seconds: 5)),
-            bangumiGetSearch(keyword).timeout(const Duration(seconds: 5)),
-          ]).catchError((e, s) {
-            NetLog.warning('bangumi', 'Partial search failed: $e');
-            return [<BangumiItem>[], <BangumiItem>[]];
-          });
+      final results = await Future.wait([
+        bangumiPostSearch(keyword)
+            .timeout(const Duration(seconds: 5))
+            .catchError((Object e, StackTrace s) {
+              NetLog.warning('bangumi', 'Post search failed: $e');
+              return <BangumiItem>[];
+            }),
+        bangumiGetSearch(keyword)
+            .timeout(const Duration(seconds: 5))
+            .catchError((Object e, StackTrace s) {
+              NetLog.warning('bangumi', 'Get search failed: $e');
+              return <BangumiItem>[];
+            }),
+      ]);
 
       final combinedList = [...results[0], ...results[1]];
       final uniqueItems = <int, BangumiItem>{};
@@ -175,6 +181,7 @@ class Bangumi {
         final keywordChars = keyword.runes
             .map((rune) => String.fromCharCode(rune))
             .toList();
+        if (keywordChars.isEmpty) return 0;
         final textChars = text.runes
             .map((rune) => String.fromCharCode(rune))
             .toList();
@@ -541,23 +548,28 @@ class Bangumi {
   Future<List<BangumiItem>> getReviewsSubjectsByID(int id) async {
     List<BangumiItem> bangumiReviewsSubjects = [];
     try {
-      var res = await _dio.request(
-        Api.checkBangumiDataUrl,
-        options: Options(
-          method: 'GET',
-          headers: bangumiHTTPHeader,
-          receiveTimeout: const Duration(seconds: 30),
-        ),
+      final res = await _dio.request(
+        // 日志关联条目（原实现误用了检查更新用的 GitHub 接口）
+        Api.formatUrl(Api.bangumiReviewsSubjectsByIDNext, [id]),
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       final jsonData = res.data;
-      for (dynamic json in jsonData) {
-        try {
-          BangumiItem bangumiItem = BangumiItem.fromJson(json);
-          if (bangumiItem.type == 2) {
-            bangumiReviewsSubjects.add(bangumiItem);
+      final jsonList = jsonData is Map ? jsonData['data'] : jsonData;
+      if (jsonList is List) {
+        for (final json in jsonList) {
+          try {
+            final itemJson = (json is Map && json['subject'] is Map)
+                ? json['subject']
+                : json;
+            final bangumiItem = BangumiItem.fromJson(
+              Map<String, dynamic>.from(itemJson as Map),
+            );
+            if (bangumiItem.type == 2) {
+              bangumiReviewsSubjects.add(bangumiItem);
+            }
+          } catch (e, s) {
+            NetLog.error('getReviewsSubjectsByID', '$e\n$s');
           }
-        } catch (e, s) {
-          NetLog.error('getReviewsSubjectsByID', '$e\n$s');
         }
       }
     } catch (e, s) {

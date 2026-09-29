@@ -446,6 +446,7 @@ class HistoryTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@TableIndex(name: 'progress_history_idx', columns: {#historyId})
 class ProgressTable extends Table {
   @override
   String get tableName => 'progress';
@@ -610,6 +611,10 @@ CREATE TABLE IF NOT EXISTS memos (
   PRIMARY KEY (id)
 )
 ''';
+
+/// 进度表按 historyId 的查询/更新很频繁（watch 每秒写），补索引避免全表扫描
+const String _createProgressIndexSql =
+    'CREATE INDEX IF NOT EXISTS progress_history_idx ON progress(historyId)';
 
 LazyDatabase _openConn() => openWalDb('history.db');
 
@@ -949,6 +954,7 @@ class HistoryManager with ChangeNotifier {
       _createPluginEventsSql,
       _createTextRulesSql,
       _createMemosSql,
+      _createProgressIndexSql,
     ]) {
       try {
         await _db.customStatement(sql);
@@ -1083,6 +1089,11 @@ class HistoryManager with ChangeNotifier {
             await (_db.delete(
               _db.historyTable,
             )..where((t) => t.id.equals(h.id))).go();
+            // 级联删除进度记录，避免残留孤儿（与单条 remove 一致）
+            await (_db.delete(_db.progressTable)..where(
+                  (t) => t.historyId.equals(h.id) & t.type.equals(h.type.value),
+                ))
+                .go();
           }
         });
         await _updateCache();
@@ -1398,6 +1409,7 @@ extension ProgressHelper on HistoryManager {
       await _db.customStatement(_createPluginEventsSql);
       await _db.customStatement(_createTextRulesSql);
       await _db.customStatement(_createMemosSql);
+      await _db.customStatement(_createProgressIndexSql);
       // ignore: empty_catches
     } catch (_) {}
     try {

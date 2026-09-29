@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
@@ -13,9 +14,31 @@ class HistoryWriteService {
   static bool _started = false;
   static bool _paused = false;
 
-  /// 暂停写入（导出/备份前调用，避免复制文件时写入导致不一致）
-  static void pause() {
+  /// isolate 尚未就绪时暂存消息，拿到 SendPort 后按序补发（否则首次写入丢失）
+  static final List<Map<String, dynamic>> _pending = [];
+
+  /// pause 的确认：isolate 队列串行，处理到 pause 时之前的写入已全部完成
+  static Completer<void>? _pauseCompleter;
+
+  /// close 的确认（导出/整库替换前需确保连接真正释放）
+  static Completer<void>? _closeCompleter;
+
+  static void _sendOrQueue(Map<String, dynamic> m) {
+    final send = _send;
+    if (send != null) {
+      send.send(m);
+    } else {
+      _pending.add(m);
+    }
+  }
+
+  /// 暂停写入并等待在途写入落盘（导出/备份前调用，保证复制的文件一致）
+  static Future<void> pause() {
+    _ensure();
     _paused = true;
+    final completer = _pauseCompleter ??= Completer<void>();
+    _sendOrQueue(<String, dynamic>{'op': 'pause'});
+    return completer.future;
   }
 
   static void resume() {
@@ -26,15 +49,36 @@ class HistoryWriteService {
     if (_started) return;
     _started = true;
     final rp = ReceivePort();
-    Isolate.spawn(_entry, [rp.sendPort, App.dataPath]);
+    Isolate.spawn(_entry, [rp.sendPort, App.dataPath]).then(
+      (_) {},
+      onError: (Object e) {
+        // 启动失败：复位以便下次重试，并唤醒可能在等待 pause 的调用方
+        _started = false;
+        _send = null;
+        debugPrint('HistoryWriteService isolate 启动失败: $e');
+        _pauseCompleter?.complete();
+        _pauseCompleter = null;
+      },
+    );
     rp.listen((msg) {
       if (msg is SendPort) {
         _send = msg;
+        // 补发在 isolate 启动期间暂存的消息，保持先后顺序
+        for (final m in _pending) {
+          msg.send(m);
+        }
+        _pending.clear();
       } else if (msg is List) {
         if (msg.isNotEmpty && msg[0] == 'err') {
           debugPrint(
             'HistoryWriteService 后台写失败: ${msg.length > 2 ? msg[2] : msg}',
           );
+        } else if (msg.length > 1 && msg[0] == 'ack' && msg[1] == 'pause') {
+          _pauseCompleter?.complete();
+          _pauseCompleter = null;
+        } else if (msg.length > 1 && msg[0] == 'ack' && msg[1] == 'close') {
+          _closeCompleter?.complete();
+          _closeCompleter = null;
         }
       }
     });
@@ -43,7 +87,7 @@ class HistoryWriteService {
   static void addHistory(History h) {
     _ensure();
     if (_paused) return;
-    _send?.send(<String, dynamic>{'op': 'addHistory', 'h': _historyToMap(h)});
+    _sendOrQueue(<String, dynamic>{'op': 'addHistory', 'h': _historyToMap(h)});
   }
 
   static void updateProgress({
@@ -56,7 +100,7 @@ class HistoryWriteService {
   }) {
     _ensure();
     if (_paused) return;
-    _send?.send(<String, dynamic>{
+    _sendOrQueue(<String, dynamic>{
       'op': 'updateProgress',
       'historyId': historyId,
       'type': type.value,
@@ -68,9 +112,11 @@ class HistoryWriteService {
   }
 
   /// 关闭后台数据库连接（WebDAV 导入/删除 history.db 前调用，释放文件占用）
-  static void closeConnection() {
+  static Future<void> closeConnection() {
     _ensure();
-    _send?.send(<String, dynamic>{'op': 'close'});
+    final completer = _closeCompleter ??= Completer<void>();
+    _sendOrQueue(<String, dynamic>{'op': 'close'});
+    return completer.future;
   }
 
   static Map<String, dynamic> _historyToMap(History h) => {
@@ -144,6 +190,10 @@ class HistoryWriteService {
             case 'close':
               // 释放 history.db 占用（WebDAV 导入前调用）
               await manager.close();
+              mainSend.send(['ack', 'close']);
+            case 'pause':
+              // 队列串行：执行到此说明之前的写入都已落盘，回 ack 即可
+              mainSend.send(['ack', 'pause']);
           }
         } catch (e) {
           mainSend.send(['err', m['op'], e.toString()]);

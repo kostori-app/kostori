@@ -484,24 +484,35 @@ class _StreamWrapper<T> {
   }
 
   void _listen() async {
-    await for (var data in _stream) {
-      if (isClosed || _cancelled) {
-        break;
-      }
-      for (var controller in controllers) {
-        if (!controller.isClosed) {
-          controller.add(data);
+    try {
+      await for (var data in _stream) {
+        if (isClosed || _cancelled) {
+          break;
+        }
+        for (var controller in controllers) {
+          if (!controller.isClosed) {
+            controller.add(data);
+          }
         }
       }
-    }
-    for (var controller in controllers) {
-      if (!controller.isClosed) {
-        controller.close();
+    } catch (e) {
+      // 底层流出错也要正常收尾：否则条目永久卡在 _loadingImages，
+      // 后续订阅者会一直挂起
+      for (var controller in controllers) {
+        if (!controller.isClosed) {
+          controller.addError(e);
+        }
       }
+    } finally {
+      for (var controller in controllers) {
+        if (!controller.isClosed) {
+          controller.close();
+        }
+      }
+      controllers.clear();
+      isClosed = true;
+      onClosed(this);
     }
-    controllers.clear();
-    isClosed = true;
-    onClosed(this);
   }
 
   Stream<T> get stream {

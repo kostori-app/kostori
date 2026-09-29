@@ -898,7 +898,14 @@ class LocalFavoritesManager with ChangeNotifier {
     final key = _resolveFolder(before);
     final entries = _byFolder.remove(key) ?? <_FavEntry>[];
     _byFolder[_resolveFolder(after)] = entries;
-    _folderOrder[_folderOrder.indexOf(before)] = after;
+    // 用解析后的 key 定位：folderOrder 存的是规范名（如默认组为 `_default`），
+    // 直接 indexOf(before) 在传入别名（“默认”）时会得到 -1 而越界
+    final idx = _folderOrder.indexOf(key);
+    if (idx >= 0) {
+      _folderOrder[idx] = after;
+    } else {
+      _folderOrder.add(after);
+    }
     _notify();
     _schedulePersist();
   }

@@ -195,6 +195,16 @@ class MyLogInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     // 计时：概要模式用
     options.extra['__logStartMs'] = DateTime.now().millisecondsSinceEpoch;
+    // 默认超时必须在日志开关判断之前套用：否则 NetLog 关闭（默认）时
+    // 普通 API 请求没有 receive/send 超时，服务端挂起会导致请求永久不返回。
+    // 流式/noLog（下载分片）/bytes 请求由调用方自行管理超时，不覆盖。
+    if (options.extra['noLog'] != true &&
+        options.extra['streaming'] != true &&
+        options.responseType != ResponseType.bytes) {
+      options.connectTimeout ??= const Duration(seconds: 15);
+      options.receiveTimeout ??= const Duration(seconds: 15);
+      options.sendTimeout ??= const Duration(seconds: 15);
+    }
     // 标注 noLog 的请求（如 HLS 分片，动辄上千条）不记录，避免刷屏
     if (options.extra['noLog'] == true) {
       handler.next(options);
@@ -232,14 +242,6 @@ class MyLogInterceptor extends Interceptor {
           "headers:\n${_redactHeaders(options.headers)}\n"
           "data:\n$data",
     );
-
-    // 流式请求不强制覆盖超时，避免长时间停顿（如推理思考）被误判为超时；
-    // 非流式请求仅在调用方未显式指定超时时套用默认值（防止覆盖 AI 等接口的显式超时）
-    if (options.extra['streaming'] != true) {
-      options.connectTimeout ??= const Duration(seconds: 15);
-      options.receiveTimeout ??= const Duration(seconds: 15);
-      options.sendTimeout ??= const Duration(seconds: 15);
-    }
     handler.next(options);
   }
 }
@@ -304,42 +306,6 @@ class AppDio with DioMixin {
 
   /// 静默模式：不打印请求/响应/错误日志。
   AppDio.quiet([BaseOptions? options]) : this(options, false);
-
-  static final Map<String, bool> _requests = {};
-
-  @override
-  Future<Response<T>> request<T>(
-    String path, {
-    Object? data,
-    Map<String, dynamic>? queryParameters,
-    CancelToken? cancelToken,
-    Options? options,
-    ProgressCallback? onSendProgress,
-    ProgressCallback? onReceiveProgress,
-  }) async {
-    if (options?.headers?['prevent-parallel'] == 'true') {
-      while (_requests.containsKey(path)) {
-        await Future.delayed(const Duration(milliseconds: 20));
-      }
-      _requests[path] = true;
-      options!.headers!.remove('prevent-parallel');
-    }
-    try {
-      return await super.request<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        cancelToken: cancelToken,
-        options: options,
-        onSendProgress: onSendProgress,
-        onReceiveProgress: onReceiveProgress,
-      );
-    } finally {
-      if (_requests.containsKey(path)) {
-        _requests.remove(path);
-      }
-    }
-  }
 }
 
 class RHttpAdapter implements HttpClientAdapter {
@@ -605,49 +571,5 @@ class GithubMirrorInterceptor extends Interceptor {
       options.path = mirrored;
     }
     handler.next(options);
-  }
-}
-
-class RetryInterceptor extends Interceptor {
-  final Dio dio;
-  final int maxRetries;
-  final Duration retryDelay;
-
-  RetryInterceptor({
-    required this.dio,
-    this.maxRetries = 0,
-    this.retryDelay = const Duration(seconds: 2),
-  });
-
-  @override
-  Future<void> onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
-    var shouldRetry = _shouldRetryOn(err);
-    var extra = err.requestOptions.extra;
-    var retryCount = (extra["__retry_count__"] as int?) ?? 0;
-
-    if (shouldRetry && retryCount < maxRetries) {
-      await Future.delayed(retryDelay);
-      final newOptions = err.requestOptions;
-      newOptions.extra = Map.from(newOptions.extra)
-        ..["__retry_count__"] = retryCount + 1;
-      try {
-        final response = await dio.fetch(newOptions);
-        return handler.resolve(response);
-      } catch (e) {
-        return handler.reject(e as DioException);
-      }
-    }
-
-    return handler.next(err);
-  }
-
-  bool _shouldRetryOn(DioException err) {
-    return err.type == DioExceptionType.connectionTimeout ||
-        err.type == DioExceptionType.receiveTimeout ||
-        err.type == DioExceptionType.sendTimeout ||
-        err.type == DioExceptionType.unknown;
   }
 }

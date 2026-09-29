@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#ffffff</color>
+    <!-- 启动窗口底色：与 Flutter 启动页的 surface（SeedColorScheme + vividBackground）保持一致，
+         避免原生启动窗口到 Flutter 首帧之间出现底色跳变 -->
+    <color name="launch_background">#FFFFFF</color>
 </resources>

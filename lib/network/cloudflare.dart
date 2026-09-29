@@ -177,9 +177,12 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
 
   // 保证 onFinished 只回调一次（Linux 分支 close 与 onClose 可能重复触发）
   var finished = false;
+  Timer? pollTimer;
   void finishOnce() {
     if (finished) return;
     finished = true;
+    pollTimer?.cancel();
+    pollTimer = null;
     onFinished();
   }
 
@@ -215,7 +218,7 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
     // 兜底超时：轮询检查是否仍处于挑战态，若已通过则提取 cookie；
     // 仅当确实结束（通过/超时）才 finish，避免 challenge 未通过就退出
     var waited = 0;
-    Timer.periodic(const Duration(seconds: 20), (_) async {
+    pollTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
       if (finished) return;
       waited += 20;
       if (await _isChallenging(webview, url)) {
@@ -433,7 +436,7 @@ Future<bool> _trySaveCookies(dynamic controller, String url, Uri uri) async {
     // 不管有没有 cf_clearance 都保存：非 CF 页面（如直接是内容）的会话
     // cookie 同样需要，否则验证页能播、播放器却缺少会话播不了。
     if (cookiesMap.isNotEmpty) {
-      _saveCookies(uri, cookiesMap);
+      await _saveCookies(uri, cookiesMap);
     }
     if (cookiesMap.containsKey('cf_clearance')) {
       NetLog.info("Cloudflare", "cf_clearance saved successfully!");
@@ -445,7 +448,7 @@ Future<bool> _trySaveCookies(dynamic controller, String url, Uri uri) async {
   return false;
 }
 
-void _saveCookies(Uri uri, Map<String, String> cookies) {
+Future<void> _saveCookies(Uri uri, Map<String, String> cookies) async {
   var host = uri.host;
   var splits = host.split('.');
   String domain = splits.length >= 3
@@ -456,12 +459,14 @@ void _saveCookies(Uri uri, Map<String, String> cookies) {
 
   final rootUri = Uri(scheme: uri.scheme, host: uri.host, path: '/');
 
-  SingleInstanceCookieJar.instance!.delete(
+  // 先删旧再写新：必须 await，否则 delete 可能晚于 insert 执行，
+  // 把刚保存的 cf_clearance 又删掉
+  await SingleInstanceCookieJar.instance!.delete(
     Uri.parse("https://$host/"),
     'cf_clearance',
   );
 
-  SingleInstanceCookieJar.instance!.saveFromResponse(
+  await SingleInstanceCookieJar.instance!.saveFromResponse(
     rootUri,
     List<io.Cookie>.generate(cookies.length, (index) {
       var cookie = io.Cookie(

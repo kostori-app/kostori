@@ -8,6 +8,7 @@ import 'package:kostori/database/daos/ai_provider_stats_dao.dart';
 import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_skill_dao.dart';
 import 'package:kostori/database/db_common.dart';
+import 'package:kostori/foundation/secret_vault.dart';
 
 part 'ai_database.g.dart';
 
@@ -84,8 +85,7 @@ class AiSessions extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-/// AI 消息记录表：每一轮对话的单条消息
-@TableIndex(name: 'tasks_session_idx', columns: {#sessionId})
+/// AI 模型配置表
 class AiModels extends Table {
   TextColumn get modelId => text()();
 
@@ -387,9 +387,17 @@ class AiDatabase extends _$AiDatabase {
   /// 缓存类表（模型目录 `ai_models`、服务商校验统计 `ai_provider_stats`）
   /// 不导出：它们由各端自己查询/覆盖，混在一起反而会互相污染。
   Future<Map<String, dynamic>> exportMergeData() async => {
-    'apiKeys': [for (final r in await select(aiApiKeys).get()) r.toJson()],
+    // 导出为明文（跨设备使用）；落库时是密文（见各 DAO）
+    'apiKeys': [
+      for (final r in await select(aiApiKeys).get())
+        {...r.toJson(), 'apiKey': SecretVault.decrypt(r.apiKey)},
+    ],
     'customProviders': [
-      for (final r in await select(aiCustomProviders).get()) r.toJson(),
+      for (final r in await select(aiCustomProviders).get())
+        {
+          ...r.toJson(),
+          if (r.apiKey != null) 'apiKey': SecretVault.decrypt(r.apiKey!),
+        },
     ],
     'sessions': [for (final r in await select(aiSessions).get()) r.toJson()],
     'auxSettings': [
@@ -420,7 +428,9 @@ class AiDatabase extends _$AiDatabase {
         final r = AiApiKey.fromJson(m);
         final local = localApiKeys[r.provider];
         if (local == null || r.updatedAt.isAfter(local.updatedAt)) {
-          await into(aiApiKeys).insertOnConflictUpdate(r.toCompanion(true));
+          await into(aiApiKeys).insertOnConflictUpdate(
+            r.copyWith(apiKey: SecretVault.encrypt(r.apiKey)).toCompanion(true),
+          );
         }
       }
 
@@ -432,8 +442,11 @@ class AiDatabase extends _$AiDatabase {
         final r = AiCustomProvider.fromJson(m);
         final local = localCustom[r.provider];
         if (local == null || r.updatedAt.isAfter(local.updatedAt)) {
+          final toStore = r.apiKey == null
+              ? r
+              : r.copyWith(apiKey: Value(SecretVault.encrypt(r.apiKey!)));
           await into(aiCustomProviders)
-              .insertOnConflictUpdate(r.toCompanion(true));
+              .insertOnConflictUpdate(toStore.toCompanion(true));
         }
       }
 

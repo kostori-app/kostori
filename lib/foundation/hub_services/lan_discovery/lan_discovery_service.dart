@@ -10,6 +10,7 @@ class LanDiscoveryService {
   RawDatagramSocket? _socket;
   Timer? _broadcastTimer;
   Timer? _cleanupTimer;
+  Timer? _receiveTimer;
 
   final Set<void Function(LanDiscoveredDevice)> _onDeviceDiscovered = {};
   final Set<void Function(LanDiscoveredDevice)> _onDeviceLeft = {};
@@ -187,6 +188,8 @@ class LanDiscoveryService {
     _cleanupTimer = null;
     _networkRefreshTimer?.cancel();
     _networkRefreshTimer = null;
+    _receiveTimer?.cancel();
+    _receiveTimer = null;
     _tcpSocket?.close();
     _tcpSocket = null;
     _socket?.close();
@@ -304,6 +307,9 @@ class LanDiscoveryService {
   }
 
   Future<void> _bindSocket() async {
+    // 重绑前先停掉旧接收轮询：否则每次重绑都会多留一个永久轮询同一 socket
+    _receiveTimer?.cancel();
+    _receiveTimer = null;
     _socket?.close();
 
     try {
@@ -320,19 +326,7 @@ class LanDiscoveryService {
 
       await _joinMulticastGroups();
       _refreshNetworkInfo();
-
-      Timer.periodic(const Duration(milliseconds: 100), (timer) {
-        if (_socket == null) {
-          timer.cancel();
-          return;
-        }
-        try {
-          final dg = _socket!.receive();
-          if (dg != null) {
-            _handleDatagram(dg);
-          }
-        } catch (_) {}
-      });
+      _startReceiveLoop();
     } catch (e) {
       HubLog.warning('LanDiscovery', 'UDP 绑定失败: $e，尝试随机端口');
       _socket = await RawDatagramSocket.bind(
@@ -344,7 +338,26 @@ class LanDiscoveryService {
       HubLog.info('LanDiscovery', 'UDP 绑定成功（随机端口），端口: ${_socket!.port}');
       await _joinMulticastGroups();
       _refreshNetworkInfo();
+      _startReceiveLoop();
     }
+  }
+
+  void _startReceiveLoop() {
+    _receiveTimer?.cancel();
+    _receiveTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      final socket = _socket;
+      if (socket == null) {
+        timer.cancel();
+        _receiveTimer = null;
+        return;
+      }
+      try {
+        final dg = socket.receive();
+        if (dg != null) {
+          _handleDatagram(dg);
+        }
+      } catch (_) {}
+    });
   }
 
   InternetAddress get _multicastGroupAddress =>

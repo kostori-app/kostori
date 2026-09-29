@@ -96,7 +96,7 @@ Future<File> exportAppData() async {
     await cacheFile.delete();
   }
   // 暂停后台历史写入，保证复制的 history.db 完整一致
-  HistoryWriteService.pause();
+  await HistoryWriteService.pause();
   // 额外导出字段级合并数据（逐条 JSON），供多端合并而非整库覆盖
   var historyMergeFile = FilePath.join(App.cachePath, 'history_merge.json');
   var pluginHistoryMergeFile = FilePath.join(
@@ -521,7 +521,7 @@ Future<File> exportPart(String key) async {
   if (dir.existsSync()) dir.deleteSync(recursive: true);
   dir.createSync(recursive: true);
   final zipPath = FilePath.join(dir.path, '$key.kostori');
-  HistoryWriteService.pause();
+  await HistoryWriteService.pause();
   try {
     await Isolate.run(() {
       final zip = ZipFile.open(zipPath);
@@ -605,7 +605,7 @@ Future<void> _applyImportedData(String cacheDirPath) async {
             .whereType<Map>()
             .map((m) => History.fromJson(Map<String, dynamic>.from(m)))
             .toList();
-        HistoryWriteService.pause();
+        await HistoryWriteService.pause();
         await HistoryManager().mergeHistoryList(histories);
         HistoryWriteService.resume();
         mergedHistory = true;
@@ -625,7 +625,7 @@ Future<void> _applyImportedData(String cacheDirPath) async {
             .whereType<Map>()
             .map((m) => PluginEventItem.fromJson(Map<String, dynamic>.from(m)))
             .toList();
-        HistoryWriteService.pause();
+        await HistoryWriteService.pause();
         await HistoryManager().mergePluginEvents(events);
         HistoryWriteService.resume();
       }
@@ -639,7 +639,7 @@ Future<void> _applyImportedData(String cacheDirPath) async {
     try {
       final list = jsonDecode(await textRulesMergeFile.readAsString());
       if (list is List) {
-        HistoryWriteService.pause();
+        await HistoryWriteService.pause();
         await HistoryManager().mergeTextRules(
           list
               .whereType<Map>()
@@ -660,7 +660,7 @@ Future<void> _applyImportedData(String cacheDirPath) async {
     try {
       final list = jsonDecode(await progressMergeFile.readAsString());
       if (list is List) {
-        HistoryWriteService.pause();
+        await HistoryWriteService.pause();
         await HistoryManager().mergeProgressList(
           list
               .whereType<Map>()
@@ -676,8 +676,8 @@ Future<void> _applyImportedData(String cacheDirPath) async {
   if (!mergedHistory && await historyFile.exists()) {
     // 旧版导出（无 history_merge.json）→ 回退整库覆盖（原子替换 + 备份）
     DebugLog.info('importAppData', '开始导入historyFile（整库覆盖）');
-    HistoryWriteService.pause();
-    HistoryWriteService.closeConnection();
+    await HistoryWriteService.pause();
+    await HistoryWriteService.closeConnection();
     await HistoryManager().reinit(() async {
       _atomicReplace(
         historyFile.path,

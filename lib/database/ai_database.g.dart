@@ -4459,10 +4459,6 @@ abstract class _$AiDatabase extends GeneratedDatabase {
   late final $AiSkillsTable aiSkills = $AiSkillsTable(this);
   late final $AiMcpServersTable aiMcpServers = $AiMcpServersTable(this);
   late final $AiAuxSettingsTable aiAuxSettings = $AiAuxSettingsTable(this);
-  late final Index tasksSessionIdx = Index(
-    'tasks_session_idx',
-    'CREATE INDEX tasks_session_idx ON ai_models ()',
-  );
   late final AiApiKeyDao aiApiKeyDao = AiApiKeyDao(this as AiDatabase);
   late final AiSessionDao aiSessionDao = AiSessionDao(this as AiDatabase);
   late final AiModelDao aiModelDao = AiModelDao(this as AiDatabase);
@@ -4490,7 +4486,6 @@ abstract class _$AiDatabase extends GeneratedDatabase {
     aiSkills,
     aiMcpServers,
     aiAuxSettings,
-    tasksSessionIdx,
   ];
 }
 

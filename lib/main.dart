@@ -5,15 +5,17 @@ import 'dart:ui';
 
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/components/boot_splash.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/app_theme.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -27,9 +29,89 @@ import 'package:kostori/pages/auth_page.dart';
 import 'package:kostori/pages/main_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
+
+/// 启动完成标记：init() 结束后置为 true，[BootGate] 据此把启动页换成正式界面
+final bootReady = ValueNotifier(false);
+
+/// 启动失败标记：init() 抛错时记录，[BootGate] 据此显示错误页而非永久启动页
+final bootError = ValueNotifier<Object?>(null);
+
+bool _booting = false;
+
+/// 安装全局错误组件构造器（只装一次，勿放在 build 内）。
+/// release 下不展示原始异常文本（可能含路径/URL/请求内容），只给通用提示。
+void _installErrorWidget() {
+  ErrorWidget.builder = (details) {
+    Log.error("Unhandled Exception", "${details.exception}\n${details.stack}");
+    return Material(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            kReleaseMode
+                ? t.failedToLoadPleaseTryAgain
+                : details.exception.toString(),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  };
+}
+
+/// 执行初始化；失败则置 [bootError]，避免卡死在启动页
+Future<void> _boot() async {
+  if (_booting) return;
+  _booting = true;
+  try {
+    await init();
+  } catch (e, s) {
+    Log.error('init', '$e\n$s');
+    bootError.value = e;
+    return;
+  } finally {
+    _booting = false;
+  }
+
+  bootError.value = null;
+  OpenAiProviderRegistry.refreshCustomProviders().catchError(
+    (e) => Log.error("refreshCustomProviders", e),
+  );
+
+  // 初始化完成，启动页交棒给正式界面
+  bootReady.value = true;
+  // 延迟触发个人页插件的“启动自动签到”（等 JS 引擎/首帧就绪）
+  Future<void>.delayed(const Duration(seconds: 3), () async {
+    try {
+      await MePagePluginManager().autoSigninAtStart();
+    } catch (_) {}
+  });
+  if (App.isDesktop) {
+    await windowManager.ensureInitialized();
+    windowManager.waitUntilReadyToShow().then((_) async {
+      await windowManager.setTitleBarStyle(
+        TitleBarStyle.hidden,
+        windowButtonVisibility: App.isMacOS,
+      );
+      if (App.isLinux) {
+        await windowManager.setBackgroundColor(Colors.transparent);
+      }
+      await windowManager.setMinimumSize(const Size(500, 600));
+      var placement = await WindowPlacement.loadFromFile();
+      if (App.isLinux) {
+        await windowManager.show();
+        await placement.applyToWindow();
+      } else {
+        await placement.applyToWindow();
+        await windowManager.show();
+      }
+
+      WindowPlacement.loop();
+    });
+  }
+}
 
 void main(List<String> args) {
   if (args.contains('--headless')) {
@@ -42,6 +124,7 @@ void main(List<String> args) {
       () async {
         WidgetsFlutterBinding.ensureInitialized();
         MediaKit.ensureInitialized();
+        _installErrorWidget();
 
         // 增大图片缓存容量：番剧列表/详情页图片量大，默认 1000 张/100MB
         // 在跳转详情页加载新图时容易把列表页缓存逐出，返回后图片重新解码导致卡顿
@@ -54,48 +137,55 @@ void main(List<String> args) {
         WebViewResolver.registerMainIsolateHandler();
         JsEngine.registerWorkerBridgeHandler();
 
-        await init();
+        // 提前挂载启动页：首帧之前系统只显示纯白的启动窗口，
+        // 而 init() 通常要 1~3 秒（数据库/脚本引擎/资源源/下载任务）
+        runApp(const BootGate());
 
-        OpenAiProviderRegistry.refreshCustomProviders().catchError(
-          (e) => Log.error("refreshCustomProviders", e),
-        );
-
-        runApp(ProviderScope(child: MyApp()));
-        // 延迟触发个人页插件的“启动自动签到”（等 JS 引擎/首帧就绪）
-        Future<void>.delayed(const Duration(seconds: 3), () async {
-          try {
-            await MePagePluginManager().autoSigninAtStart();
-          } catch (_) {}
-        });
-        if (App.isDesktop) {
-          await windowManager.ensureInitialized();
-          windowManager.waitUntilReadyToShow().then((_) async {
-            await windowManager.setTitleBarStyle(
-              TitleBarStyle.hidden,
-              windowButtonVisibility: App.isMacOS,
-            );
-            if (App.isLinux) {
-              await windowManager.setBackgroundColor(Colors.transparent);
-            }
-            await windowManager.setMinimumSize(const Size(500, 600));
-            var placement = await WindowPlacement.loadFromFile();
-            if (App.isLinux) {
-              await windowManager.show();
-              await placement.applyToWindow();
-            } else {
-              await placement.applyToWindow();
-              await windowManager.show();
-            }
-
-            WindowPlacement.loop();
-          });
-        }
+        await _boot();
       },
       (error, stack) {
         Log.error("Unhandled Exception", error, stack);
       },
     );
   });
+}
+
+/// 启动门闩：init() 期间显示 [BootSplash]，完成后淡入切换到正式界面。
+///
+/// 底色与正式界面一致（两者都用 [buildAppTheme]），所以切换时只是内容淡入，
+/// 不会出现白屏闪烁。
+class BootGate extends StatelessWidget {
+  const BootGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: ListenableBuilder(
+        listenable: Listenable.merge([bootReady, bootError]),
+        builder: (context, _) {
+          final Widget child;
+          if (bootError.value != null) {
+            child = BootError(
+              key: const ValueKey('boot-error'),
+              onRetry: _boot,
+            );
+          } else if (bootReady.value) {
+            child = const ProviderScope(key: ValueKey("app"), child: MyApp());
+          } else {
+            child = const BootSplash(key: ValueKey("splash"));
+          }
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Curves.easeOut,
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -183,56 +273,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Color translateColorSetting() {
-    final colorName = appdata.settings['color'];
-    return switch (colorName.toLowerCase()) {
-      'teal' => Colors.teal,
-      'deep purple' => Colors.deepPurple,
-      'orange' => Colors.orange,
-      'blue' => Colors.blue,
-      'pink' => Colors.pink,
-      'green' => Colors.green,
-      'red' => Colors.red,
-      'purple' => Colors.purple,
-      'yellow' => Colors.yellow,
-      'cyan' => Colors.cyan,
-      'm3 default' => const Color(0xff6750a4),
-      'deep orange' => Colors.deepOrange,
-      'indigo' => Colors.indigo,
-      'cloudy blue' => const Color(0xFFACC2D9),
-      'dark pastel green' => const Color(0xFF56AE57),
-      'dust' => const Color(0xFFB2996E),
-      'electric lime' => const Color(0xFFA8FF04),
-      'fresh green' => const Color(0xFF69D84F),
-      'light eggplant' => const Color(0xFF894585),
-      'nasty green' => const Color(0xFF70B23F),
-      'really light blue' => const Color(0xFFD4FFFF),
-      'tea' => const Color(0xFF65AB7C),
-      'warm purple' => const Color(0xFF952E8F),
-      'yellowish tan' => const Color(0xFFFCFC81),
-      'cement' => const Color(0xFFA5A391),
-      'dark grass green' => const Color(0xFF388004),
-      'dusty teal' => const Color(0xFF4C9085),
-      'grey teal' => const Color(0xFF5E9B8A),
-      'macaroni and cheese' => const Color(0xFFEFB435),
-      'pinkish tan' => const Color(0xFFD99B82),
-      'spruce' => const Color(0xFF0A5F38),
-      'strong blue' => const Color(0xFF0C06F7),
-      'toxic green' => const Color(0xFF61DE2A),
-      'windows blue' => const Color(0xFF3778BF),
-      'blue blue' => const Color(0xFF2242C7),
-      'blue with a hint of purple' => const Color(0xFF533CC6),
-      'booger' => const Color(0xFF9BB53C),
-      'bright sea green' => const Color(0xFF05FFA6),
-      'green teal' => const Color(0xFF17B890),
-      'brownish' => const Color(0xFF582E1B),
-      'off green' => const Color(0xFFBDD393),
-      'tangerine' => const Color(0xFFFF964F),
-      'ugly green' => const Color(0xFF84B701),
-      'custom' =>
-        Utils.hexToColor(appdata.implicitData['customColor']) ??
-            Color(0xFF6677ff),
-      _ => Colors.blue,
-    };
+    return resolveSeedColor(
+      appdata.settings['color'],
+      customColor: appdata.implicitData['customColor'],
+    );
   }
 
   ThemeData getTheme(
@@ -241,41 +285,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Color? tertiary,
     Brightness brightness,
   ) {
-    String? font;
-    List<String>? fallback;
-    if (App.isLinux || App.isWindows) {
-      font = 'Noto Sans CJK';
-      fallback = [
-        'Segoe UI',
-        'Noto Sans SC',
-        'Noto Sans TC',
-        'Noto Sans',
-        'Microsoft YaHei',
-        'PingFang SC',
-        'Arial',
-        'sans-serif',
-      ];
-    }
-    final isAmoled =
-        (appdata.settings.s.themeMode == 'dark' && appdata.settings.s.amoled);
-
-    final Color color = primary;
-    return ThemeData(
-      colorScheme: isAmoled
-          ? ColorScheme.fromSeed(
-              seedColor: color,
-              brightness: Brightness.dark,
-            ).copyWith(surface: Colors.black)
-          : SeedColorScheme.fromSeeds(
-              primaryKey: primary,
-              secondaryKey: secondary,
-              tertiaryKey: tertiary,
-              brightness: brightness,
-              tones: FlexTones.vividBackground(brightness),
-            ),
-      useMaterial3: true,
-      fontFamily: font,
-      fontFamilyFallback: fallback,
+    // AMOLED 只对深色主题生效：system 模式且系统为深色时也应生效
+    final amoled = (brightness == Brightness.dark && appdata.settings.s.amoled);
+    return buildAppTheme(
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      brightness: brightness,
+      amoled: amoled,
     );
   }
 
@@ -340,15 +357,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               Locale('zh', 'TW'),
             ],
             builder: (context, widget) {
-              ErrorWidget.builder = (details) {
-                Log.error(
-                  "Unhandled Exception",
-                  "${details.exception}\n${details.stack}",
-                );
-                return Material(
-                  child: Center(child: Text(details.exception.toString())),
-                );
-              };
               if (widget != null) {
                 widget = OverlayWidget(widget);
                 if (App.isDesktop) {

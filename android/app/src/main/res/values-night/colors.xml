@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色模式下的启动窗口底色，对应 Flutter 启动页深色 surface -->
+    <color name="launch_background">#0F1114</color>
+</resources>

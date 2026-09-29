@@ -220,6 +220,8 @@ void _checkOldConfigs() {
         .where((e) => e.searchPageData != null)
         .map((e) => e.key)
         .toList();
+    // settings 的 [] = 只改内存，这里补一次落盘，避免每次启动重算
+    unawaited(appdata.saveData());
   }
 
   if (appdata.implicitData['webdavAutoSync'] == null) {

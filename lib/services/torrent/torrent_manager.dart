@@ -191,6 +191,12 @@ class TorrentManager extends Notifier<TorrentState> {
 
   Directory? _torrentDir;
   int _persistTick = 0;
+  String _lastSyncSig = '';
+  static int _jobIdSeq = 0;
+
+  /// 毫秒时间戳 + 自增序号：同毫秒内连续添加也不会撞 id
+  static String _newJobId() =>
+      '${DateTime.now().millisecondsSinceEpoch}_${_jobIdSeq++}';
   Future<void> _writeChain = Future.value();
   Timer? _syncTimer;
 
@@ -258,13 +264,12 @@ class TorrentManager extends Notifier<TorrentState> {
   Future<void> fetchTrackers() async {
     final url = trackerUrl.trim();
     if (url.isEmpty) return;
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 15);
     try {
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 15);
       final req = await client.getUrl(Uri.parse(url));
       final res = await req.close();
       final body = await res.transform(const SystemEncoding().decoder).join();
-      client.close(force: true);
       final list =
           body
               .split(RegExp(r'\s+'))
@@ -274,7 +279,12 @@ class TorrentManager extends Notifier<TorrentState> {
               .toList()
             ..sort();
       if (list.isNotEmpty) setTrackers(list);
-    } catch (_) {}
+    } catch (_) {
+      // 失败静默：tracker 列表是可选增强，不影响本地下载
+    } finally {
+      // 任何路径都要释放 socket/连接池，否则每次失败都泄漏一个 HttpClient
+      client.close(force: true);
+    }
   }
 
   int get downloadLimitKb =>
@@ -446,7 +456,7 @@ class TorrentManager extends Notifier<TorrentState> {
         return j;
       }
     }
-    final id = '${DateTime.now().millisecondsSinceEpoch}';
+    final id = _newJobId();
     final effectiveMagnet = _augmentTrackers(magnet);
     final job = TorrentJob(
       id: id,
@@ -506,7 +516,7 @@ class TorrentManager extends Notifier<TorrentState> {
       if (_refetching.add(j.id)) unawaited(_refetchMetadata(j));
       return j;
     }
-    final id = '${DateTime.now().millisecondsSinceEpoch}';
+    final id = _newJobId();
     final job = TorrentJob(
       id: id,
       magnet: _magnetOfModel(model),
@@ -979,6 +989,9 @@ class TorrentManager extends Notifier<TorrentState> {
     final engine = _engines.remove(job.id);
     _models.remove(job.id);
     _started.remove(job.id);
+    _starting.remove(job.id);
+    _wantStart.remove(job.id);
+    _refetching.remove(job.id);
     if (engine != null) {
       try {
         await engine.stop();
@@ -1100,6 +1113,31 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   // ── 轮询同步 ──────────────────────────────────────────────────────────────
+  /// 生成可比较的状态摘要：无变化时跳过 emit，避免每秒无谓重建所有 watcher
+  String _syncSignature() {
+    final b = StringBuffer();
+    for (final job in _jobs) {
+      b
+        ..write(job.id)
+        ..write('|')
+        ..write(job.status.name)
+        ..write('|')
+        ..write(job.downloadRate)
+        ..write('|')
+        ..write(job.uploadRate)
+        ..write('|')
+        ..write(job.numPeers)
+        ..write('|')
+        ..write(job.numSeeds)
+        ..write('|')
+        ..write((job.progress * 1000).round())
+        ..write('|')
+        ..write(job.totalDone)
+        ..write(';');
+    }
+    return b.toString();
+  }
+
   void _sync() {
     for (final job in _jobs) {
       final engine = _engines[job.id];
@@ -1155,7 +1193,11 @@ class TorrentManager extends Notifier<TorrentState> {
         job.status = TorrentJobStatus.downloading;
       }
     }
-    _emit();
+    final sig = _syncSignature();
+    if (sig != _lastSyncSig) {
+      _lastSyncSig = sig;
+      _emit();
+    }
     if (++_persistTick >= 5) {
       _persistTick = 0;
       _persist();

@@ -835,12 +835,19 @@ abstract class _$AiTaskDatabase extends GeneratedDatabase {
   _$AiTaskDatabase(QueryExecutor e) : super(e);
   $AiTaskDatabaseManager get managers => $AiTaskDatabaseManager(this);
   late final $AiTasksTable aiTasks = $AiTasksTable(this);
+  late final Index tasksSessionIdx = Index(
+    'tasks_session_idx',
+    'CREATE INDEX tasks_session_idx ON ai_tasks (session_id)',
+  );
   late final AiTaskDao aiTaskDao = AiTaskDao(this as AiTaskDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [aiTasks];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    aiTasks,
+    tasksSessionIdx,
+  ];
 }
 
 typedef $$AiTasksTableCreateCompanionBuilder = AiTasksCompanion Function({

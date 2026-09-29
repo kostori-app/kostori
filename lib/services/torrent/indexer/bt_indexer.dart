@@ -272,9 +272,14 @@ class BtSources {
     _loaded = true;
   }
 
+  /// 生成安全的配置文件名：key 来自导入 JSON（外部输入），
+  /// 必须去掉路径分隔符/`..`，否则可写到 bt_source 之外
+  static String _safeFileName(String key) =>
+      key.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+
   static Future<void> _writeFile(BtSourceConfig c) async {
     if (!await dir.exists()) await dir.create(recursive: true);
-    await File(p.join(dir.path, '${c.key}.json'))
+    await File(p.join(dir.path, '${_safeFileName(c.key)}.json'))
         .writeAsString(const JsonEncoder.withIndent('  ').convert(c.toJson()));
   }
 

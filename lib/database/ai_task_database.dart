@@ -10,6 +10,7 @@ import 'package:kostori/foundation/log.dart';
 
 part 'ai_task_database.g.dart';
 
+@TableIndex(name: 'tasks_session_idx', columns: {#sessionId})
 class AiTasks extends Table {
   IntColumn get id => integer().autoIncrement()();
 

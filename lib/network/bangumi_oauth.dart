@@ -9,6 +9,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/secret_vault.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/cookie_jar.dart';
@@ -28,11 +29,15 @@ const bangumiClientId = 'bgm68556a791c57ccf88';
 /// 内置 Bangumi 应用客户端密钥（写死，Bangumi OAuth 规范必填）
 const bangumiClientSecret = 'f49ee603dee65e096a3bec75bd037079';
 
-String? get bangumiAccessToken =>
-    appdata.implicitData[_kAccessToken] as String?;
+String? get bangumiAccessToken {
+  final raw = appdata.implicitData[_kAccessToken] as String?;
+  return raw == null ? null : SecretVault.decrypt(raw);
+}
 
-String? get bangumiRefreshTokenValue =>
-    appdata.implicitData[_kRefreshToken] as String?;
+String? get bangumiRefreshTokenValue {
+  final raw = appdata.implicitData[_kRefreshToken] as String?;
+  return raw == null ? null : SecretVault.decrypt(raw);
+}
 
 bool get bangumiLoggedIn {
   final token = bangumiAccessToken;
@@ -93,28 +98,39 @@ Future<bool> bangumiRefreshToken() async {
       ),
     );
     final json = res.data;
-    Log.info('BangumiOAuth', '刷新token status=${res.statusCode} body=$json');
     if (json is Map) {
       final access = json['access_token']?.toString() ?? '';
       if (access.isNotEmpty) {
-        appdata.implicitData[_kAccessToken] = access;
+        appdata.implicitData[_kAccessToken] = SecretVault.encrypt(access);
         final newRefresh = json['refresh_token']?.toString() ?? '';
         if (newRefresh.isNotEmpty) {
-          appdata.implicitData[_kRefreshToken] = newRefresh;
+          appdata.implicitData[_kRefreshToken] = SecretVault.encrypt(
+            newRefresh,
+          );
         }
         appdata.writeImplicitData();
         await refreshBangumiTokenStatus();
         return true;
       }
+      // 仅在明确返回 OAuth 错误（refresh_token 失效/被撤销）时登出；
+      // 其它响应（限流/网关错误页等非预期 body）保留登录态，避免误登出
+      final err = json['error']?.toString() ?? '';
+      if (err.isNotEmpty) {
+        Log.warning('BangumiOAuth', '刷新token被拒绝 error=$err');
+        bangumiOAuthLogout();
+        try {
+          App.rootContext.showMessage(message: t.loginExpiredReLogin);
+          // 无可用 context 时（如后台刷新）提示发不出，静默即可
+          // ignore: empty_catches
+        } catch (_) {}
+        return false;
+      }
+      Log.warning('BangumiOAuth', '刷新token响应缺少 access_token，保留登录态');
+      return false;
     }
-    // 刷新失败（refresh_token 已过期/被撤销等）：清除令牌并提示重新登录，
-    // 避免继续用失效 token 请求且无任何反馈
-    bangumiOAuthLogout();
-    try {
-      App.rootContext.showMessage(message: t.loginExpiredReLogin);
-      // 无可用 context 时（如后台刷新）提示发不出，静默即可
-      // ignore: empty_catches
-    } catch (_) {}
+    // 非 JSON 响应（错误页/网关错误/限流）：不清除令牌
+    Log.warning('BangumiOAuth', '刷新token异常响应 status=${res.statusCode}');
+    return false;
   } catch (e) {
     Log.error('BangumiOAuth', '刷新token失败: $e');
     // 网络异常时不清除令牌（可能是临时网络问题），避免误登出
@@ -138,10 +154,7 @@ Future<Map<String, dynamic>?> bangumiTokenStatus() async {
       ),
     );
     final json = res.data;
-    Log.info(
-      'BangumiOAuth',
-      'token_status status=${res.statusCode} body=$json',
-    );
+    Log.info('BangumiOAuth', 'token_status status=${res.statusCode}');
     if (json is Map) return json.cast<String, dynamic>();
   } catch (e) {
     Log.error('BangumiOAuth', 'token_status失败: $e');
@@ -200,8 +213,9 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
     super.initState();
     _emailCtrl.text =
         appdata.implicitData['bangumi_login_email'] as String? ?? '';
-    _passwordCtrl.text =
-        appdata.implicitData['bangumi_login_password'] as String? ?? '';
+    _passwordCtrl.text = SecretVault.decrypt(
+      appdata.implicitData['bangumi_login_password'] as String? ?? '',
+    );
     _initFlow();
   }
 
@@ -312,7 +326,9 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
       appdata.writeImplicitData();
     }
     if (password.isNotEmpty) {
-      appdata.implicitData['bangumi_login_password'] = password;
+      appdata.implicitData['bangumi_login_password'] = SecretVault.encrypt(
+        password,
+      );
       appdata.writeImplicitData();
     }
 
@@ -478,8 +494,8 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
         }
         Log.info(
           'BangumiLogin',
-          '授权提交 status=${authRes.statusCode} location=$location code=$code'
-              ' body=${authRes.data is String ? (authRes.data as String).substring(0, ((authRes.data as String).length > 300 ? 300 : (authRes.data as String).length)) : authRes.data}',
+          '授权提交 status=${authRes.statusCode} '
+              'code=${code.isEmpty ? '(empty)' : '(ok)'}',
         );
       } catch (e) {
         Log.error('BangumiLogin', '授权提交异常: $e');
@@ -515,16 +531,14 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
         ),
       );
       final json = tokenRes.data;
-      Log.info(
-        'BangumiLogin',
-        'token status=${tokenRes.statusCode} body=$json',
-      );
+      Log.info('BangumiLogin', 'token status=${tokenRes.statusCode}');
       if (json is Map) {
         final access = json['access_token']?.toString() ?? '';
         if (access.isNotEmpty) {
-          appdata.implicitData[_kAccessToken] = access;
-          appdata.implicitData[_kRefreshToken] =
-              json['refresh_token']?.toString() ?? '';
+          appdata.implicitData[_kAccessToken] = SecretVault.encrypt(access);
+          appdata.implicitData[_kRefreshToken] = SecretVault.encrypt(
+            json['refresh_token']?.toString() ?? '',
+          );
           appdata.writeImplicitData();
           if (mounted) {
             context.showMessage(message: t.bangumiLoginSuccess);
