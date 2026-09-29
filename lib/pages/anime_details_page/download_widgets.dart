@@ -1540,7 +1540,7 @@ Future<void> _openSeriesDownloadPicker(
         sourceKey: source.key,
       ),
   ];
-  await _writeDownloadHistory(data, coverFallback, allEpisode: items.length);
+  await _writeDownloadHistory(data, coverFallback, allEpisode: 1);
   if (isCancelled?.call() ?? false) return;
   await _openAnimeDownloadPicker(
     context,
