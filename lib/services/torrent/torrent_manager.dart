@@ -485,6 +485,77 @@ class TorrentManager extends Notifier<TorrentState> {
     return job;
   }
 
+  /// 从 `.torrent` 文件字节导入任务：元数据已随文件提供，无需网络抓取。
+  /// 解析失败返回 null（已提示）。
+  Future<TorrentJob?> addTorrentFile(
+    Uint8List bytes, {
+    TorrentStopPolicy stopAfter = TorrentStopPolicy.none,
+  }) async {
+    await init();
+    final TorrentModel model;
+    try {
+      model = TorrentParser.parseBytes(bytes);
+    } catch (e) {
+      App.rootContext.showMessage(message: '${t.downloadFailed}: $e');
+      return null;
+    }
+    final infoHash = model.infoHash;
+    for (final j in _jobs) {
+      if (j.magnet.isEmpty || _infoHashOf(j.magnet) != infoHash) continue;
+      if (_models.containsKey(j.id)) return j;
+      if (_refetching.add(j.id)) unawaited(_refetchMetadata(j));
+      return j;
+    }
+    final id = '${DateTime.now().millisecondsSinceEpoch}';
+    final job = TorrentJob(
+      id: id,
+      magnet: _magnetOfModel(model),
+      torrentPath: p.join(_torrentDir!.path, '$id.torrent'),
+      savePath: downloadDir,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+      status: TorrentJobStatus.metadata,
+      stopAfter: stopAfter,
+      selectionInitialized: false,
+    );
+    _jobs.insert(0, job);
+    _persist();
+    _emit();
+
+    try {
+      final infoBytes = model.infoDictBytes;
+      if (infoBytes == null) {
+        throw const FormatException('missing info dictionary');
+      }
+      await File(job.torrentPath).writeAsBytes(infoBytes, flush: true);
+      await _prepareEngine(
+        job,
+        start: stopAfter != TorrentStopPolicy.afterMetadata,
+      );
+      if (job.status == TorrentJobStatus.failed) {
+        App.rootContext.showMessage(
+          message: '${t.downloadFailed}: ${job.error ?? ''}',
+        );
+      }
+    } catch (e) {
+      job.status = TorrentJobStatus.failed;
+      job.error = e.toString();
+      App.rootContext.showMessage(message: '${t.downloadFailed}: $e');
+    }
+    _persist();
+    _emit();
+    return job;
+  }
+
+  /// 由已解析的种子模型生成 magnet（infohash + 自带 tracker），
+  /// 用于去重，并把原种子的 tracker 传给引擎。
+  static String _magnetOfModel(TorrentModel model) {
+    final sb = StringBuffer('magnet:?xt=urn:btih:${model.infoHash}');
+    for (final a in model.announces) {
+      sb.write('&tr=${Uri.encodeComponent(a.toString())}');
+    }
+    return sb.toString();
+  }
+
   /// 取出磁力的 infohash（用于去重复用已有任务）。
   static String? _infoHashOf(String magnet) {
     final m = RegExp(

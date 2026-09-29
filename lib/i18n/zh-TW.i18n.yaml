@@ -1,5 +1,7 @@
 aToAddBToRemoveCToMove: ${a} 新增 • ${b} 移除 • ${c} 移動
 aToAddBToRemove: ${a} 新增 • ${b} 移除
+aToAdd: ${a} 項新增
+aToRemove: ${a} 項移除
 aToMove: ${a} 項移動
 cUpdates: ${c} 個更新
 aNewVersionIsAvailableDoYouWantToUpdateNow: 發現新版本，是否立即更新？
@@ -3083,6 +3085,8 @@ torrentMagnetHint: 貼上磁力連結
 torrentPlay: 播放
 torrentParse: 解析
 torrentAdd: 新增種子
+torrentImportFile: 匯入種子檔
+addToTorrentDownload: 加入種子下載
 torrentSettings: 種子設定
 torrentModeStream: 邊下邊播
 torrentModeDownload: 下載保存

@@ -69,12 +69,12 @@ void main() {
     expect(find.text('在看'), findsOneWidget);
     expect(find.text('看完'), findsOneWidget);
     expect(find.text(t.newFolder), findsOneWidget);
-    // 未勾选时不显示「新增 x / 移除 y」统计
-    expect(find.text(t.aToAddBToRemove(a: '1', b: '0')), findsNothing);
+    // 未勾选时不显示统计
+    expect(find.text(t.aToAdd(a: '1')), findsNothing);
 
     await tester.tap(find.text('在看'));
     await tester.pumpAndSettle();
-    expect(find.text(t.aToAddBToRemove(a: '1', b: '0')), findsOneWidget);
+    expect(find.text(t.aToAdd(a: '1')), findsOneWidget);
     // 未点确认前不写入收藏
     expect(manager.find('id-1', AnimeType('test_source'.hashCode)), isEmpty);
   });

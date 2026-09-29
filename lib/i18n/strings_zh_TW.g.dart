@@ -41,6 +41,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	// Translations
 	@override String aToAddBToRemoveCToMove({required Object a, required Object b, required Object c}) => '${a} 新增 • ${b} 移除 • ${c} 移動';
 	@override String aToAddBToRemove({required Object a, required Object b}) => '${a} 新增 • ${b} 移除';
+	@override String aToAdd({required Object a}) => '${a} 項新增';
+	@override String aToRemove({required Object a}) => '${a} 項移除';
 	@override String aToMove({required Object a}) => '${a} 項移動';
 	@override String cUpdates({required Object c}) => '${c} 個更新';
 	@override String get aNewVersionIsAvailableDoYouWantToUpdateNow => '發現新版本，是否立即更新？';
@@ -3042,6 +3044,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentPlay => '播放';
 	@override String get torrentParse => '解析';
 	@override String get torrentAdd => '新增種子';
+	@override String get torrentImportFile => '匯入種子檔';
+	@override String get addToTorrentDownload => '加入種子下載';
 	@override String get torrentSettings => '種子設定';
 	@override String get torrentModeStream => '邊下邊播';
 	@override String get torrentModeDownload => '下載保存';
@@ -3177,6 +3181,8 @@ extension on TranslationsZhTw {
 		return switch (path) {
 			'aToAddBToRemoveCToMove' => ({required Object a, required Object b, required Object c}) => '${a} 新增 • ${b} 移除 • ${c} 移動',
 			'aToAddBToRemove' => ({required Object a, required Object b}) => '${a} 新增 • ${b} 移除',
+			'aToAdd' => ({required Object a}) => '${a} 項新增',
+			'aToRemove' => ({required Object a}) => '${a} 項移除',
 			'aToMove' => ({required Object a}) => '${a} 項移動',
 			'cUpdates' => ({required Object c}) => '${c} 個更新',
 			'aNewVersionIsAvailableDoYouWantToUpdateNow' => '發現新版本，是否立即更新？',
@@ -3685,10 +3691,10 @@ extension on TranslationsZhTw {
 			'wish' => '想看',
 			'onHold' => '擱置',
 			'dropped' => '拋棄',
-			'todayRecommendation' => '今日推薦',
-			'tTotalCount' => ({required Object t}) => '${t} 條總計',
 			_ => null,
 		} ?? switch (path) {
+			'todayRecommendation' => '今日推薦',
+			'tTotalCount' => ({required Object t}) => '${t} 條總計',
 			'introduction' => '內容簡介',
 			'latestComments' => '最新評論',
 			'linkedItems' => '關聯條目',
@@ -4199,10 +4205,10 @@ extension on TranslationsZhTw {
 			'rotate' => '旋轉',
 			'stereoIn' => '立體聲輸入',
 			'averageBpp' => '平均 Bpp',
-			'alpha' => '透明度',
-			'trackId' => '軌道 ID',
 			_ => null,
 		} ?? switch (path) {
+			'alpha' => '透明度',
+			'trackId' => '軌道 ID',
 			'trackTitle' => '軌道標題',
 			'trackLanguage' => '軌道語言',
 			'trackImage' => '軌道圖像',
@@ -4713,10 +4719,10 @@ extension on TranslationsZhTw {
 			'enterBio' => '輸入個人簡介',
 			'autoReconnect' => '自動重連',
 			'allowSelfSignedCert' => '允許自簽憑證',
-			'allowSelfSignedCertHint' => '透過 WSS 連線時信任自簽憑證',
-			'directMessage' => '私聊訊息',
 			_ => null,
 		} ?? switch (path) {
+			'allowSelfSignedCertHint' => '透過 WSS 連線時信任自簽憑證',
+			'directMessage' => '私聊訊息',
 			'noAnnouncementsYet' => '暫無公告',
 			'enterAnnouncementText' => '輸入公告內容...',
 			'welcomeMessage' => '歡迎訊息',
@@ -5227,10 +5233,10 @@ extension on TranslationsZhTw {
 			'noStickersYet' => '還沒有貼紙',
 			'removeSticker' => '移除貼紙',
 			'noSearchSources' => '沒有搜尋源',
-			'pleaseAddSomeSources' => '請新增一些資料源',
-			'manage' => '管理',
 			_ => null,
 		} ?? switch (path) {
+			'pleaseAddSomeSources' => '請新增一些資料源',
+			'manage' => '管理',
 			'importPersona' => '導入角色配置',
 			'newPersona' => '新建角色配置',
 			'notConfigured' => '未配置',
@@ -5741,10 +5747,10 @@ extension on TranslationsZhTw {
 			'profileIconUpload' => '上傳圖片',
 			'askUser' => '詢問使用者',
 			'askUserInputHint' => '輸入回答（可留空）',
-			'profilePersona' => '人設',
-			'profileTone' => '語氣',
 			_ => null,
 		} ?? switch (path) {
+			'profilePersona' => '人設',
+			'profileTone' => '語氣',
 			'profilePromptFragments' => '提示片段（每行一條）',
 			'profileKnowledge' => '知識（每行一條）',
 			'profileParams' => '生成參數',
@@ -6241,6 +6247,8 @@ extension on TranslationsZhTw {
 			'torrentPlay' => '播放',
 			'torrentParse' => '解析',
 			'torrentAdd' => '新增種子',
+			'torrentImportFile' => '匯入種子檔',
+			'addToTorrentDownload' => '加入種子下載',
 			'torrentSettings' => '種子設定',
 			'torrentModeStream' => '邊下邊播',
 			'torrentModeDownload' => '下載保存',
@@ -6253,12 +6261,12 @@ extension on TranslationsZhTw {
 			'torrentDownloadLimit' => '下載限速',
 			'torrentUploadLimit' => '上傳限速',
 			'torrentDht' => 'DHT 網路',
+			_ => null,
+		} ?? switch (path) {
 			'torrentLsd' => '區域網路探索(LSD)',
 			'torrentUpnp' => 'UPnP/NAT-PMP',
 			'torrentEncrypt' => '強制加密連線',
 			'torrentStopSeed' => '完成後停止做種',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSelectFiles' => '選擇檔案',
 			'torrentApplySelection' => '套用選擇',
 			'torrentDelete' => '刪除',

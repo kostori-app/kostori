@@ -70,4 +70,36 @@ void main() {
       expect(firstUrlInSelection(''), isNull);
     });
   });
+
+  group('firstMagnetInSelection', () {
+    test('纯磁力链原样返回', () {
+      const magnet =
+          'magnet:?xt=urn:btih:ABCDEF0123456789&dn=name&tr=udp%3A%2F%2Fa';
+      expect(firstMagnetInSelection(magnet), magnet);
+    });
+
+    test('去掉结尾的标点', () {
+      expect(
+        firstMagnetInSelection('magnet:?xt=urn:btih:abc。'),
+        'magnet:?xt=urn:btih:abc',
+      );
+      expect(
+        firstMagnetInSelection('（magnet:?xt=urn:btih:abc）'),
+        'magnet:?xt=urn:btih:abc',
+      );
+    });
+
+    test('从整段文本里取第一个磁力链', () {
+      expect(
+        firstMagnetInSelection('下载这个 magnet:?xt=urn:btih:abc 谢谢'),
+        'magnet:?xt=urn:btih:abc',
+      );
+    });
+
+    test('没有磁力链时返回 null', () {
+      expect(firstMagnetInSelection('hello world'), isNull);
+      expect(firstMagnetInSelection('https://a.com/p/1'), isNull);
+      expect(firstMagnetInSelection(''), isNull);
+    });
+  });
 }

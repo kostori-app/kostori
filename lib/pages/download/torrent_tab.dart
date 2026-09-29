@@ -10,9 +10,13 @@ import 'package:kostori/services/torrent/torrent_job.dart';
 import 'package:kostori/services/torrent/torrent_manager.dart';
 import 'package:kostori/utils/io.dart';
 
-/// 添加种子弹窗（供下载页 AppBar 调用）
-Future<void> showAddTorrentSheet(BuildContext context) async {
-  final magnetCtrl = TextEditingController();
+/// 添加种子弹窗（供下载页 AppBar 与选中文本菜单调用）。
+/// [initialMagnet] 非空时预填磁力输入框（如从选中文本里的磁力链进入）。
+Future<void> showAddTorrentSheet(
+  BuildContext context, {
+  String? initialMagnet,
+}) async {
+  final magnetCtrl = TextEditingController(text: initialMagnet ?? '');
   var stopAfter = TorrentStopPolicy.none;
   await showModalBottomSheet<void>(
     context: context,
@@ -81,21 +85,56 @@ Future<void> showAddTorrentSheet(BuildContext context) async {
                 ],
               ),
               const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () async {
-                  final magnet = magnetCtrl.text.trim();
-                  if (magnet.isEmpty) {
-                    App.rootContext.showMessage(message: t.torrentNeedMagnet);
-                    return;
-                  }
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  App.rootContext.showMessage(message: t.torrentFetchingMeta);
-                  await ProviderScope.containerOf(context)
-                      .read(torrentManagerProvider.notifier)
-                      .add(magnet, stopAfter: stopAfter);
-                },
-                icon: const Icon(Icons.check),
-                label: Text(t.torrentParse),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await selectFile(ext: ['torrent']);
+                        if (picked == null) return;
+                        final bytes = await picked.readAsBytes();
+                        if (bytes.isEmpty) {
+                          App.rootContext.showMessage(
+                            message: t.downloadFailed,
+                          );
+                          return;
+                        }
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        App.rootContext.showMessage(
+                          message: t.torrentFetchingMeta,
+                        );
+                        await ProviderScope.containerOf(context)
+                            .read(torrentManagerProvider.notifier)
+                            .addTorrentFile(bytes, stopAfter: stopAfter);
+                      },
+                      icon: const Icon(Icons.file_open_outlined),
+                      label: Text(t.torrentImportFile),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        final magnet = magnetCtrl.text.trim();
+                        if (magnet.isEmpty) {
+                          App.rootContext.showMessage(
+                            message: t.torrentNeedMagnet,
+                          );
+                          return;
+                        }
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        App.rootContext.showMessage(
+                          message: t.torrentFetchingMeta,
+                        );
+                        await ProviderScope.containerOf(context)
+                            .read(torrentManagerProvider.notifier)
+                            .add(magnet, stopAfter: stopAfter);
+                      },
+                      icon: const Icon(Icons.check),
+                      label: Text(t.torrentParse),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

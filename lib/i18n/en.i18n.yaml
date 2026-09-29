@@ -1,5 +1,7 @@
 aToAddBToRemoveCToMove: ${a} to add • ${b} to remove • ${c} to move
 aToAddBToRemove: ${a} to add • ${b} to remove
+aToAdd: ${a} to add
+aToRemove: ${a} to remove
 aToMove: ${a} to move
 cUpdates: ${c} updates
 aNewVersionIsAvailableDoYouWantToUpdateNow: A new version is available. Do you want to update now?
@@ -3082,6 +3084,8 @@ torrentMagnetHint: Paste magnet link
 torrentPlay: Play
 torrentParse: Parse
 torrentAdd: Add Torrent
+torrentImportFile: Import torrent file
+addToTorrentDownload: Add to Torrent
 torrentSettings: Torrent Settings
 torrentModeStream: Stream
 torrentModeDownload: Download

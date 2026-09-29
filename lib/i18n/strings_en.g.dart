@@ -47,6 +47,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '${a} to add • ${b} to remove'
 	String aToAddBToRemove({required Object a, required Object b}) => '${a} to add • ${b} to remove';
 
+	/// en: '${a} to add'
+	String aToAdd({required Object a}) => '${a} to add';
+
+	/// en: '${a} to remove'
+	String aToRemove({required Object a}) => '${a} to remove';
+
 	/// en: '${a} to move'
 	String aToMove({required Object a}) => '${a} to move';
 
@@ -9051,6 +9057,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Add Torrent'
 	String get torrentAdd => 'Add Torrent';
 
+	/// en: 'Import torrent file'
+	String get torrentImportFile => 'Import torrent file';
+
+	/// en: 'Add to Torrent'
+	String get addToTorrentDownload => 'Add to Torrent';
+
 	/// en: 'Torrent Settings'
 	String get torrentSettings => 'Torrent Settings';
 
@@ -9395,6 +9407,8 @@ extension on Translations {
 		return switch (path) {
 			'aToAddBToRemoveCToMove' => ({required Object a, required Object b, required Object c}) => '${a} to add • ${b} to remove • ${c} to move',
 			'aToAddBToRemove' => ({required Object a, required Object b}) => '${a} to add • ${b} to remove',
+			'aToAdd' => ({required Object a}) => '${a} to add',
+			'aToRemove' => ({required Object a}) => '${a} to remove',
 			'aToMove' => ({required Object a}) => '${a} to move',
 			'cUpdates' => ({required Object c}) => '${c} updates',
 			'aNewVersionIsAvailableDoYouWantToUpdateNow' => 'A new version is available. Do you want to update now?',
@@ -9903,10 +9917,10 @@ extension on Translations {
 			'pluginName' => 'Plugin file name',
 			'alreadyExists' => 'already exists',
 			'mainContent' => 'Main Content',
-			'switchh' => 'Switch',
-			'failedToLoadPleaseTryAgain' => 'Failed to load, please try again.',
 			_ => null,
 		} ?? switch (path) {
+			'switchh' => 'Switch',
+			'failedToLoadPleaseTryAgain' => 'Failed to load, please try again.',
 			'failedToOpen' => 'Failed to open',
 			'doing' => 'doing',
 			'collect' => 'collect',
@@ -10417,10 +10431,10 @@ extension on Translations {
 			'rotate' => 'Rotate',
 			'stereoIn' => 'Stereo In',
 			'averageBpp' => 'Average Bpp',
-			'alpha' => 'Alpha',
-			'trackId' => 'Track ID',
 			_ => null,
 		} ?? switch (path) {
+			'alpha' => 'Alpha',
+			'trackId' => 'Track ID',
 			'trackTitle' => 'Track Title',
 			'trackLanguage' => 'Track Language',
 			'trackImage' => 'Track Image',
@@ -10931,10 +10945,10 @@ extension on Translations {
 			'enterBio' => 'Enter bio',
 			'autoReconnect' => 'Auto Reconnect',
 			'allowSelfSignedCert' => 'Allow Self-signed Certificate',
-			'allowSelfSignedCertHint' => 'Trust self-signed certificates when connecting over WSS',
-			'directMessage' => 'Direct Message',
 			_ => null,
 		} ?? switch (path) {
+			'allowSelfSignedCertHint' => 'Trust self-signed certificates when connecting over WSS',
+			'directMessage' => 'Direct Message',
 			'noAnnouncementsYet' => 'No announcements yet',
 			'enterAnnouncementText' => 'Enter announcement text...',
 			'welcomeMessage' => 'Welcome Message',
@@ -11445,10 +11459,10 @@ extension on Translations {
 			'noStickersYet' => 'No stickers yet',
 			'removeSticker' => 'Remove sticker',
 			'noSearchSources' => 'No search sources',
-			'importPersona' => 'Import Persona',
-			'newPersona' => 'New Persona',
 			_ => null,
 		} ?? switch (path) {
+			'importPersona' => 'Import Persona',
+			'newPersona' => 'New Persona',
 			'notConfigured' => 'Not configured',
 			'enabled' => 'Enabled',
 			'required' => 'Required',
@@ -11959,10 +11973,10 @@ extension on Translations {
 			'profileIcon' => 'Icon',
 			'profileIconUpload' => 'Upload image',
 			'askUser' => 'Ask the user',
-			'askUserInputHint' => 'Type an answer (optional)',
-			'profilePersona' => 'Persona',
 			_ => null,
 		} ?? switch (path) {
+			'askUserInputHint' => 'Type an answer (optional)',
+			'profilePersona' => 'Persona',
 			'profileTone' => 'Tone',
 			'profilePromptFragments' => 'Prompt Fragments (one per line)',
 			'profileKnowledge' => 'Knowledge (one per line)',
@@ -12460,6 +12474,8 @@ extension on Translations {
 			'torrentPlay' => 'Play',
 			'torrentParse' => 'Parse',
 			'torrentAdd' => 'Add Torrent',
+			'torrentImportFile' => 'Import torrent file',
+			'addToTorrentDownload' => 'Add to Torrent',
 			'torrentSettings' => 'Torrent Settings',
 			'torrentModeStream' => 'Stream',
 			'torrentModeDownload' => 'Download',
@@ -12471,12 +12487,12 @@ extension on Translations {
 			'torrentSaveDir' => 'Save directory',
 			'torrentDownloadLimit' => 'Download limit',
 			'torrentUploadLimit' => 'Upload limit',
+			_ => null,
+		} ?? switch (path) {
 			'torrentDht' => 'DHT',
 			'torrentLsd' => 'Local peer discovery (LSD)',
 			'torrentUpnp' => 'UPnP/NAT-PMP',
 			'torrentEncrypt' => 'Force encryption',
-			_ => null,
-		} ?? switch (path) {
 			'torrentStopSeed' => 'Stop seeding when finished',
 			'torrentSelectFiles' => 'Select files',
 			'torrentApplySelection' => 'Apply selection',

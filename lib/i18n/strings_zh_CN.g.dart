@@ -41,6 +41,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	// Translations
 	@override String aToAddBToRemoveCToMove({required Object a, required Object b, required Object c}) => '${a} 项添加 • ${b} 项删除 • ${c} 项移动';
 	@override String aToAddBToRemove({required Object a, required Object b}) => '${a} 项添加 • ${b} 项删除';
+	@override String aToAdd({required Object a}) => '${a} 项添加';
+	@override String aToRemove({required Object a}) => '${a} 项删除';
 	@override String aToMove({required Object a}) => '${a} 项移动';
 	@override String cUpdates({required Object c}) => '${c} 项更新';
 	@override String get aNewVersionIsAvailableDoYouWantToUpdateNow => '发现新版本，是否立即更新？';
@@ -3043,6 +3045,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentPlay => '播放';
 	@override String get torrentParse => '解析';
 	@override String get torrentAdd => '添加种子';
+	@override String get torrentImportFile => '导入种子文件';
+	@override String get addToTorrentDownload => '添加到种子下载';
 	@override String get torrentSettings => '种子设置';
 	@override String get torrentModeStream => '边下边播';
 	@override String get torrentModeDownload => '下载保存';
@@ -3178,6 +3182,8 @@ extension on TranslationsZhCn {
 		return switch (path) {
 			'aToAddBToRemoveCToMove' => ({required Object a, required Object b, required Object c}) => '${a} 项添加 • ${b} 项删除 • ${c} 项移动',
 			'aToAddBToRemove' => ({required Object a, required Object b}) => '${a} 项添加 • ${b} 项删除',
+			'aToAdd' => ({required Object a}) => '${a} 项添加',
+			'aToRemove' => ({required Object a}) => '${a} 项删除',
 			'aToMove' => ({required Object a}) => '${a} 项移动',
 			'cUpdates' => ({required Object c}) => '${c} 项更新',
 			'aNewVersionIsAvailableDoYouWantToUpdateNow' => '发现新版本，是否立即更新？',
@@ -3686,10 +3692,10 @@ extension on TranslationsZhCn {
 			'collect' => '看过',
 			'wish' => '想看',
 			'onHold' => '搁置',
-			'dropped' => '抛弃',
-			'todayRecommendation' => '今日推荐',
 			_ => null,
 		} ?? switch (path) {
+			'dropped' => '抛弃',
+			'todayRecommendation' => '今日推荐',
 			'tTotalCount' => ({required Object t}) => '共 ${t} 项',
 			'introduction' => '简介',
 			'latestComments' => '最新评论',
@@ -4200,10 +4206,10 @@ extension on TranslationsZhCn {
 			'stereoIn' => '立体声输入',
 			'averageBpp' => '平均 Bpp',
 			'alpha' => '透明度',
-			'trackId' => '轨道 ID',
-			'trackTitle' => '轨道标题',
 			_ => null,
 		} ?? switch (path) {
+			'trackId' => '轨道 ID',
+			'trackTitle' => '轨道标题',
 			'trackLanguage' => '轨道语言',
 			'trackImage' => '轨道图像',
 			'trackAlbumArt' => '轨道专辑封面',
@@ -4714,10 +4720,10 @@ extension on TranslationsZhCn {
 			'autoReconnect' => '自动重连',
 			'allowSelfSignedCert' => '允许自签名证书',
 			'allowSelfSignedCertHint' => '通过 WSS 连接时信任自签名证书',
-			'directMessage' => '私聊',
-			'noAnnouncementsYet' => '暂无公告',
 			_ => null,
 		} ?? switch (path) {
+			'directMessage' => '私聊',
+			'noAnnouncementsYet' => '暂无公告',
 			'enterAnnouncementText' => '输入公告内容...',
 			'welcomeMessage' => '欢迎消息',
 			'noWelcomeMessage' => '暂无欢迎消息',
@@ -5228,10 +5234,10 @@ extension on TranslationsZhCn {
 			'removeSticker' => '移除贴纸',
 			'noSearchSources' => '没有搜索源',
 			'pleaseAddSomeSources' => '请添加一些数据源',
-			'manage' => '管理',
-			'importPersona' => '导入角色配置',
 			_ => null,
 		} ?? switch (path) {
+			'manage' => '管理',
+			'importPersona' => '导入角色配置',
 			'newPersona' => '新建角色配置',
 			'notConfigured' => '未配置',
 			'enabled' => '已启用',
@@ -5742,10 +5748,10 @@ extension on TranslationsZhCn {
 			'profileIcon' => '图标',
 			'profileIconUpload' => '上传图片',
 			'askUser' => '询问用户',
-			'askUserInputHint' => '输入回答（可留空）',
-			'profilePersona' => '人设',
 			_ => null,
 		} ?? switch (path) {
+			'askUserInputHint' => '输入回答（可留空）',
+			'profilePersona' => '人设',
 			'profileTone' => '语气',
 			'profilePromptFragments' => '提示片段（每行一条）',
 			'profileKnowledge' => '知识（每行一条）',
@@ -6243,6 +6249,8 @@ extension on TranslationsZhCn {
 			'torrentPlay' => '播放',
 			'torrentParse' => '解析',
 			'torrentAdd' => '添加种子',
+			'torrentImportFile' => '导入种子文件',
+			'addToTorrentDownload' => '添加到种子下载',
 			'torrentSettings' => '种子设置',
 			'torrentModeStream' => '边下边播',
 			'torrentModeDownload' => '下载保存',
@@ -6254,12 +6262,12 @@ extension on TranslationsZhCn {
 			'torrentSaveDir' => '保存目录',
 			'torrentDownloadLimit' => '下载限速',
 			'torrentUploadLimit' => '上传限速',
+			_ => null,
+		} ?? switch (path) {
 			'torrentDht' => 'DHT 网络',
 			'torrentLsd' => '局域网发现(LSD)',
 			'torrentUpnp' => 'UPnP/NAT-PMP',
 			'torrentEncrypt' => '强制加密连接',
-			_ => null,
-		} ?? switch (path) {
 			'torrentStopSeed' => '完成后停止做种',
 			'torrentSelectFiles' => '选择文件',
 			'torrentApplySelection' => '应用选择',

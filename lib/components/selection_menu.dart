@@ -180,6 +180,7 @@ Widget appSelectionContextMenu(
             );
           },
         ),
+      ...appSelectionMagnetItems(context, selectedText()),
       ...appSelectionLinkItems(selectedText()),
     ],
   );
@@ -312,9 +313,42 @@ Widget appEditableSelectionContextMenu(
             );
           },
         ),
+      ...appSelectionMagnetItems(context, text),
       ...appSelectionLinkItems(text),
     ],
   );
+}
+
+/// 选中文本里包含磁力链时追加「添加到种子下载」。
+List<ContextMenuButtonItem> appSelectionMagnetItems(
+  BuildContext context,
+  String selectedText,
+) {
+  final magnet = firstMagnetInSelection(selectedText);
+  if (magnet == null) return const [];
+  return [
+    ContextMenuButtonItem(
+      label: t.addToTorrentDownload,
+      onPressed: () {
+        ContextMenuController.removeAny();
+        showAddTorrentSheet(_navContextOf(context), initialMagnet: magnet);
+      },
+    ),
+  ];
+}
+
+/// 取文本里第一个 magnet 链接（去掉结尾常见的标点，
+/// 避免把中文句号/括号带进链接）。
+String? firstMagnetInSelection(String text) {
+  final match = RegExp(
+    r'magnet:\?[^\s]+',
+    caseSensitive: false,
+  ).firstMatch(text.trim());
+  if (match == null) return null;
+  final magnet = match
+      .group(0)!
+      .replaceAll(RegExp(r'''[)\]}>）】」』》〉，。；、,.;:!?'"”’]+$'''), '');
+  return magnet.isEmpty ? null : magnet;
 }
 
 /// 翻译结果弹层（选中文本菜单的「翻译」与 AI 消息翻译共用）：

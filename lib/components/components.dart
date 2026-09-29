@@ -46,6 +46,7 @@ import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/foundation/memo_store.dart';
 import 'package:kostori/pages/categories_page.dart';
 import 'package:kostori/pages/download/download_page.dart';
+import 'package:kostori/pages/download/torrent_tab.dart';
 import 'package:kostori/pages/memo/memo_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/foundation/video_probe.dart';
