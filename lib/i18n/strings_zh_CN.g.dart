@@ -585,6 +585,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String noUpdateAvailableForThisArchitectureA({required Object a}) => '当前架构 (${a}) 暂无可用更新';
 	@override String get checkUpdateFailed => '检查更新失败...';
 	@override String get downloadFailed => '下载失败';
+	@override String get downloadInfoFailed => '获取番剧信息失败';
+	@override String get downloadInfoEmpty => '源返回空数据';
+	@override String get downloadSourceUnsupported => '该源不支持下载';
 	@override String get downloadLinkExpired => '链接已失效（410），请重新解析后下载';
 	@override String get failedToCheckTheHashValuePleaseTryAgain => '哈希值检查失败，请重试';
 	@override String get english => '英语';
@@ -3747,6 +3750,9 @@ extension on TranslationsZhCn {
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '当前架构 (${a}) 暂无可用更新',
 			'checkUpdateFailed' => '检查更新失败...',
 			'downloadFailed' => '下载失败',
+			'downloadInfoFailed' => '获取番剧信息失败',
+			'downloadInfoEmpty' => '源返回空数据',
+			'downloadSourceUnsupported' => '该源不支持下载',
 			'downloadLinkExpired' => '链接已失效（410），请重新解析后下载',
 			'failedToCheckTheHashValuePleaseTryAgain' => '哈希值检查失败，请重试',
 			'english' => '英语',
@@ -4222,11 +4228,11 @@ extension on TranslationsZhCn {
 			'unknownError' => '未知错误',
 			'disableLengthLimitation' => '禁用长度限制',
 			'disableLengthLimitationDesc' => '单条日志放宽到 2 万字符；内存总量与文件大小仍有限制（防止日志占用大量内存）',
+			_ => null,
+		} ?? switch (path) {
 			'updateLog' => '更新日志',
 			'liked' => '喜欢',
 			'rating' => '评分',
-			_ => null,
-		} ?? switch (path) {
 			'pixelFormat' => '像素格式',
 			'hwPixelFormat' => '硬件像素格式',
 			'resolution' => '分辨率',
@@ -4736,11 +4742,11 @@ extension on TranslationsZhCn {
 			'imageTooLargeToSend' => '图片太大，无法发送',
 			'pleaseConfigureServerUploadOrClientOss' => '请配置服务器上传或客户端 OSS。',
 			'stopTheServerToChangeUploadMode' => '停止服务器以修改上传模式',
+			_ => null,
+		} ?? switch (path) {
 			'enableClientOss' => '启用客户端 OSS',
 			'uploadImagesDirectlyFromClientToOss' => '从客户端直接上传图片到 OSS',
 			'ossNotConfigured' => 'OSS 未配置',
-			_ => null,
-		} ?? switch (path) {
 			'dropToSendImage' => '拖放以发送图片',
 			'longPressImageToSave' => '长按图片以保存',
 			'pleaseEnterAValidUrl' => '请输入以 http:// 或 https:// 开头的有效 URL',
@@ -5250,11 +5256,11 @@ extension on TranslationsZhCn {
 			'cannotBeEmpty' => '不能为空',
 			'invalidCookies' => '无效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
+			_ => null,
+		} ?? switch (path) {
 			'sources' => '数据源',
 			'translationFailedPleaseTryAgainLater' => '翻译失败，请稍后重试',
 			'translationErrorRegionNotSupported' => 'AI 翻译源不支持当前网络地区，请更换翻译源或使用其他地区的网络',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorModelNotSupported' => '当前配置的模型不被该服务商支持，请到 AI 设置更换模型',
 			'translationErrorApiKeyInvalid' => 'API Key 无效或无权限，请检查 AI 设置中的密钥',
 			'translationErrorRateLimited' => '请求过于频繁或额度不足，请稍后再试',
@@ -5764,11 +5770,11 @@ extension on TranslationsZhCn {
 			'builtin' => '内置',
 			'skillMarkdownHint' => '技能支持 Markdown 格式',
 			'sendMessage' => '发送消息',
+			_ => null,
+		} ?? switch (path) {
 			'contextAutoCompressed' => '上下文过长，已自动压缩',
 			'chatGreeting' => '今天有什么可以帮你？',
 			'chatStart1' => '总结这段文本',
-			_ => null,
-		} ?? switch (path) {
 			'chatStart2' => '写一首诗',
 			'chatStart3' => '解释一个概念',
 			'chatStart4' => '翻译这段内容',
@@ -6278,11 +6284,11 @@ extension on TranslationsZhCn {
 			'torrentSourceTitleField' => '标题字段',
 			'torrentSourceMagnetField' => '磁力字段',
 			'torrentSourceHashField' => '哈希字段',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceSizeField' => '体积字段',
 			'torrentSourceGroupField' => '分组字段',
 			'torrentSourceDateField' => '时间字段',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourcesEmpty' => '还没有 BT 资源站：点右下角「导入」，或把 .json 配置文件放进下面目录',
 			'torrentSourceExample' => '填入示例',
 			'torrentMagnetHint' => '粘贴磁力链接',

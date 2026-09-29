@@ -326,8 +326,8 @@ LoadingDialogController showLoadingDialog(
                           const SizedBox(height: 6),
                           TextButton(
                             onPressed: () {
-                              controller.closed = true;
                               onCancel?.call();
+                              controller.close();
                             },
                             style: TextButton.styleFrom(
                               visualDensity: VisualDensity.compact,

@@ -584,6 +584,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String noUpdateAvailableForThisArchitectureA({required Object a}) => '該架構 (${a}) 暫無可用更新';
 	@override String get checkUpdateFailed => '檢查更新失敗...';
 	@override String get downloadFailed => '下載失敗';
+	@override String get downloadInfoFailed => '取得番劇資訊失敗';
+	@override String get downloadInfoEmpty => '來源回傳空資料';
+	@override String get downloadSourceUnsupported => '此來源不支援下載';
 	@override String get downloadLinkExpired => '連結已失效（410），請重新解析後下載';
 	@override String get failedToCheckTheHashValuePleaseTryAgain => '檢查雜湊值失敗，請重試';
 	@override String get english => '英語';
@@ -3745,6 +3748,9 @@ extension on TranslationsZhTw {
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '該架構 (${a}) 暫無可用更新',
 			'checkUpdateFailed' => '檢查更新失敗...',
 			'downloadFailed' => '下載失敗',
+			'downloadInfoFailed' => '取得番劇資訊失敗',
+			'downloadInfoEmpty' => '來源回傳空資料',
+			'downloadSourceUnsupported' => '此來源不支援下載',
 			'downloadLinkExpired' => '連結已失效（410），請重新解析後下載',
 			'failedToCheckTheHashValuePleaseTryAgain' => '檢查雜湊值失敗，請重試',
 			'english' => '英語',
@@ -4221,11 +4227,11 @@ extension on TranslationsZhTw {
 			'unknownError' => '未知錯誤',
 			'loadPageAndLoadNextCantBeNull' => 'loadPage and loadNext can\'t be null at the same time',
 			'disableLengthLimitation' => '停用長度限制',
+			_ => null,
+		} ?? switch (path) {
 			'disableLengthLimitationDesc' => '單條日誌放寬到 2 萬字元；記憶體總量與檔案大小仍有限制（避免日誌佔用大量記憶體）',
 			'updateLog' => '更新日誌',
 			'liked' => '喜歡',
-			_ => null,
-		} ?? switch (path) {
 			'rating' => '評分',
 			'pixelFormat' => '像素格式',
 			'hwPixelFormat' => '硬體像素格式',
@@ -4735,11 +4741,11 @@ extension on TranslationsZhTw {
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
 			'imageTooLargeToSend' => '圖片太大，無法發送',
 			'pleaseConfigureServerUploadOrClientOss' => '請設定伺服器上傳或用戶端 OSS。',
+			_ => null,
+		} ?? switch (path) {
 			'stopTheServerToChangeUploadMode' => '停止伺服器以更改上傳模式',
 			'enableClientOss' => '啟用用戶端 OSS',
 			'uploadImagesDirectlyFromClientToOss' => '直接從用戶端上傳圖片到 OSS',
-			_ => null,
-		} ?? switch (path) {
 			'ossNotConfigured' => 'OSS 未設定',
 			'dropToSendImage' => '拖放以發送圖片',
 			'longPressImageToSave' => '長按圖片儲存',
@@ -5249,11 +5255,11 @@ extension on TranslationsZhTw {
 			'loginWithPasswordIsDisabled' => '密碼登入已停用',
 			'cannotBeEmpty' => '不能為空',
 			'invalidCookies' => '無效的 Cookies',
+			_ => null,
+		} ?? switch (path) {
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '資料源',
 			'translationFailedPleaseTryAgainLater' => '翻譯失敗，請稍後重試',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorRegionNotSupported' => 'AI 翻譯來源不支援目前所在地區，請更換翻譯來源或改用其他地區的網路',
 			'translationErrorModelNotSupported' => '目前設定的模型不受該服務商支援，請到 AI 設定更換模型',
 			'translationErrorApiKeyInvalid' => 'API Key 無效或無權限，請檢查 AI 設定中的金鑰',
@@ -5763,11 +5769,11 @@ extension on TranslationsZhTw {
 			'skillMarkdownHint' => '技能支援 Markdown 格式',
 			'sendMessage' => '發送訊息',
 			'contextAutoCompressed' => '上下文過長，已自動壓縮',
+			_ => null,
+		} ?? switch (path) {
 			'chatGreeting' => '今天有什麼可以幫你？',
 			'chatStart1' => '總結這段文字',
 			'chatStart2' => '寫一首詩',
-			_ => null,
-		} ?? switch (path) {
 			'chatStart3' => '解釋一個概念',
 			'chatStart4' => '翻譯這段內容',
 			'importSkills' => '匯入技能',
@@ -6277,11 +6283,11 @@ extension on TranslationsZhTw {
 			'torrentSourceMagnetField' => '磁力欄位',
 			'torrentSourceHashField' => '雜湊欄位',
 			'torrentSourceSizeField' => '體積欄位',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceGroupField' => '分組欄位',
 			'torrentSourceDateField' => '時間欄位',
 			'torrentSourcesEmpty' => '還沒有 BT 資源站：點右下角「匯入」，或把 .json 設定檔放進下面目錄',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceExample' => '填入示例',
 			'torrentMagnetHint' => '貼上磁力連結',
 			'torrentPlay' => '播放',

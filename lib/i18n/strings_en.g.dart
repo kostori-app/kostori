@@ -1700,6 +1700,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Download failed'
 	String get downloadFailed => 'Download failed';
 
+	/// en: 'Failed to load anime info'
+	String get downloadInfoFailed => 'Failed to load anime info';
+
+	/// en: 'The source returned no data'
+	String get downloadInfoEmpty => 'The source returned no data';
+
+	/// en: 'This source does not support downloads'
+	String get downloadSourceUnsupported => 'This source does not support downloads';
+
 	/// en: 'Link expired (410), please re-resolve and download'
 	String get downloadLinkExpired => 'Link expired (410), please re-resolve and download';
 
@@ -10017,6 +10026,9 @@ extension on Translations {
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => 'No update available for this architecture (${a})',
 			'checkUpdateFailed' => 'Check update failed...',
 			'downloadFailed' => 'Download failed',
+			'downloadInfoFailed' => 'Failed to load anime info',
+			'downloadInfoEmpty' => 'The source returned no data',
+			'downloadSourceUnsupported' => 'This source does not support downloads',
 			'downloadLinkExpired' => 'Link expired (410), please re-resolve and download',
 			'failedToCheckTheHashValuePleaseTryAgain' => 'Failed to check the hash value. Please try again',
 			'english' => 'English',
@@ -10485,11 +10497,11 @@ extension on Translations {
 			'unknownError' => 'Unknown error',
 			'loadPageAndLoadNextCantBeNull' => 'loadPage and loadNext can\'t be null at the same time',
 			'disableLengthLimitation' => 'Disable Length Limitation',
+			_ => null,
+		} ?? switch (path) {
 			'disableLengthLimitationDesc' => 'Raises a single log up to 20k characters; the in-memory budget and file size stay capped to keep memory in check.',
 			'updateLog' => 'Update log',
 			'liked' => 'Liked',
-			_ => null,
-		} ?? switch (path) {
 			'rating' => 'Rating',
 			'pixelFormat' => 'Pixel Format',
 			'hwPixelFormat' => 'HW Pixel Format',
@@ -10999,11 +11011,11 @@ extension on Translations {
 			'notConfiguredWillUseServerOrBase64' => 'Not configured · will use server or base64',
 			'imageTooLargeToSend' => 'Image too large to send',
 			'pleaseConfigureServerUploadOrClientOss' => 'Please configure server upload or client OSS.',
+			_ => null,
+		} ?? switch (path) {
 			'stopTheServerToChangeUploadMode' => 'Stop the server to change upload mode',
 			'enableClientOss' => 'Enable Client OSS',
 			'uploadImagesDirectlyFromClientToOss' => 'Upload images directly from client to OSS',
-			_ => null,
-		} ?? switch (path) {
 			'ossNotConfigured' => 'OSS not configured',
 			'dropToSendImage' => 'Drop to send image',
 			'longPressImageToSave' => 'Long press image to save',
@@ -11513,11 +11525,11 @@ extension on Translations {
 			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
 			'cannotBeEmpty' => 'Cannot be empty',
 			'invalidCookies' => 'Invalid cookies',
+			_ => null,
+		} ?? switch (path) {
 			'webviewIsNotAvailable' => 'Webview is not available',
 			'sources' => 'Sources',
 			'translationFailedPleaseTryAgainLater' => 'Translation failed, please try again later',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorRegionNotSupported' => 'The AI translation provider does not support your current region. Please switch provider or use a different network',
 			'translationErrorModelNotSupported' => 'The configured model is not supported by this provider. Please change it in AI settings',
 			'translationErrorApiKeyInvalid' => 'The API key is invalid or lacks permission. Please check it in AI settings',
@@ -12027,11 +12039,11 @@ extension on Translations {
 			'builtin' => 'Built-in',
 			'skillMarkdownHint' => 'Skills support Markdown',
 			'sendMessage' => 'Send message',
+			_ => null,
+		} ?? switch (path) {
 			'contextAutoCompressed' => 'Context too long, auto-compressed',
 			'chatGreeting' => 'How can I help you today?',
 			'chatStart1' => 'Summarize this text',
-			_ => null,
-		} ?? switch (path) {
 			'chatStart2' => 'Write a poem',
 			'chatStart3' => 'Explain a concept',
 			'chatStart4' => 'Translate this',
@@ -12541,11 +12553,11 @@ extension on Translations {
 			'torrentSourceTitleField' => 'Title field',
 			'torrentSourceMagnetField' => 'Magnet field',
 			'torrentSourceHashField' => 'Hash field',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceSizeField' => 'Size field',
 			'torrentSourceGroupField' => 'Group field',
 			'torrentSourceDateField' => 'Date field',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourcesEmpty' => 'No BT sources yet. Tap "Import" at the bottom-right, or drop .json files into the directory below',
 			'torrentSourceExample' => 'Fill example',
 			'torrentMagnetHint' => 'Paste magnet link',

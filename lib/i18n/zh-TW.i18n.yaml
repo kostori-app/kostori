@@ -543,6 +543,9 @@ inconsistentVersions: 版本不一致
 noUpdateAvailableForThisArchitectureA: 該架構 (${a}) 暫無可用更新
 checkUpdateFailed: 檢查更新失敗...
 downloadFailed: 下載失敗
+downloadInfoFailed: 取得番劇資訊失敗
+downloadInfoEmpty: 來源回傳空資料
+downloadSourceUnsupported: 此來源不支援下載
 downloadLinkExpired: 連結已失效（410），請重新解析後下載
 failedToCheckTheHashValuePleaseTryAgain: 檢查雜湊值失敗，請重試
 english: 英語

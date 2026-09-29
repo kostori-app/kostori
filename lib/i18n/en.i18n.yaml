@@ -555,6 +555,9 @@ inconsistentVersions: Inconsistent versions
 noUpdateAvailableForThisArchitectureA: No update available for this architecture (${a})
 checkUpdateFailed: Check update failed...
 downloadFailed: Download failed
+downloadInfoFailed: Failed to load anime info
+downloadInfoEmpty: The source returned no data
+downloadSourceUnsupported: This source does not support downloads
 downloadLinkExpired: Link expired (410), please re-resolve and download
 failedToCheckTheHashValuePleaseTryAgain: Failed to check the hash value. Please try again
 english: English

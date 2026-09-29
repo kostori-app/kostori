@@ -1375,23 +1375,33 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
   );
   bool gone() => cancelled || loading.closed;
   try {
+    final loadInfo = source.loadAnimeInfo;
+    if (loadInfo == null) {
+      context.showMessage(
+        message: t.downloadSourceUnsupported,
+        level: LogLevel.warning,
+      );
+      return;
+    }
     AnimeDetails? data;
-    Object? infoError;
+    String? infoError;
     // 加载 Massively 展示当前步骤
     loading.setMessage('${anime.title} · ${t.downloadStepLoadingInfo}');
     try {
-      data = (await source.loadAnimeInfo?.call(anime.id))?.dataOrNull;
+      final res = await loadInfo(anime.id);
+      data = res.dataOrNull;
+      infoError = res.errorMessage;
     } catch (e) {
-      infoError = e;
+      infoError = e.toString().split('\n').first;
     }
     if (gone()) return;
     if (data == null) {
       // 错误也要有报告（原因写进提示，而不是只有“下载失败”）
-      final detail = infoError?.toString().split('\n').first ?? '';
+      final detail = infoError?.trim() ?? '';
       context.showMessage(
         message: detail.isEmpty
-            ? t.downloadFailed
-            : '${t.downloadFailed}: $detail',
+            ? '${t.downloadInfoFailed}: ${t.downloadInfoEmpty}'
+            : '${t.downloadInfoFailed}: $detail',
         level: LogLevel.error,
       );
       return;
