@@ -482,13 +482,93 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
   /// 层级展示用扁平列表：顶层分组 + 其直接子组（保持登记顺序）
   late List<String> _groups;
 
+  final _searchCtrl = TextEditingController();
+  String _keyword = '';
+
   @override
   void initState() {
     super.initState();
     _groups = _flatten();
   }
 
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   List<String> _flatten() => DownloadManager.hierarchicalGroups();
+
+  /// 已展开的父组（默认全部折叠，避免子组多时翻很久才到下一个父组）
+  final Set<String> _expanded = {};
+
+  /// 可见分组：搜索时按关键词过滤（忽略折叠，显示全部命中）；否则折叠父组只留顶层
+  List<String> _visibleGroups() {
+    final k = _keyword.trim().toLowerCase();
+    final searching = k.isNotEmpty;
+    final out = <String>[];
+    for (final g in _groups) {
+      if (DownloadManager.isSubGroup(g) && !searching) {
+        final parent = g.substring(
+          0,
+          g.lastIndexOf(DownloadManager.groupSeparator),
+        );
+        if (!_expanded.contains(parent)) continue;
+      }
+      if (searching) {
+        final leaf = DownloadManager.leafOf(g).toLowerCase();
+        if (!g.toLowerCase().contains(k) && !leaf.contains(k)) continue;
+      }
+      out.add(g);
+    }
+    return out;
+  }
+
+  /// 搜索关键词无同名顶层分组时可一键新建
+  bool get _canCreateFromSearch {
+    final name = DownloadManager.sanitizeGroupName(_keyword.trim());
+    if (name.isEmpty) return false;
+    final lower = name.toLowerCase();
+    return !DownloadManager.groups().any(
+      (g) => !DownloadManager.isSubGroup(g) && g.toLowerCase() == lower,
+    );
+  }
+
+  Future<void> _createFromSearch() async {
+    final leaf = DownloadManager.sanitizeGroupName(_keyword.trim());
+    if (leaf.isEmpty) return;
+    if (!DownloadManager.groups().contains(leaf)) {
+      await DownloadManager.createGroup(leaf);
+    }
+    _searchCtrl.clear();
+    setState(() => _keyword = '');
+    _refresh();
+  }
+
+  /// 拖动排序（仅顶层可拖）：按可见顶层顺序重建完整层级顺序
+  void _onReorder(int oldIndex, int newIndex) {
+    final visible = _visibleGroups();
+    if (oldIndex < 0 || oldIndex >= visible.length) return;
+    final moved = visible[oldIndex];
+    if (DownloadManager.isSubGroup(moved)) return;
+    final roots = visible.where((g) => !DownloadManager.isSubGroup(g)).toList();
+    final from = roots.indexOf(moved);
+    if (from < 0) return;
+    final adjusted = newIndex > oldIndex ? newIndex - 1 : newIndex;
+    var target = 0;
+    for (var k = 0; k < adjusted && k < visible.length; k++) {
+      if (!DownloadManager.isSubGroup(visible[k])) target++;
+    }
+    roots.removeAt(from);
+    roots.insert(target.clamp(0, roots.length), moved);
+    final full = <String>[];
+    for (final r in roots) {
+      full.add(r);
+      full.addAll(DownloadManager.subGroupsOf(r));
+    }
+    DownloadManager.setGroupOrder(full);
+    _refresh();
+  }
 
   void _refresh() {
     setState(() => _groups = _flatten());
@@ -531,6 +611,7 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
       return;
     }
     await DownloadManager.createGroup(full);
+    if (parent.isNotEmpty) _expanded.add(parent); // 展开父组以便看到新建的子组
     _refresh();
   }
 
@@ -665,32 +746,79 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
           ),
         ),
       ),
-      builder: (context, sc) => _groups.isEmpty
-          ? Center(
-              child: Text(
-                t.noData,
-                style: TextStyle(color: cs.onSurfaceVariant),
+      builder: (context, sc) {
+        final visible = _visibleGroups();
+        final canCreate = _canCreateFromSearch;
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: TextField(
+                controller: _searchCtrl,
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
+                onChanged: (v) => setState(() => _keyword = v),
+                decoration: InputDecoration(
+                  hintText: t.search,
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _keyword.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _keyword = '');
+                          },
+                        ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               ),
-            )
-          : ReorderableListView.builder(
-              scrollController: sc,
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-              buildDefaultDragHandles: false,
-              itemCount: _groups.length,
-              onReorderItem: (oldIndex, newIndex) {
-                final list = List<String>.from(_groups);
-                final item = list.removeAt(oldIndex);
-                list.insert(newIndex.clamp(0, list.length), item);
-                DownloadManager.setGroupOrder(list);
-                _refresh();
-              },
-              itemBuilder: (context, i) => _groupTile(context, cs, i),
             ),
+            // 搜索无同名顶层分组：一键新建
+            if (canCreate)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                child: _GroupChoiceTile(
+                  label: '${t.newFolder}「${_keyword.trim()}」',
+                  selected: false,
+                  icon: Icons.create_new_folder_outlined,
+                  onTap: _createFromSearch,
+                ),
+              ),
+            Expanded(
+              child: visible.isEmpty
+                  ? Center(
+                      child: Text(
+                        t.noData,
+                        style: TextStyle(color: cs.onSurfaceVariant),
+                      ),
+                    )
+                  : ReorderableListView.builder(
+                      scrollController: sc,
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                      buildDefaultDragHandles: false,
+                      itemCount: visible.length,
+                      onReorderItem: _onReorder,
+                      itemBuilder: (context, i) =>
+                          _groupTile(context, cs, visible, i),
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _groupTile(BuildContext context, ColorScheme cs, int i) {
-    final name = _groups[i];
+  Widget _groupTile(
+    BuildContext context,
+    ColorScheme cs,
+    List<String> groups,
+    int i,
+  ) {
+    final name = groups[i];
     final isSub = DownloadManager.isSubGroup(name);
     final count = widget.items.where((e) => e.group == name).length;
     // 卡片样式：点击卡片 = 分配条目，右侧菜单为其它操作
@@ -714,6 +842,23 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (!isSub && DownloadManager.hasSubGroups(name))
+            IconButton(
+              tooltip: _expanded.contains(name)
+                  ? t.downloadGroupCollapse
+                  : t.downloadGroupExpand,
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                _expanded.contains(name)
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                size: 20,
+                color: cs.onSurfaceVariant,
+              ),
+              onPressed: () => setState(() {
+                if (!_expanded.remove(name)) _expanded.add(name);
+              }),
+            ),
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, size: 20, color: cs.onSurfaceVariant),
             onSelected: (v) {
