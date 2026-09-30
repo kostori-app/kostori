@@ -73,11 +73,12 @@ Future<void> init() async {
   // 崩溃兜底：恢复上次同步中断遗留的 .bak 数据库（需在任何数据库打开之前）
   recoverStaleBackups();
   await SingleInstanceCookieJar.createInstance();
+  // i18n 依赖 appdata 从磁盘读出的语言设置，须等其加载完成，否则拿到默认值
+  await App.initComponents().wait();
+  await I18nUtils.init().wait();
   var futures = [
     Rhttp.init(),
-    App.initComponents(),
     SAFTaskWorker().init().wait(),
-    I18nUtils.init().wait(),
     JsEngine().init().wait(),
     AnimeSourceManager().init().wait(),
     MePagePluginManager().init().wait(),

@@ -161,7 +161,12 @@ class _AppSettingsState extends State<AppSettings> {
                   },
                   onChanged: () async {
                     var lang = appdata.settings['language'];
-                    await LocaleSettings.setLocaleRaw(lang);
+                    // setLocaleRaw("system") 会退化成 en，需走 useDeviceLocale
+                    if (lang == "system") {
+                      await LocaleSettings.useDeviceLocale();
+                    } else {
+                      await LocaleSettings.setLocaleRaw(lang);
+                    }
                     App.forceRebuild();
                   },
                 ),
