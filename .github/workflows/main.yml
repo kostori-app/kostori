@@ -92,8 +92,7 @@ jobs:
             Kostori-windows-*.msix
 
   #linux
-  # ubuntu-24.04-arm 是 GitHub 公开仓库免费提供的 arm64 runner，
-  # 私有仓库不可用（届时改用 vars.LINUX_ARM64_RUNNER 自建 runner）。
+  # ubuntu-24.04-arm 仅公开仓库免费，私有库需自建 runner（vars.LINUX_ARM64_RUNNER）
   Build_Linux:
     strategy:
       fail-fast: false
@@ -155,10 +154,8 @@ jobs:
           NAME="Kostori_linux_${TAG}_${{ matrix.arch }}"
           BUNDLE="build/linux/${{ matrix.flutter_arch }}/release/bundle"
 
-          # tarball：直接解压即用
           tar -czf "${NAME}.tar.gz" -C "$BUNDLE" .
 
-          # deb：装到 /opt/kostori，postinst 建 /usr/bin 软链与桌面项
           rm -rf "pkg_${NAME}"
           mkdir -p "pkg_${NAME}/opt/kostori"
           mkdir -p "pkg_${NAME}/usr/share/applications"
@@ -176,12 +173,11 @@ jobs:
           Section: x11
           Priority: optional
           Architecture: ${{ matrix.arch }}
-          Maintainer: axlmly <https://github.com/kostori-app/kostori>
+          Homepage: https://github.com/kostori-app/kostori
           Installed-Size: $(du -sk "pkg_${NAME}/opt" | cut -f1)
           Description: An anime streaming app.
            Supports browsing, watching and downloading anime, with a built-in
            headless service for remote control and LAN playback.
-          Homepage: https://github.com/kostori-app/kostori
           Depends: libgtk-3-0, libwebkit2gtk-4.1-0, libmpv2, libasound2t64, libsecret-1-0
           EOF
 
