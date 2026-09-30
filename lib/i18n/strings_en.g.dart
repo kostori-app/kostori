@@ -4225,9 +4225,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Open in browser'
 	String get webAdminUrl => 'Open in browser';
 
-	/// en: 'Restart Hub to apply'
-	String get restartHubToApply => 'Restart Hub to apply';
-
 	/// en: 'Watching: ${a}'
 	String watchingAnime({required Object a}) => 'Watching: ${a}';
 
@@ -10924,7 +10921,6 @@ extension on Translations {
 			'webAdminOnPort' => 'Port',
 			'webAdminPort' => 'Web Admin Port',
 			'webAdminUrl' => 'Open in browser',
-			'restartHubToApply' => 'Restart Hub to apply',
 			'watchingAnime' => ({required Object a}) => 'Watching: ${a}',
 			'openChatDialog' => 'Open chat dialog',
 			'hubDetails' => 'Hub Details',
@@ -11023,9 +11019,9 @@ extension on Translations {
 			'publicBaseUrl' => 'Public Base URL',
 			'publicBaseUrlHint' => 'External base address for uploaded images (public IPv4/IPv6 or domain); leave empty to use connection address',
 			'publicIpDetected' => 'Public IP detected',
+			'publicIpDetectFailed' => 'Failed to detect public IP',
 			_ => null,
 		} ?? switch (path) {
-			'publicIpDetectFailed' => 'Failed to detect public IP',
 			'notConfiguredWillUseServerOrBase64' => 'Not configured · will use server or base64',
 			'imageTooLargeToSend' => 'Image too large to send',
 			'pleaseConfigureServerUploadOrClientOss' => 'Please configure server upload or client OSS.',
@@ -11537,9 +11533,9 @@ extension on Translations {
 			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
 			'noConfigurationsFound' => 'No configurations found',
+			'noData' => 'No data',
 			_ => null,
 		} ?? switch (path) {
-			'noData' => 'No data',
 			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
 			'cannotBeEmpty' => 'Cannot be empty',
 			'invalidCookies' => 'Invalid cookies',
@@ -12051,9 +12047,9 @@ extension on Translations {
 			'headers' => 'Headers (JSON)',
 			'noSkillsYet' => 'No skills yet',
 			'skillName' => 'Skill Name',
+			'skillKey' => 'Skill Key',
 			_ => null,
 		} ?? switch (path) {
-			'skillKey' => 'Skill Key',
 			'builtin' => 'Built-in',
 			'skillMarkdownHint' => 'Skills support Markdown',
 			'sendMessage' => 'Send message',
@@ -12565,9 +12561,9 @@ extension on Translations {
 			'torrentSourceHashRegex' => 'Hash regex',
 			'torrentSourceMagnetTemplate' => 'Magnet template ({hash})',
 			'torrentSourceDateRegex' => 'Date regex',
+			'torrentSourceJsonPath' => 'JSON path',
 			_ => null,
 		} ?? switch (path) {
-			'torrentSourceJsonPath' => 'JSON path',
 			'torrentSourceTitleField' => 'Title field',
 			'torrentSourceMagnetField' => 'Magnet field',
 			'torrentSourceHashField' => 'Hash field',

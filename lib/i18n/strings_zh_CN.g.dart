@@ -1433,7 +1433,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get webAdminOnPort => '端口';
 	@override String get webAdminPort => 'Web 管理端口';
 	@override String get webAdminUrl => '在浏览器打开';
-	@override String get restartHubToApply => '重启 Hub 后生效';
 	@override String watchingAnime({required Object a}) => '正在看：${a}';
 	@override String get openChatDialog => '打开聊天窗口';
 	@override String get hubDetails => 'Hub 详情';
@@ -4646,7 +4645,6 @@ extension on TranslationsZhCn {
 			'webAdminOnPort' => '端口',
 			'webAdminPort' => 'Web 管理端口',
 			'webAdminUrl' => '在浏览器打开',
-			'restartHubToApply' => '重启 Hub 后生效',
 			'watchingAnime' => ({required Object a}) => '正在看：${a}',
 			'openChatDialog' => '打开聊天窗口',
 			'hubDetails' => 'Hub 详情',
@@ -4746,9 +4744,9 @@ extension on TranslationsZhCn {
 			'publicBaseUrlHint' => '上传图片的外网可访问地址（公网 IPv4/IPv6 或域名时填写）；留空则使用连接地址',
 			'publicIpDetected' => '已探测到公网 IP',
 			'publicIpDetectFailed' => '公网 IP 探测失败',
+			'notConfiguredWillUseServerOrBase64' => '未配置 · 将使用服务器或 Base64',
 			_ => null,
 		} ?? switch (path) {
-			'notConfiguredWillUseServerOrBase64' => '未配置 · 将使用服务器或 Base64',
 			'imageTooLargeToSend' => '图片太大，无法发送',
 			'pleaseConfigureServerUploadOrClientOss' => '请配置服务器上传或客户端 OSS。',
 			'stopTheServerToChangeUploadMode' => '停止服务器以修改上传模式',
@@ -5260,9 +5258,9 @@ extension on TranslationsZhCn {
 			'tapToShare' => '点击分享',
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '没有数据',
+			'loginWithPasswordIsDisabled' => '密码登录已禁用',
 			_ => null,
 		} ?? switch (path) {
-			'loginWithPasswordIsDisabled' => '密码登录已禁用',
 			'cannotBeEmpty' => '不能为空',
 			'invalidCookies' => '无效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
@@ -5774,9 +5772,9 @@ extension on TranslationsZhCn {
 			'headers' => '请求头（JSON）',
 			'noSkillsYet' => '暂无技能',
 			'skillName' => '技能名称',
+			'skillKey' => '技能 Key',
 			_ => null,
 		} ?? switch (path) {
-			'skillKey' => '技能 Key',
 			'builtin' => '内置',
 			'skillMarkdownHint' => '技能支持 Markdown 格式',
 			'sendMessage' => '发送消息',
@@ -6288,9 +6286,9 @@ extension on TranslationsZhCn {
 			'torrentSourceHashRegex' => '哈希正则',
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '时间正则',
+			'torrentSourceJsonPath' => 'JSON 路径',
 			_ => null,
 		} ?? switch (path) {
-			'torrentSourceJsonPath' => 'JSON 路径',
 			'torrentSourceTitleField' => '标题字段',
 			'torrentSourceMagnetField' => '磁力字段',
 			'torrentSourceHashField' => '哈希字段',

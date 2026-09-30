@@ -14,6 +14,21 @@ class _AdminService extends HubWebAdminService {
   _AdminService(super.hub);
 }
 
+/// 探测某端口是否有服务在监听，连不上返回 null
+Future<int?> _probe(int port) async {
+  final client = HttpClient();
+  try {
+    final req = await client.getUrl(Uri.parse('http://127.0.0.1:$port/'));
+    final res = await req.close();
+    await res.drain<void>();
+    return res.statusCode;
+  } on Object {
+    return null;
+  } finally {
+    client.close(force: true);
+  }
+}
+
 Future<T> _withAdmin<T>(
   Future<T> Function(int port, String adminKey) body, {
   required int port,
@@ -576,6 +591,62 @@ void main() {
         expect(html, contains('./app.js'));
         client.close(force: true);
       }, port: 47899);
+    });
+  });
+
+  group('启停与端口立即生效', () {
+    // 这组守护的是「不要提示重启 Hub」：启停和改端口都是当场生效的，
+    // 之前 UI 却提示"重启 Hub 后生效"，而代码同时在立刻启动服务。
+    test('开启后立即可用；改端口经 restartWebAdmin 直接换端口', () async {
+      final dir = await Directory.systemTemp.createTemp('kostori_hub_admin');
+      App.dataPath = dir.path;
+      await ApiKeyManager().init();
+      final hub = HubService.instance;
+      const portA = 47921;
+      const portB = 47922;
+      appdata.implicitData['hub_web_admin_enabled'] = true;
+      appdata.implicitData['hub_web_admin_port'] = portA;
+      appdata.implicitData['hub_web_admin_bind_mode'] = 'ipv4';
+      appdata.writeImplicitData();
+      try {
+        await hub.init(preferredPort: 47920, mode: BindMode.ipv4);
+        await hub.startWebAdmin();
+        expect(await _probe(portA), 200, reason: '开启后应立刻在配置端口上服务，不存在需要重启的中间态');
+
+        appdata.implicitData['hub_web_admin_port'] = portB;
+        appdata.writeImplicitData();
+        await hub.restartWebAdmin();
+        expect(await _probe(portB), 200, reason: '端口改动应重绑后立即生效');
+        expect(await _probe(portA), isNull, reason: '旧端口应已释放');
+      } finally {
+        await hub.stopWebAdmin();
+        await hub.dispose();
+        if (dir.existsSync()) dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('关闭后端口不再服务', () async {
+      final dir = await Directory.systemTemp.createTemp('kostori_hub_admin');
+      App.dataPath = dir.path;
+      await ApiKeyManager().init();
+      final hub = HubService.instance;
+      const port = 47923;
+      appdata.implicitData['hub_web_admin_enabled'] = true;
+      appdata.implicitData['hub_web_admin_port'] = port;
+      appdata.implicitData['hub_web_admin_bind_mode'] = 'ipv4';
+      appdata.writeImplicitData();
+      try {
+        await hub.init(preferredPort: 47924, mode: BindMode.ipv4);
+        expect(await _probe(port), 200);
+        appdata.implicitData['hub_web_admin_enabled'] = false;
+        appdata.writeImplicitData();
+        await hub.startWebAdmin(); // 关闭态下调用应收敛为停止
+        expect(await _probe(port), isNull, reason: '关闭应立即停止服务');
+      } finally {
+        await hub.stopWebAdmin();
+        await hub.dispose();
+        if (dir.existsSync()) dir.deleteSync(recursive: true);
+      }
     });
   });
 

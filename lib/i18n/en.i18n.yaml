@@ -1444,7 +1444,6 @@ webAdminEnabled: Enable Web Admin
 webAdminOnPort: Port
 webAdminPort: Web Admin Port
 webAdminUrl: Open in browser
-restartHubToApply: Restart Hub to apply
 watchingAnime: 'Watching: ${a}'
 openChatDialog: Open chat dialog
 hubDetails: Hub Details

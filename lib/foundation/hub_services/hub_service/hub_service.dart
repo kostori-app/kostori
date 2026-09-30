@@ -197,6 +197,14 @@ class HubService extends BaseHttpService {
 
   HubWebAdminService? _webAdmin;
 
+  /// 改端口等启动期参数后重新绑定 Web 管理服务。
+  /// 管理页跑在独立端口上，为一个端口改动把整个 Hub 连同所有客户端连接
+  /// 一起重启没有必要。
+  Future<void> restartWebAdmin() async {
+    await stopWebAdmin();
+    await startWebAdmin();
+  }
+
   List<HubClientInfo> get clients => _clients.values.toList();
 
   int get clientCount => _clients.length;

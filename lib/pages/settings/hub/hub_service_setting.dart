@@ -1683,22 +1683,46 @@ class _WebAdminSettingsPageState extends ConsumerState<_WebAdminSettingsPage> {
 
   @override
   void dispose() {
-    // 返回时保存端口（之前只在按回车时保存，直接返回会丢改动）
-    _savePort();
+    // 返回时保存端口（之前只在按回车时保存，直接返回会丢改动）。
+    // dispose 里没有安全的提示时机，失败只记日志。
+    if (_persistPort() && _enabled) {
+      _hub.restartWebAdmin().catchError(
+        (Object e) => HubLog.error('HubWebAdmin', '重绑 Web 管理端口失败：$e'),
+      );
+    }
     _portCtrl.dispose();
     super.dispose();
   }
 
-  void _savePort() {
+  /// 只落盘，不提示也不重绑。dispose 里已经拿不到安全的提示时机了。
+  /// 返回 true 表示端口确实变了。
+  bool _persistPort() {
     final port = int.tryParse(_portCtrl.text.trim());
     if (port == null || port <= 0 || port > 65535) {
       _portCtrl.text = '$_port';
-      return;
+      return false;
     }
+    if (port == _port) return false;
     appdata.implicitData['hub_web_admin_port'] = port;
     appdata.writeImplicitData();
+    return true;
+  }
+
+  Future<void> _savePort() async {
+    if (!_persistPort()) {
+      if (mounted) setState(() {});
+      return;
+    }
     if (mounted) setState(() {});
-    App.rootContext.showMessage(message: t.restartHubToApply);
+    if (!_enabled) return;
+    try {
+      await _hub.restartWebAdmin();
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: '${t.savedFailed}: $e',
+        level: LogLevel.warning,
+      );
+    }
   }
 
   void _open() {
@@ -1748,13 +1772,21 @@ class _WebAdminSettingsPageState extends ConsumerState<_WebAdminSettingsPage> {
                   settingKey: 'hub_web_admin_enabled',
                   dataSource: SwitchDataSource.implicit,
                   subtitle: _enabled ? 'http://localhost:$_port' : t.disabled,
-                  onChanged: () {
-                    // 持久化已由 _SwitchSetting 完成，这里处理服务启停
-                    if (appdata.implicitData['hub_web_admin_enabled'] == true) {
-                      App.rootContext.showMessage(message: t.restartHubToApply);
-                      _hub.startWebAdmin();
-                    } else {
-                      _hub.stopWebAdmin();
+                  onChanged: () async {
+                    // 持久化已由 _SwitchSetting 完成，这里处理服务启停。
+                    // 启停都是立刻生效的，所以不要提示"重启后生效"——那是错的。
+                    try {
+                      if (appdata.implicitData['hub_web_admin_enabled'] ==
+                          true) {
+                        await _hub.startWebAdmin();
+                      } else {
+                        await _hub.stopWebAdmin();
+                      }
+                    } catch (e) {
+                      App.rootContext.showMessage(
+                        message: '${t.savedFailed}: $e',
+                        level: LogLevel.warning,
+                      );
                     }
                     if (mounted) setState(() {});
                   },

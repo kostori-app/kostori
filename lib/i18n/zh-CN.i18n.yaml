@@ -1439,7 +1439,6 @@ webAdminEnabled: 启用 Web 管理
 webAdminOnPort: 端口
 webAdminPort: Web 管理端口
 webAdminUrl: 在浏览器打开
-restartHubToApply: 重启 Hub 后生效
 watchingAnime: '正在看：${a}'
 openChatDialog: 打开聊天窗口
 hubDetails: Hub 详情

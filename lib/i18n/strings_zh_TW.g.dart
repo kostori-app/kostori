@@ -1434,7 +1434,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get webAdminOnPort => '連接埠';
 	@override String get webAdminPort => 'Web 管理連接埠';
 	@override String get webAdminUrl => '在瀏覽器開啟';
-	@override String get restartHubToApply => '重啟 Hub 後生效';
 	@override String watchingAnime({required Object a}) => '正在看：${a}';
 	@override String get openChatDialog => '開啟聊天對話框';
 	@override String get hubDetails => 'Hub 詳情';
@@ -4646,7 +4645,6 @@ extension on TranslationsZhTw {
 			'webAdminOnPort' => '連接埠',
 			'webAdminPort' => 'Web 管理連接埠',
 			'webAdminUrl' => '在瀏覽器開啟',
-			'restartHubToApply' => '重啟 Hub 後生效',
 			'watchingAnime' => ({required Object a}) => '正在看：${a}',
 			'openChatDialog' => '開啟聊天對話框',
 			'hubDetails' => 'Hub 詳情',
@@ -4745,9 +4743,9 @@ extension on TranslationsZhTw {
 			'publicBaseUrl' => '公網基礎網址',
 			'publicBaseUrlHint' => '上傳圖片的外網可存取網址（公網 IPv4/IPv6 或網域時填寫）；留空則使用連線網址',
 			'publicIpDetected' => '已偵測到公網 IP',
+			'publicIpDetectFailed' => '公網 IP 偵測失敗',
 			_ => null,
 		} ?? switch (path) {
-			'publicIpDetectFailed' => '公網 IP 偵測失敗',
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
 			'imageTooLargeToSend' => '圖片太大，無法發送',
 			'pleaseConfigureServerUploadOrClientOss' => '請設定伺服器上傳或用戶端 OSS。',
@@ -5259,9 +5257,9 @@ extension on TranslationsZhTw {
 			'enterServerAddress' => '輸入伺服器位址',
 			'tapToShare' => '點擊分享',
 			'noConfigurationsFound' => '未找到配置',
+			'noData' => '沒有資料',
 			_ => null,
 		} ?? switch (path) {
-			'noData' => '沒有資料',
 			'loginWithPasswordIsDisabled' => '密碼登入已停用',
 			'cannotBeEmpty' => '不能為空',
 			'invalidCookies' => '無效的 Cookies',
@@ -5773,9 +5771,9 @@ extension on TranslationsZhTw {
 			'noSkillsYet' => '暫無技能',
 			'skillName' => '技能名稱',
 			'skillKey' => '技能 Key',
+			'builtin' => '內建',
 			_ => null,
 		} ?? switch (path) {
-			'builtin' => '內建',
 			'skillMarkdownHint' => '技能支援 Markdown 格式',
 			'sendMessage' => '發送訊息',
 			'contextAutoCompressed' => '上下文過長，已自動壓縮',
@@ -6287,9 +6285,9 @@ extension on TranslationsZhTw {
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '時間正則',
 			'torrentSourceJsonPath' => 'JSON 路徑',
+			'torrentSourceTitleField' => '標題欄位',
 			_ => null,
 		} ?? switch (path) {
-			'torrentSourceTitleField' => '標題欄位',
 			'torrentSourceMagnetField' => '磁力欄位',
 			'torrentSourceHashField' => '雜湊欄位',
 			'torrentSourceSizeField' => '體積欄位',
