@@ -68,7 +68,7 @@ const currentLabel = computed(
   () => NAV.find((n) => n.key === tab.value)?.label ?? '',
 );
 
-/** 窄屏下选完就收起抽屉，否则会挡住刚打开的视图 */
+/** 窄屏下选完就收起抽屉 */
 function pick(key) {
   tab.value = key;
   drawer.value = false;
@@ -223,7 +223,6 @@ function signOut() {
   min-height: 100vh;
 }
 
-/* 顶栏只在窄屏出现 */
 .topbar {
   display: none;
   position: sticky;
@@ -404,9 +403,6 @@ nav {
   min-width: 0;
 }
 
-/* ── 窄屏：侧栏改为抽屉 ──────────────────────────────
-   早前把 10 个导航项塞进一条横向滚动条，结果在手机上挤成一团、
-   点击目标过小、也没有任何提示说明还能往右滑。改成抽屉。 */
 @media (max-width: 860px) {
   .shell {
     grid-template-columns: 1fr;
@@ -441,7 +437,6 @@ nav {
   }
 
   .nav {
-    /* 保证触摸目标足够大 */
     padding: 11px 12px;
     font-size: 14px;
     border-radius: var(--r);

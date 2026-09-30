@@ -6,8 +6,7 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowSplashScreenBackground">@color/launch_background</item>
-        <!-- 用 foreground（纯图形）而不是 ic_launcher：
-             后者是自适应图标，会带上 ic_launcher_background 的白底板 -->
+        <!-- 用 foreground 而非 ic_launcher：后者是自适应图标，会带自己的底板 -->
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">

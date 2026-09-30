@@ -6,7 +6,7 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowSplashScreenBackground">@color/launch_background</item>
-        <!-- 同 values-v31：避免闪屏图标带白底板 -->
+        <!-- 同 values-v31 -->
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">

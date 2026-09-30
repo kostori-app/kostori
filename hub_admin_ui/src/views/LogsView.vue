@@ -110,7 +110,6 @@ const badge = (l) =>
   overflow: auto;
   font-family: var(--mono);
   font-size: 12px;
-  /* 日志内容不换行，窄屏下横向滚动而不是撑破布局 */
   overflow-x: auto;
 }
 
