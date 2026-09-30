@@ -94,8 +94,6 @@ Future<void> runHeadlessMode(List<String> args) async {
     switch (serviceName) {
       case 'hub':
         await _startHubService(port, mode, noAuth, cert, key, started);
-      case 'lan':
-        await _startLanService(port, started);
       case 'headless':
       default:
         await _startHeadlessService(port, mode, noAuth, cert, key, started);
@@ -202,16 +200,6 @@ Future<void> _startHubService(
   started['https'] = cert != null && key != null;
 }
 
-Future<void> _startLanService(int? port, Map<String, dynamic> started) async {
-  // 恢复设置页持久化的 PIN：这条路径没有任何设置页代码，
-  // 不恢复的话用户配的 PIN 在无头模式下等于没生效
-  LanControlService.instance.restorePersistedPin();
-  await LanControlService.instance.start(port ?? 42183);
-  started['port'] = LanControlService.instance.port;
-  started['bound'] = ['0.0.0.0'];
-  started['pinEnabled'] = LanControlService.instance.pinEnabled;
-}
-
 Future<void> _waitForShutdown(Map<String, dynamic> started) async {
   final completer = Completer<void>();
   final signalSubs = <StreamSubscription<ProcessSignal>>[];
@@ -233,9 +221,6 @@ Future<void> _waitForShutdown(Map<String, dynamic> started) async {
   try {
     // 必须用 instance：HubService() 会拿到一个从未初始化的新实例
     await HubService.instance.dispose();
-  } catch (_) {}
-  try {
-    await LanControlService.instance.stop();
   } catch (_) {}
   cliPrint({'status': 'stopped'});
   exit(0);

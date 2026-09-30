@@ -61,7 +61,7 @@ Full catalog + Material→project mapping lives in `docs/components.md` (auto-lo
 ## Structure
 
 - `lib/main.dart` entry; `lib/init.dart` startup wiring (called once from `main`); `lib/headless.dart` CLI/server mode.
-- Headless CLI: `--headless` plus `--service hub|lan|headless`, `--port`, `--bind`, `--no-auth`, `--cert`/`--key`, fixed `--api-key`/`--admin-key`. Emits `[CLI PRINT] <json>` lines.
+- Headless CLI: `--headless` plus `--service hub|headless`, `--port`, `--bind`, `--no-auth`, `--cert`/`--key`, fixed `--api-key`/`--admin-key`. Emits `[CLI PRINT] <json>` lines. LAN remote control is app-UI-only: it drives the on-device player, so it has no headless mode.
 - `lib/foundation/` core services (`ai_service`, `anime_source`, `audio_service`, `bangumi`, `hub_services`, `me_plugin`, `translation`, `image_loader`, `webview`).
 - `lib/pages/` one folder per feature. `lib/network/` dio/rhttp + cookie jar + Cloudflare bypass. `lib/database/` drift DBs + DAOs. `lib/services/` download + torrent. `lib/skills/` AI skills (builtins registered in `init.dart`). `lib/components/` shared UI. `lib/utils/` helpers.
 - `lib/repositories/` data layer (currently only `ai_repository.dart`).

@@ -86,18 +86,6 @@ class LanControlService {
 
   bool get pinEnabled => _pinEnabled;
 
-  /// 从 appdata 恢复 PIN。
-  ///
-  /// 持久化一直由设置页负责（`lan_pin_enabled` / `lan_pin_code`），
-  /// 但只有打开那个页面时才会写回本服务；无头 `--service lan` 模式下
-  /// 没有任何人调用 setPinRequirement，配置的 PIN 等于没生效。
-  void restorePersistedPin() {
-    final enabled = appdata.implicitData['lan_pin_enabled'] as bool? ?? false;
-    final pin = appdata.implicitData['lan_pin_code'] as String? ?? '';
-    if (!enabled && pin.isEmpty) return;
-    setPinRequirement(enabled: enabled, pin: pin);
-  }
-
   void setPinRequirement({required bool enabled, required String pin}) {
     _pinEnabled = enabled;
     _pinCode = pin.trim();
