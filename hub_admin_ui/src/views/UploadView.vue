@@ -32,7 +32,7 @@ const MODES = [
 ];
 
 async function load() {
-  const res = await run(() => api.uploadConfig());
+    const res = await run(() => api.uploadConfig(), { failure: () => '' });
   if (!res.ok) return;
   const c = res.result;
   form.mode = c.mode;

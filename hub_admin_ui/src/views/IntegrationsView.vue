@@ -37,11 +37,11 @@ const botForm = reactive({ name: '', avatarUrl: '', biography: '' });
 
 async function loadAll() {
   loading.value = true;
-  const [w, s, b] = await Promise.all([
-    run(() => api.webhooks()),
-    run(() => api.subscriptions()),
-    run(() => api.satoriBots()),
-  ]);
+    const [w, s, b] = await Promise.all([
+      run(() => api.webhooks(), { failure: () => '' }),
+      run(() => api.subscriptions(), { failure: () => '' }),
+      run(() => api.satoriBots(), { failure: () => '' }),
+    ]);
   if (w.ok) {
     webhooks.value = w.result.items || [];
     rooms.value = w.result.rooms || [];

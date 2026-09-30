@@ -25,10 +25,12 @@ const form = reactive({
   tlsPassword: '',
 });
 
+// 首屏加载失败不再弹 toast：侧栏已经显示连接状态，
+// 逐个页面弹一次只会盖住真正的操作反馈
 async function load() {
   const [c, k] = await Promise.all([
-    run(() => api.config()),
-    run(() => api.keys()),
+    run(() => api.config(), { failure: () => '' }),
+    run(() => api.keys(), { failure: () => '' }),
   ]);
   if (!c.ok) return;
   config.value = c.result;
@@ -53,11 +55,33 @@ async function load() {
 
 onMounted(load);
 
+// 只列真正要重启的项：端口/绑定/TLS 属于 HubService.init() 一次性读取，
+// 心跳间隔在 _startHeartbeatCheck 建定时器时被捕获，其余项都是实时生效。
+// 笼统地说「部分设置重启后生效」会让人白重启，也让人以为存完就好了。
+const NEEDS_RESTART = {
+  hubPort: 'Hub 端口',
+  hubBindMode: 'Hub 绑定',
+  webAdminPort: '管理端口',
+  webAdminBindMode: '管理端口绑定',
+  tlsEnabled: 'TLS 开关',
+  tlsCertificatePath: '证书路径',
+  tlsPrivateKeyPath: '私钥路径',
+  tlsPassword: '证书密码',
+  pingIntervalMs: '心跳间隔',
+};
+
 async function save() {
   busy.value = true;
   const res = await run(() => api.saveConfig({ ...form }), {
-    success: (r) =>
-      r?.changed?.length ? `已保存：${r.changed.join('、')}` : '已保存（无变更）',
+    success: (r) => {
+      const changed = r?.changed || [];
+      if (!changed.length) return '已保存（无变更）';
+      const restart = changed.filter((k) => NEEDS_RESTART[k]);
+      const base = `已保存：${changed.join('、')}`;
+      return restart.length
+        ? `${base}（${restart.map((k) => NEEDS_RESTART[k]).join('、')} 需重启 Hub 生效）`
+        : `${base}，已即时生效`;
+    },
     failure: (e) => `保存失败：${e?.message}`,
   });
   busy.value = false;
@@ -106,7 +130,7 @@ async function autoIp() {
     <div v-if="!loaded" class="empty">正在读取配置…</div>
 
     <template v-else>
-      <Card title="服务" subtitle="端口与绑定地址的改动需要重启 Hub 生效">
+      <Card title="服务" subtitle="端口、绑定与 TLS 在 Hub 启动时读取，改动后需重启 Hub">
         <div class="form">
           <FormField v-model="form.hubPort" type="number" label="Hub 端口" :min="1024" :max="65535" />
           <label class="field">

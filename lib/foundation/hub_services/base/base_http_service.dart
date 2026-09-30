@@ -877,6 +877,8 @@ abstract class BaseHttpService implements BaseService {
   );
 
   /// 发送 HTML 页面
+  /// HTML 由服务端按当前构建产物/路由表现场生成，且本机改一次构建就变一次。
+  /// 不显式禁用缓存的话浏览器会启发式缓存旧页面，用户看到的仍是上一版。
   shelf.Response sendHtml(
     shelf.Request req,
     String html, {
@@ -884,7 +886,10 @@ abstract class BaseHttpService implements BaseService {
   }) => shelf.Response(
     status,
     body: html,
-    headers: {'content-type': 'text/html; charset=utf-8'},
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+    },
   );
 
   shelf.Response sendBytes(

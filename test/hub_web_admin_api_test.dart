@@ -514,6 +514,13 @@ void main() {
         expect(html, contains('./app.js'));
         expect(html, contains('./app.css'));
         expect(html, isNot(contains('hub_admin.html')), reason: '旧的单文件页面应已下线');
+        // 管理页是服务端按当前构建产物现场生成的。不禁缓存的话浏览器会
+        // 继续用上一版 HTML（连同旧版整页 UI），用户看到的还是旧文案。
+        expect(
+          res.headers.value(HttpHeaders.cacheControlHeader),
+          'no-store',
+          reason: '管理页必须禁用缓存，否则升级后浏览器仍渲染旧页面',
+        );
         client.close(force: true);
       }, port: 47896);
     });
