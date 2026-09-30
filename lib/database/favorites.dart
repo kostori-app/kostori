@@ -1320,3 +1320,10 @@ enum FavoriteSortType {
     FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC',
   };
 }
+
+extension FavoriteSortTypeToggle on FavoriteSortType {
+  /// 排序菜单点击后的方向切换：[first] 为该项默认方向（首次点击即生效），
+  /// 之后每次点击在两个方向间来回切。
+  FavoriteSortType toggled(FavoriteSortType first, FavoriteSortType second) =>
+      this == first ? second : first;
+}

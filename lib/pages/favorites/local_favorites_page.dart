@@ -370,9 +370,9 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       return null;
     }
 
-    void setSort(FavoriteSortType asc, FavoriteSortType desc) {
+    void setSort(FavoriteSortType first, FavoriteSortType second) {
       setState(() {
-        sortType = sortType == asc ? desc : asc;
+        sortType = sortType.toggled(first, second);
         appdata.implicitData['favori_sort'] = sortType.value;
         appdata.writeImplicitData();
         updateAnimes();
@@ -391,8 +391,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           ),
           text: t.recentlyWatched,
           onClick: () => setSort(
-            FavoriteSortType.recentlyWatchedAsc,
             FavoriteSortType.recentlyWatchedDesc,
+            FavoriteSortType.recentlyWatchedAsc,
           ),
         ),
         MenuEntry(
