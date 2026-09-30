@@ -61,3 +61,8 @@ app.*.map.json
 **/build/reports/
 .gradle/
 /nul
+
+# Gradle / Kotlin 编译会话（机器相关，勿提交）
+android/.gradle/
+android/.kotlin/
+android/app/.cxx/
