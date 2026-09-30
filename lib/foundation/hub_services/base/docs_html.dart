@@ -8,6 +8,14 @@ String _buildDocsHtml() {
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="/icon" type="image/png">
+  <script>
+    // 在样式生效前定色，避免暗色用户看到白屏闪烁
+    (() => {
+      const saved = localStorage.getItem('kostori-docs-theme');
+      const theme = saved ?? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
  
@@ -29,6 +37,38 @@ String _buildDocsHtml() {
       --orange: #fb923c;
       --red: #f87171;
       --yellow: #fbbf24;
+      --shadow: 0 1px 3px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.45);
+      --code-bg: rgba(0,0,0,0.28);
+      --header-grad: linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%);
+      --nav-hover: rgba(255,255,255,0.045);
+      --logo-ring: 0 0 0 1px var(--border2), 0 0 12px rgba(59,130,246,0.25);
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface2: #f0f3f8;
+      --surface3: #e6ebf3;
+      --border: #dde3ed;
+      --border2: #c9d3e2;
+      --accent: #2563eb;
+      --accent2: #1d4ed8;
+      --accent-glow: rgba(37,99,235,0.10);
+      --text: #1a2233;
+      --text-muted: #64748b;
+      --green: #059669;
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --orange: #ea580c;
+      --red: #dc2626;
+      --yellow: #ca8a04;
+      --shadow: 0 1px 2px rgba(15,23,42,0.08);
+      --shadow-lg: 0 12px 28px rgba(15,23,42,0.12);
+      --code-bg: rgba(15,23,42,0.045);
+      --header-grad: linear-gradient(180deg, rgba(37,99,235,0.05) 0%, transparent 100%);
+      --nav-hover: rgba(15,23,42,0.045);
+      --logo-ring: 0 0 0 1px var(--border2), 0 0 10px rgba(37,99,235,0.18);
     }
  
     body {
@@ -55,7 +95,7 @@ String _buildDocsHtml() {
     #sidebar-header {
       padding: 20px 18px 14px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%);
+      background: var(--header-grad);
     }
  
     #sidebar-header .logo {
@@ -259,7 +299,7 @@ String _buildDocsHtml() {
  
     .endpoint-card.expanded {
       border-color: var(--accent2);
-      box-shadow: 0 0 0 1px rgba(59,130,246,0.15), 0 4px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.15), 0 4px 20px var(--shadow-lg);
     }
  
     .endpoint-header {
@@ -268,7 +308,7 @@ String _buildDocsHtml() {
       border-radius: 10px;
     }
  
-    .endpoint-header:hover { background: rgba(255,255,255,0.02); }
+    .endpoint-header:hover { background: var(--nav-hover); }
     .expanded .endpoint-header { border-radius: 10px 10px 0 0; }
  
     .method-pill {
@@ -515,15 +555,71 @@ String _buildDocsHtml() {
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Theme toggle ── */
+    #theme-btn {
+      margin-left: auto;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1;
+      padding: 4px 7px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    #theme-btn:hover { color: var(--text); border-color: var(--border2); background: var(--surface3); }
+
+    #nav-toggle { display: none; }
+
+    /* ── Responsive ── */
+    #scrim { display: none; }
+
+    @media (max-width: 860px) {
+      #sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 30;
+        transform: translateX(-100%);
+        transition: transform 0.22s ease;
+        box-shadow: var(--shadow-lg);
+      }
+      body.nav-open #sidebar { transform: none; }
+      body.nav-open #scrim {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(0,0,0,0.45);
+      }
+      #nav-toggle {
+        display: block;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-size: 15px;
+        line-height: 1;
+        padding: 5px 9px;
+        cursor: pointer;
+      }
+      #hero { padding: 22px 16px 12px; }
+      #hero h1 { font-size: 22px; }
+      #main { width: 100%; }
+    }
   </style>
 </head>
 <body>
  
+<div id="scrim" onclick="document.body.classList.remove('nav-open')"></div>
 <div id="sidebar">
   <div id="sidebar-header">
     <div class="logo">
+      <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
       <img src="/icon" alt="Kostori" onerror="this.style.display='none'">
       <span>Kostori API</span>
+      <button id="theme-btn" title="Toggle theme" aria-label="切换主题">◐</button>
     </div>
     <div class="version-row">
       <span class="version" id="api-version">v—</span>
@@ -580,8 +676,28 @@ function highlight(json) {
  
 function formatSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
-  return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
 }
+
+// ── Theme ────────────────────────────────────────────────────────────────────
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem('kostori-docs-theme', theme);
+}
+document.getElementById('theme-btn').addEventListener('click', () => {
+  applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+});
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+  if (!localStorage.getItem('kostori-docs-theme')) {
+    document.documentElement.dataset.theme = e.matches ? 'light' : 'dark';
+  }
+});
+
+// ── Mobile nav ───────────────────────────────────────────────────────────────
+document.getElementById('nav-toggle').addEventListener('click', () => {
+  document.body.classList.toggle('nav-open');
+});
  
 (async () => {
   // ── Fetch spec ───────────────────────────────────────────────────────────
@@ -940,10 +1056,6 @@ function showResponse(panel, status, text, errMsg, elapsed) {
     </div>
     ${bodyHtml}
   `;
-}
- 
-function formatSize(bytes) {
-  return bytes < 1024 ? bytes + ' B' : (bytes/1024).toFixed(1) + ' KB';
 }
 </script>
 </body>
