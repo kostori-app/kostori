@@ -19,10 +19,32 @@ class OffscreenHost {
 
   bool _attached = false;
 
+  ThemeData? _theme;
+
+  /// 离屏树当前使用的配色。
+  ThemeData get theme =>
+      _theme ??
+      buildAppTheme(
+        primary: resolveSeedColor(
+          appdata.settings['color'] as String?,
+          customColor: appdata.implicitData['customColor'] as String?,
+        ),
+        brightness: Brightness.light,
+        amoled: appdata.settings['amoled'] == true,
+      );
+
   /// 挂载离屏树。幂等，可重复调用。
   ///
   /// 主题取当前外观设置，保证截图配色与 GUI 一致。
   void attach({required Brightness brightness}) {
+    _theme = buildAppTheme(
+      primary: resolveSeedColor(
+        appdata.settings['color'] as String?,
+        customColor: appdata.implicitData['customColor'] as String?,
+      ),
+      brightness: brightness,
+      amoled: appdata.settings['amoled'] == true,
+    );
     if (_attached) return;
     final binding = WidgetsBinding.instance;
     // 与 runApp 走同一条路径：wrapWithDefaultView 补上隐式 View，
@@ -32,14 +54,7 @@ class OffscreenHost {
         _OffscreenRoot(
           key: rootKey,
           overlayKey: overlayKey,
-          theme: buildAppTheme(
-            primary: resolveSeedColor(
-              appdata.settings['color'] as String?,
-              customColor: appdata.implicitData['customColor'] as String?,
-            ),
-            brightness: brightness,
-            amoled: appdata.settings['amoled'] == true,
-          ),
+          theme: _theme!,
           brightness: brightness,
         ),
       ),

@@ -20,6 +20,7 @@ import 'package:kostori/database/favorites.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/app_theme.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/offscreen_host.dart';

@@ -64,127 +64,140 @@ class CalendarScreenshotWidget extends StatelessWidget {
     final todayTime = _timeFormat.format(now);
 
     return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
+      color: colorScheme.surface,
       padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── 顶部标题栏 ──────────────────────────────────────────────
-          Row(
-            children: [
-              Icon(Icons.calendar_month, size: 28, color: colorScheme.primary),
-              const SizedBox(width: 12),
-              Text(
-                isSingleDay ? t.today : t.timetable,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+      child: DefaultTextStyle(
+        // 不依赖上层 DefaultTextStyle：离屏渲染时宿主可能没有继承到正文色
+        style: TextStyle(color: colorScheme.onSurface, fontSize: 13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── 顶部标题栏 ──────────────────────────────────────────────
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_month,
+                  size: 28,
+                  color: colorScheme.primary,
                 ),
-              ),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (appdata.settings['bangumiDataVer'] != null)
+                const SizedBox(width: 12),
+                Text(
+                  isSingleDay ? t.today : t.timetable,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (appdata.settings['bangumiDataVer'] != null)
+                      Text(
+                        'bangumi-data: ${appdata.settings['bangumiDataVer']}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.outline,
+                        ),
+                      ),
                     Text(
-                      'bangumi-data: ${appdata.settings['bangumiDataVer']}',
+                      _dateTimeFormat.format(captureTime),
                       style: TextStyle(
                         fontSize: 12,
                         color: colorScheme.outline,
                       ),
                     ),
-                  Text(
-                    _dateTimeFormat.format(captureTime),
-                    style: TextStyle(fontSize: 12, color: colorScheme.outline),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // ── 统计卡片 ────────────────────────────────────────────────
-          Row(
-            children: [
-              _StatCard(
-                label: isSingleDay ? t.todayTotal : t.weekTotal,
-                value: '$totalCount',
-                icon: Icons.tv,
-              ),
-              const SizedBox(width: 12),
-              if (!isSingleDay) ...[
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // ── 统计卡片 ────────────────────────────────────────────────
+            Row(
+              children: [
                 _StatCard(
-                  label: t.todayBroadcast,
-                  value: '$todayCount',
-                  icon: Icons.today,
+                  label: isSingleDay ? t.todayTotal : t.weekTotal,
+                  value: '$totalCount',
+                  icon: Icons.tv,
                 ),
                 const SizedBox(width: 12),
-                _StatCard(
-                  label: t.broadcastDays,
-                  value: '$activeDays',
-                  icon: Icons.date_range,
-                ),
-              ] else
-                _StatCard(
-                  label: _monthDayFormat.format(captureTime),
-                  value: _weekdayName(todayIdx),
-                  icon: Icons.today,
-                ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          // ── 每天的列表 ──────────────────────────────────────────────
-          ...List.generate(7, (weekdayIndex) {
-            final dayList = bangumiCalendar[weekdayIndex];
-            if (dayList.isEmpty) return const SizedBox();
+                if (!isSingleDay) ...[
+                  _StatCard(
+                    label: t.todayBroadcast,
+                    value: '$todayCount',
+                    icon: Icons.today,
+                  ),
+                  const SizedBox(width: 12),
+                  _StatCard(
+                    label: t.broadcastDays,
+                    value: '$activeDays',
+                    icon: Icons.date_range,
+                  ),
+                ] else
+                  _StatCard(
+                    label: _monthDayFormat.format(captureTime),
+                    value: _weekdayName(todayIdx),
+                    icon: Icons.today,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // ── 每天的列表 ──────────────────────────────────────────────
+            ...List.generate(7, (weekdayIndex) {
+              final dayList = bangumiCalendar[weekdayIndex];
+              if (dayList.isEmpty) return const SizedBox();
 
-            final isToday = weekdayIndex == todayIdx;
-            // 计算今日已播过的条目索引（用于插入"当前时间"分割线）
-            int lastPastIndex = -1;
-            if (isToday) {
-              for (int i = 0; i < dayList.length; i++) {
-                final time = _safeTimeOf(dayList[i].airTime);
-                if (time != null && time.compareTo(todayTime) < 0) {
-                  lastPastIndex = i;
+              final isToday = weekdayIndex == todayIdx;
+              // 计算今日已播过的条目索引（用于插入"当前时间"分割线）
+              int lastPastIndex = -1;
+              if (isToday) {
+                for (int i = 0; i < dayList.length; i++) {
+                  final time = _safeTimeOf(dayList[i].airTime);
+                  if (time != null && time.compareTo(todayTime) < 0) {
+                    lastPastIndex = i;
+                  }
                 }
               }
-            }
 
-            final weekday = captureTime.add(
-              Duration(days: weekdayIndex - captureTime.weekday + 1),
-            );
+              final weekday = captureTime.add(
+                Duration(days: weekdayIndex - captureTime.weekday + 1),
+              );
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _DayHeader(
-                  date: weekday,
-                  weekdayName: _weekdayName(weekdayIndex),
-                  count: dayList.length,
-                  isToday: isToday,
-                ),
-                // 番剧列表（今日在当前位置插入时间分割线）
-                ...List.generate(dayList.length + (isToday ? 1 : 0), (i) {
-                  if (isToday && i == lastPastIndex + 1) {
-                    return _NowDivider(time: todayTime);
-                  }
-                  final adjustedIndex = isToday && i > lastPastIndex
-                      ? i - 1
-                      : i;
-                  if (adjustedIndex >= dayList.length) return const SizedBox();
-                  return _ScreenshotBangumiRow(
-                    bangumiItem: dayList[adjustedIndex],
-                    isPast: isToday && adjustedIndex <= lastPastIndex,
-                    showTimeDivider: false,
-                  );
-                }),
-              ],
-            );
-          }),
-          const Divider(height: 24),
-          const Center(child: KostoriWatermark()),
-        ],
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _DayHeader(
+                    date: weekday,
+                    weekdayName: _weekdayName(weekdayIndex),
+                    count: dayList.length,
+                    isToday: isToday,
+                  ),
+                  // 番剧列表（今日在当前位置插入时间分割线）
+                  ...List.generate(dayList.length + (isToday ? 1 : 0), (i) {
+                    if (isToday && i == lastPastIndex + 1) {
+                      return _NowDivider(time: todayTime);
+                    }
+                    final adjustedIndex = isToday && i > lastPastIndex
+                        ? i - 1
+                        : i;
+                    if (adjustedIndex >= dayList.length) {
+                      return const SizedBox();
+                    }
+                    return _ScreenshotBangumiRow(
+                      bangumiItem: dayList[adjustedIndex],
+                      isPast: isToday && adjustedIndex <= lastPastIndex,
+                      showTimeDivider: false,
+                    );
+                  }),
+                ],
+              );
+            }),
+            const Divider(height: 24),
+            const Center(child: KostoriWatermark()),
+          ],
+        ),
       ),
     );
   }

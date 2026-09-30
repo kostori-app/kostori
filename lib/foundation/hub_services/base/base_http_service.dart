@@ -396,6 +396,28 @@ abstract class BaseHttpService implements BaseService {
         }
         final showWeekly = mode != 'today';
 
+        // 主题参数：theme=light|dark 决定明暗，seed 指定主题色名或 #RRGGBB
+        final themeParam = req.requestedUri.queryParameters['theme'];
+        final seedParam = req.requestedUri.queryParameters['seed'];
+        ThemeData? themeOverride;
+        if (themeParam != null || seedParam != null) {
+          final base = OffscreenHost.instance.theme;
+          final brightness = switch (themeParam?.toLowerCase()) {
+            'light' => Brightness.light,
+            'dark' => Brightness.dark,
+            _ => base.brightness,
+          };
+          final seed = resolveSeedColor(
+            seedParam,
+            customColor: seedParam?.startsWith('#') ?? false ? seedParam : null,
+          );
+          themeOverride = buildAppTheme(
+            primary: seed,
+            brightness: brightness,
+            amoled: brightness == Brightness.dark,
+          );
+        }
+
         try {
           final calendar = await loadBangumiCalendar();
           // 需要一个 BuildContext 来渲染截图：GUI 下复用 navigator 上下文，
@@ -422,6 +444,7 @@ abstract class BaseHttpService implements BaseService {
             captureTime: DateTime.now(),
             showWeekly: showWeekly,
             offscreenOverlay: offscreenOverlay,
+            themeOverride: themeOverride,
           );
 
           if (bytes == null) {
@@ -447,7 +470,9 @@ abstract class BaseHttpService implements BaseService {
       middlewares: [authMiddleware],
       doc: RouteDoc(
         summary: '番剧时间表截图',
-        description: '返回番剧时间表截图，默认本周，可通过 ?mode=today 仅返回今天',
+        description:
+            '返回番剧时间表截图，默认本周，可通过 ?mode=today 仅返回今天。'
+            '配色可用 ?theme=light|dark 指定明暗、?seed=teal 或 #RRGGBB 指定主题色。',
         requiresAuth: true,
         params: [
           DocParam(
@@ -460,6 +485,18 @@ abstract class BaseHttpService implements BaseService {
             name: 'mode',
             type: 'query',
             description: '截图模式：weekly（默认，整周）或 today（仅今天）',
+            required: false,
+          ),
+          DocParam(
+            name: 'theme',
+            type: 'query',
+            description: '配色明暗：light 或 dark，缺省沿用应用主题',
+            required: false,
+          ),
+          DocParam(
+            name: 'seed',
+            type: 'query',
+            description: '主题色：teal / pink / green 等名称，或 #RRGGBB',
             required: false,
           ),
         ],

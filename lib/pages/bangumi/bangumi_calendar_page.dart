@@ -1025,6 +1025,10 @@ Future<Uint8List?> generateBangumiCalendarPng({
 
   /// 离屏渲染时由调用方直接提供；缺省时回退到从 context 向上查找宿主 Overlay。
   OverlayState? offscreenOverlay,
+
+  /// 覆盖截图配色。null 表示沿用当前主题。
+  /// 调用方（如 HTTP 接口）可据此指定 light/dark 与主题种子色。
+  ThemeData? themeOverride,
 }) async {
   final overlay =
       offscreenOverlay ??
@@ -1050,16 +1054,37 @@ Future<Uint8List?> generateBangumiCalendarPng({
         : const <BangumiItem>[];
   });
 
+  // 封面是异步网络图，不预热的话抓帧时大多还是占位图
+  final providers = <ImageProvider>[
+    for (final day in calendarToCapture)
+      for (final item in day)
+        if (item.images['large']?.isNotEmpty ?? false)
+          CachedImageProvider(item.images['large']!, sourceKey: 'bangumi')
+              as ImageProvider,
+  ];
+  if (providers.isNotEmpty) {
+    await Future.wait(
+      providers.map((p) => precacheImage(p, context).catchError((_) {})),
+    );
+  }
+
   final repaintKey = GlobalKey();
   final screenshotWidget = RepaintBoundary(
     key: repaintKey,
     child: MediaQuery(
       data: MediaQuery.of(context),
       child: Theme(
-        data: Theme.of(context),
-        child: CalendarScreenshotWidget(
-          bangumiCalendar: calendarToCapture,
-          captureTime: captureTime,
+        data: themeOverride ?? Theme.of(context),
+        child: DefaultTextStyle(
+          // 离屏渲染拿不到宿主的正文样式，这里显式给一个，保证文字可见
+          style: TextStyle(
+            color: (themeOverride ?? Theme.of(context)).colorScheme.onSurface,
+            fontSize: 13,
+          ),
+          child: CalendarScreenshotWidget(
+            bangumiCalendar: calendarToCapture,
+            captureTime: captureTime,
+          ),
         ),
       ),
     ),
@@ -1074,9 +1099,14 @@ Future<Uint8List?> generateBangumiCalendarPng({
   overlay.insert(renderEntry);
 
   try {
-    await Future.delayed(const Duration(milliseconds: 1000));
-    await WidgetsBinding.instance.endOfFrame;
-    await WidgetsBinding.instance.endOfFrame;
+    // 等封面真正解码完成：逐帧等待，直到 precache 全部结束
+    final deadline = DateTime.now().add(const Duration(seconds: 20));
+    while (DateTime.now().isBefore(deadline)) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (providers.every((p) => imageCache.containsKey(p))) break;
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+    await Future.delayed(const Duration(milliseconds: 200));
     await WidgetsBinding.instance.endOfFrame;
 
     final boundary =
