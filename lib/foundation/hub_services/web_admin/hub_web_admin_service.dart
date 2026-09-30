@@ -158,6 +158,9 @@ class HubWebAdminService extends BaseHttpService {
       _restartHub,
       middlewares: [adminAuthMiddleware],
     );
+
+    // ── 集成能力（上传/Webhook/Satori/Key/LAN/检索）──
+    registerIntegrationRoutes();
   }
 
   @override
@@ -604,6 +607,15 @@ class HubWebAdminService extends BaseHttpService {
     if (body['hubPort'] is num) {
       saveHubPort((body['hubPort'] as num).toInt());
       changed.add('hubPort');
+    }
+    if (body['hubBindMode'] is String) {
+      saveHubBindMode(
+        BindMode.values.firstWhereOrNull(
+              (m) => m.name == body['hubBindMode'],
+            ) ??
+            BindMode.ipv4,
+      );
+      changed.add('hubBindMode');
     }
     if (body['webAdminPort'] is num) {
       webAdminPort = (body['webAdminPort'] as num).toInt();

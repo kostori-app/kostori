@@ -127,6 +127,8 @@ part 'subscription/hub_subscription_runtime.dart';
 
 part 'web_admin/hub_web_admin_service.dart';
 
+part 'web_admin/hub_web_admin_api.dart';
+
 class HubCrypto {
   static Uint8List? _key;
   static Uint8List? _iv;

@@ -203,9 +203,13 @@ Future<void> _startHubService(
 }
 
 Future<void> _startLanService(int? port, Map<String, dynamic> started) async {
+  // 恢复设置页持久化的 PIN：这条路径没有任何设置页代码，
+  // 不恢复的话用户配的 PIN 在无头模式下等于没生效
+  LanControlService.instance.restorePersistedPin();
   await LanControlService.instance.start(port ?? 42183);
   started['port'] = LanControlService.instance.port;
   started['bound'] = ['0.0.0.0'];
+  started['pinEnabled'] = LanControlService.instance.pinEnabled;
 }
 
 Future<void> _waitForShutdown(Map<String, dynamic> started) async {
