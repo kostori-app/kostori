@@ -10,13 +10,15 @@ class AppearanceSettings extends StatefulWidget {
 class _AppearanceSettingsState extends State<AppearanceSettings>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  final themeModes = {" system": t.system, "light": t.light, "dark": t.dark};
+  final themeModes = {"system": t.system, "light": t.light, "dark": t.dark};
   int themeMode = 0;
 
   @override
   void initState() {
     super.initState();
+    // key 曾误写为 " system"，indexOf 返回 -1 会让 TabController 断言崩溃
     themeMode = themeModes.keys.toList().indexOf(appdata.settings.s.themeMode);
+    if (themeMode < 0) themeMode = 0;
     _tabController = TabController(
       length: themeModes.length,
       vsync: this,
