@@ -65,6 +65,12 @@ class _App {
 
   BuildContext get rootContext => rootNavigatorKey.currentContext!;
 
+  /// 无头模式下没有 runApp，rootNavigatorKey 从未挂载，此处为 null。
+  BuildContext? get rootContextOrNull {
+    final ctx = rootNavigatorKey.currentContext;
+    return (ctx != null && ctx.mounted) ? ctx : null;
+  }
+
   final Appdata data = appdata;
 
   final HistoryManager history = HistoryManager();

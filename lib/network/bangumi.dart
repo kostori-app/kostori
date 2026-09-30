@@ -793,10 +793,14 @@ class Bangumi {
         NetLog.warning('checkBangumiData', '网络请求失败（超时/不可达）: $e');
         return;
       }
-      App.rootContext.showMessage(
-        message: t.bangumiDataUpdateFailed,
-        level: LogLevel.error,
-      );
+      // 无头模式没有 UI，rootContext 为 null，此时只记日志不弹提示
+      final rootContext = App.rootContextOrNull;
+      if (rootContext != null) {
+        rootContext.showMessage(
+          message: t.bangumiDataUpdateFailed,
+          level: LogLevel.error,
+        );
+      }
       NetLog.error('checkBangumiData', '$e\n$s');
     }
   }

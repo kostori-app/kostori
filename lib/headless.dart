@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/main_isolate_runner.dart';
+import 'package:kostori/foundation/offscreen_host.dart';
 import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/init.dart';
 import 'package:media_kit/media_kit.dart';
@@ -88,6 +90,16 @@ Future<void> runHeadlessMode(List<String> args) async {
   }
 
   await init();
+
+  // 挂离屏渲染树：部分接口（如番剧时间表截图）需要活的 widget 树与 Overlay，
+  // 无头模式没有 runApp，只能靠 attachRootWidget 提供不可见的渲染环境
+  OffscreenHost.instance.attach(
+    brightness: switch (appdata.settings['themeMode'] as String?) {
+      'light' => Brightness.light,
+      'dark' => Brightness.dark,
+      _ => WidgetsBinding.instance.platformDispatcher.platformBrightness,
+    },
+  );
 
   final started = <String, dynamic>{};
   try {

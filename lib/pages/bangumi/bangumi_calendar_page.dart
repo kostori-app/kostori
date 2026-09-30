@@ -1022,9 +1022,17 @@ Future<Uint8List?> generateBangumiCalendarPng({
   required List<List<BangumiItem>> bangumiCalendar,
   required DateTime captureTime,
   required bool showWeekly,
+
+  /// 离屏渲染时由调用方直接提供；缺省时回退到从 context 向上查找宿主 Overlay。
+  OverlayState? offscreenOverlay,
 }) async {
-  final overlayState = context.findAncestorStateOfType<OverlayWidgetState>();
-  if (overlayState == null) {
+  final overlay =
+      offscreenOverlay ??
+      context
+          .findAncestorStateOfType<OverlayWidgetState>()
+          ?.overlayKey
+          .currentState;
+  if (overlay == null) {
     Log.error('截图失败', '未找到 OverlayWidgetState');
     return null;
   }
@@ -1063,7 +1071,7 @@ Future<Uint8List?> generateBangumiCalendarPng({
       child: SizedBox(width: 800, child: screenshotWidget),
     ),
   );
-  overlayState.addOverlay(renderEntry);
+  overlay.insert(renderEntry);
 
   try {
     await Future.delayed(const Duration(milliseconds: 1000));
@@ -1086,7 +1094,7 @@ Future<Uint8List?> generateBangumiCalendarPng({
     Log.error('截图失败', '$e\n$s');
     return null;
   } finally {
-    overlayState.remove(renderEntry);
+    renderEntry.remove();
   }
 }
 
