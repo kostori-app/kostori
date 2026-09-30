@@ -1,14 +1,11 @@
 // hub_web_admin_api.dart
 //
 // 管理后台的「集成类」接口：上传配置、入站 Webhook、Satori 机器人、
-// API Key 轮换、LAN 远程控制状态、消息检索。
+// API Key 轮换、消息检索。
 //
-// 与 hub_web_admin_service.dart 的分工：那里是服务生命周期与核心运维
-// （总览/统计/房间/客户端/日志/重启），这里是对外集成能力。
-//
-// 出站 Webhook 与 WS Bot 刻意不在这里：HubSubscriptionManager.migrateLegacy()
-// 已把它们迁移成 subscription，由 /api/admin/subscriptions 统一管理，
-// 再开一套 CRUD 会造成两个真相来源。
+// 刻意不含 LAN 远程控制：那是独立的 LanControlService（自己的 HttpServer 单例），
+// PIN 也一直由设置页持久化与编辑。放进 Hub 的管理面板会造出第二个真相来源，
+// 还会让「拿到 admin key」能直接改掉另一个暴露在 0.0.0.0 上的服务的唯一鉴权。
 part of 'package:kostori/foundation/hub_services/services.dart';
 
 extension HubWebAdminApi on HubWebAdminService {
@@ -21,7 +18,6 @@ extension HubWebAdminApi on HubWebAdminService {
     _registerWebhookRoutes();
     _registerSatoriBotRoutes();
     _registerKeyRoutes();
-    _registerLanRoutes();
     _registerSearchRoutes();
   }
 
@@ -603,80 +599,6 @@ extension HubWebAdminApi on HubWebAdminService {
           DocParam(name: 'admin', type: 'body', description: 'true 轮换管理层 Key'),
         ],
         response: 'JSON: rotated, key',
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  //  LAN 远程控制（只读状态 + PIN）
-  //
-  //  刻意不暴露 start/stop：播放与导航回调由 Flutter 页面注册
-  //  （setPlayerHandler / setNavigationHandler），从网页启动会得到一个
-  //  能连上但什么都不做的服务。
-  // ═══════════════════════════════════════════════════════════════════════
-
-  void _registerLanRoutes() {
-    final service = LanControlService.instance;
-
-    addGet(
-      '/api/admin/lan',
-      (req, params) => sendJson(req, {
-        'state': service.state.name,
-        'port': service.port,
-        'listening': service.isListening,
-        'pinEnabled': service.pinEnabled,
-        'connectionCount': service.connectionCount,
-        'connectedDeviceIds': service.connectedDeviceIds.toList(),
-        'lastError': service.lastError,
-        'maxPinAttempts': _kMaxPinAttempts,
-        'maxPinFailures': _kMaxPinFailures,
-      }),
-      middlewares: [adminAuthMiddleware],
-      doc: const RouteDoc(
-        summary: 'LAN 远程控制状态',
-        description: '监听状态、PIN 是否开启、当前连接数',
-        requiresAuth: true,
-        response: 'JSON: state, port, pinEnabled, connectionCount, ...',
-      ),
-    );
-
-    addPost(
-      '/api/admin/lan/pin',
-      (req, params) async {
-        final body = await readJson(req);
-        if (body == null) {
-          return sendJson(req, {'error': 'Invalid JSON body'}, status: 400);
-        }
-        final enabled = body['enabled'] == true;
-        final pin = body['pin']?.toString().trim() ?? '';
-        if (enabled && !RegExp(r'^\d{4,6}$').hasMatch(pin)) {
-          return sendJson(req, {
-            'error': 'pin must be 4-6 digits',
-          }, status: 400);
-        }
-        service.setPinRequirement(enabled: enabled, pin: pin);
-        return sendJson(req, {'saved': true, 'pinEnabled': service.pinEnabled});
-      },
-      middlewares: [adminAuthMiddleware],
-      doc: const RouteDoc(
-        summary: '设置 LAN 连接 PIN',
-        description: '开启后新连接必须先通过 PIN 校验。配置会持久化',
-        requiresAuth: true,
-        params: [
-          DocParam(
-            name: 'enabled',
-            type: 'body',
-            description: '是否开启',
-            required: true,
-          ),
-          DocParam(
-            name: 'pin',
-            type: 'body',
-            description: '4-6 位数字',
-            required: true,
-          ),
-        ],
-        response: 'JSON: saved, pinEnabled',
       ),
     );
   }

@@ -439,48 +439,31 @@ void main() {
     });
   });
 
-  group('LAN 远程控制：只读状态 + PIN', () {
-    test('可读取状态并设置 PIN，且持久化', () async {
+  group('LAN 远程控制不在管理面板里', () {
+    test('相关路由不存在', () async {
       await _withAdmin((port, key) async {
-        final (c0, b0) = await _call(
-          port,
-          'GET',
-          '/api/admin/lan',
-          adminKey: key,
-        );
-        expect(c0, 200);
-        expect(b0!['pinEnabled'], isFalse);
-
-        final (c1, b1) = await _call(
-          port,
-          'POST',
-          '/api/admin/lan/pin',
-          adminKey: key,
-          body: {'enabled': true, 'pin': '1234'},
-        );
-        expect(c1, 200, reason: '${b1?['error']}');
-        expect(LanControlService.instance.pinEnabled, isTrue);
-        expect(
-          appdata.implicitData['lan_pin_code'],
-          isNot('1234'),
-          reason: 'PIN 走设置页已有的存储键，不另开一套',
-        );
-      }, port: 47893);
-    });
-
-    test('非 4-6 位数字被拒', () async {
-      await _withAdmin((port, key) async {
-        for (final bad in ['123', '1234567', 'abcd', '']) {
-          final (code, _) = await _call(
-            port,
-            'POST',
-            '/api/admin/lan/pin',
-            adminKey: key,
-            body: {'enabled': true, 'pin': bad},
-          );
-          expect(code, 400, reason: 'PIN "$bad" 应被拒');
+        for (final entry in {
+          'GET': ['/api/admin/lan'],
+          'POST': ['/api/admin/lan/pin'],
+        }.entries) {
+          for (final path in entry.value) {
+            final (code, _) = await _call(
+              port,
+              entry.key,
+              path,
+              adminKey: key,
+              body: entry.key == 'POST' ? <String, dynamic>{} : null,
+            );
+            expect(
+              code,
+              404,
+              reason:
+                  '$entry.key $path 不该存在：'
+                  'LAN 控制是独立服务，PIN 由设置页负责',
+            );
+          }
         }
-      }, port: 47894);
+      }, port: 47893);
     });
   });
 
@@ -563,7 +546,6 @@ void main() {
             '/api/admin/webhooks',
             '/api/admin/satori-bots',
             '/api/admin/keys',
-            '/api/admin/lan',
             '/api/admin/search?q=a',
             '/api/admin/pinned',
           ],
@@ -571,7 +553,6 @@ void main() {
             '/api/admin/upload',
             '/api/admin/webhooks',
             '/api/admin/satori-bots',
-            '/api/admin/lan/pin',
           ],
         }.entries) {
           for (final path in entry.value) {

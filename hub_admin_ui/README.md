@@ -22,7 +22,7 @@ hub_admin_ui/          源码（本目录）
     styles.css         设计令牌与基础样式
     components/        Card / AppButton / AppModal / FormField / StatTile /
                        StatusBadge / MiniChart / ToastHost
-    views/             11 个视图，与 /api/admin/* 一一对应
+    views/             10 个视图，与 /api/admin/* 一一对应
 assets/hub_admin/      构建产物（已提交）
   index.html  app.js  app.css
 ```
@@ -51,6 +51,8 @@ npm run dev        # http://localhost:5273
 
 - 页面通过 `GET/POST /api/admin/*` 与 Hub 通信，全部走同源相对路径，
   **不硬编码 9100/9200**，端口在设置页改掉后依然有效。
+- **不含 LAN 远程控制**：那是独立的 `LanControlService`（自己的 `HttpServer` 单例），
+  播放/导航回调与 PIN 都由应用设置页负责，不在这里做第二个入口。
 - 静态资源由 `HubWebAdminService` 按固定文件名提供（`/app.js`、`/app.css`），
   文件名写在路由表里而非取自请求，因此没有路径穿越面。
   Vite 侧因此关闭了 hash 文件名（见 `vite.config.js` 的 `rollupOptions.output`）。

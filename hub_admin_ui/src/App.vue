@@ -17,7 +17,6 @@ import LogsView from './views/LogsView.vue';
 import ConfigView from './views/ConfigView.vue';
 import UploadView from './views/UploadView.vue';
 import IntegrationsView from './views/IntegrationsView.vue';
-import LanView from './views/LanView.vue';
 import AiView from './views/AiView.vue';
 
 const authed = ref(!!getToken());
@@ -39,7 +38,6 @@ const NAV = [
   { key: 'integrations', label: '集成', group: '设置' },
   { key: 'upload', label: '上传', group: '设置' },
   { key: 'ai', label: 'AI 机器人', group: '设置' },
-  { key: 'lan', label: 'LAN 控制', group: '设置' },
   { key: 'config', label: '服务配置', group: '设置' },
 ];
 
@@ -62,7 +60,6 @@ const VIEWS = {
   config: ConfigView,
   upload: UploadView,
   integrations: IntegrationsView,
-  lan: LanView,
   ai: AiView,
 };
 const current = computed(() => VIEWS[tab.value]);
