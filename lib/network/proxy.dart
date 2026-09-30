@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -18,6 +20,27 @@ Future<String?> getProxy() async {
   return proxy;
 }
 
+/// 「跟随系统」时不应显式指定代理，交给底层客户端读取环境变量。
+bool get isSystemProxy =>
+    (appdata.settings['proxy'] as String).removeAllBlank == "system";
+
+/// Linux/WSL 无平台通道，只能从环境变量探测。
+String? proxyFromEnvironment() {
+  const keys = [
+    "HTTPS_PROXY",
+    "https_proxy",
+    "HTTP_PROXY",
+    "http_proxy",
+    "ALL_PROXY",
+    "all_proxy",
+  ];
+  for (final key in keys) {
+    final value = Platform.environment[key]?.removeAllBlank;
+    if (value != null && value.isNotEmpty) return value;
+  }
+  return null;
+}
+
 Future<String?> _getProxy() async {
   if ((appdata.settings['proxy'] as String).removeAllBlank == "direct") {
     return null;
@@ -33,7 +56,8 @@ Future<String?> _getProxy() async {
       return null;
     }
   } else {
-    res = "No Proxy";
+    // 探测不到时返回 null，由调用方透传给底层客户端读取环境变量
+    res = proxyFromEnvironment() ?? "No Proxy";
   }
   if (res == "No Proxy") return null;
 

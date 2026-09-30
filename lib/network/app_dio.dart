@@ -319,13 +319,17 @@ class RHttpAdapter implements HttpClientAdapter {
 
     final isNoProxy = enableNoProxyOverrides
         ? noProxyOverrides.any((entry) {
+            final String domain;
+            final bool enabled;
             if (entry is Map) {
-              final domain = entry['domain']?.toString() ?? '';
-              final enabled = entry['enabled'] as bool? ?? true;
-              return enabled && options.uri.host.startsWith(domain);
+              domain = entry['domain']?.toString() ?? '';
+              enabled = entry['enabled'] as bool? ?? true;
+            } else {
+              // 兼容旧版仅存域名字符串的格式
+              domain = entry.toString();
+              enabled = true;
             }
-            // 兼容旧版仅存域名字符串的格式
-            return options.uri.host.startsWith(entry.toString());
+            return enabled && _hostMatchesDomain(options.uri.host, domain);
           })
         : false;
 
@@ -342,13 +346,19 @@ class RHttpAdapter implements HttpClientAdapter {
         ? rhttp.HttpVersionPref.http1_1
         : rhttp.HttpVersionPref.all;
 
+    // 显式传 noProxy() 会连带关掉 reqwest 的环境变量代理，故 system 模式传 null
+    final rhttp.ProxySettings? proxySettings;
+    if (isNoProxy || appdata.settings['proxy'] == "direct") {
+      proxySettings = const rhttp.ProxySettings.noProxy();
+    } else if (proxy != null) {
+      proxySettings = rhttp.ProxySettings.proxy(proxy);
+    } else {
+      proxySettings = null;
+    }
+
     return rhttp.ClientSettings(
       httpVersionPref: httpVersionPref,
-      proxySettings: isNoProxy
-          ? const rhttp.ProxySettings.noProxy()
-          : (proxy == null
-                ? const rhttp.ProxySettings.noProxy()
-                : rhttp.ProxySettings.proxy(proxy)),
+      proxySettings: proxySettings,
       redirectSettings: redirectSettings,
       timeoutSettings: const rhttp.TimeoutSettings(
         connectTimeout: Duration(seconds: 15),
@@ -362,6 +372,16 @@ class RHttpAdapter implements HttpClientAdapter {
         verifyCertificates: appdata.settings['ignoreBadCertificate'] != true,
       ),
     );
+  }
+
+  /// 点分隔后缀匹配，让 bgm.tv 规则能命中 api.bgm.tv。
+  static bool _hostMatchesDomain(String host, String domain) {
+    if (domain.isEmpty) return false;
+    if (host == domain) return true;
+    if (host.endsWith('.$domain')) return true;
+    // 兼容只填主机名前缀的旧条目
+    if (!domain.contains('.') && host.startsWith('$domain.')) return true;
+    return false;
   }
 
   static Map<String, List<String>> _getOverrides() {

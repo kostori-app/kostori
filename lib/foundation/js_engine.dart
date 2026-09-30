@@ -309,6 +309,8 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
         var proxy = await getProxy();
         dio.httpClientAdapter = IOHttpClientAdapter(
           createHttpClient: () {
+            // system 模式保留 dart:io 默认的 findProxyFromEnvironment
+            if (proxy == null && isSystemProxy) return HttpClient();
             return HttpClient()
               ..findProxy = (uri) => proxy == null ? "DIRECT" : "PROXY $proxy";
           },
