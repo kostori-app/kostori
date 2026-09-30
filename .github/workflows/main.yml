@@ -92,8 +92,20 @@ jobs:
             Kostori-windows-*.msix
 
   #linux
+  # ubuntu-24.04-arm 是 GitHub 公开仓库免费提供的 arm64 runner，
+  # 私有仓库不可用（届时改用 vars.LINUX_ARM64_RUNNER 自建 runner）。
   Build_Linux:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+            flutter_arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            flutter_arch: arm64
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
@@ -124,7 +136,7 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
-          architecture: x64
+          architecture: ${{ matrix.flutter_arch }}
 
       # rhttp / super_native_extensions / dtorrent_task_v2 是 Rust 原生依赖
       - name: Set up Rust
@@ -135,12 +147,13 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build linux --release
+      - name: Build ${{ matrix.arch }}
+        run: flutter build linux --release --target-platform linux-${{ matrix.flutter_arch }}
 
       - name: Package Linux outputs
         run: |
-          NAME="Kostori_linux_${TAG}_amd64"
-          BUNDLE=build/linux/x64/release/bundle
+          NAME="Kostori_linux_${TAG}_${{ matrix.arch }}"
+          BUNDLE="build/linux/${{ matrix.flutter_arch }}/release/bundle"
 
           # tarball：直接解压即用
           tar -czf "${NAME}.tar.gz" -C "$BUNDLE" .
@@ -162,7 +175,7 @@ jobs:
           Version: ${TAG}
           Section: x11
           Priority: optional
-          Architecture: amd64
+          Architecture: ${{ matrix.arch }}
           Maintainer: axlmly <https://github.com/kostori-app/kostori>
           Installed-Size: $(du -sk "pkg_${NAME}/opt" | cut -f1)
           Description: An anime streaming app.
@@ -182,7 +195,7 @@ jobs:
       - name: Upload Linux outputs
         uses: actions/upload-artifact@v4
         with:
-          name: Kostori_linux_amd64
+          name: Kostori_linux_${{ matrix.arch }}
           path: Kostori_linux_*.tar.gz*
             Kostori_linux_*.deb*
 
@@ -209,10 +222,16 @@ jobs:
           name: Kostori_windows_msix
           path: outputs
 
-      - name: Download Linux outputs
+      - name: Download Linux amd64
         uses: actions/download-artifact@v4
         with:
           name: Kostori_linux_amd64
+          path: outputs
+
+      - name: Download Linux arm64
+        uses: actions/download-artifact@v4
+        with:
+          name: Kostori_linux_arm64
           path: outputs
 
       - uses: softprops/action-gh-release@v2
