@@ -7,7 +7,7 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowSplashScreenBackground">@color/launch_background</item>
         <!-- 同 values-v31 -->
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
