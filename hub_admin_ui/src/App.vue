@@ -220,8 +220,8 @@ function signOut() {
 .shell {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
-  /* auto 行默认会平分 min-height 的多余空间：窄屏下 .side 是 fixed 不参与行
-     sizing，于是 .topbar 被一起撑高，按钮在里面垂直居中就飘了。 */
+  /* auto 行默认平分 min-height 的余量；窄屏下 .side 是 fixed 不参与行 sizing，
+     .topbar 会被一起撑高 */
   align-content: start;
   min-height: 100vh;
 }
@@ -409,7 +409,6 @@ nav {
 @media (max-width: 860px) {
   .shell {
     grid-template-columns: 1fr;
-    /* 顶栏保持自然高度，其余留给内容 */
     grid-template-rows: auto 1fr;
   }
 

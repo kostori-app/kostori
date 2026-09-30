@@ -14,7 +14,7 @@ class _AdminService extends HubWebAdminService {
   _AdminService(super.hub);
 }
 
-/// 探测某端口是否有服务在监听，连不上返回 null
+/// 探测端口是否有服务在监听，连不上返回 null
 Future<int?> _probe(int port) async {
   final client = HttpClient();
   try {
@@ -529,8 +529,7 @@ void main() {
         expect(html, contains('./app.js'));
         expect(html, contains('./app.css'));
         expect(html, isNot(contains('hub_admin.html')), reason: '旧的单文件页面应已下线');
-        // 管理页是服务端按当前构建产物现场生成的。不禁缓存的话浏览器会
-        // 继续用上一版 HTML（连同旧版整页 UI），用户看到的还是旧文案。
+        // 管理页必须禁用缓存，否则升级后浏览器仍渲染旧页面
         expect(
           res.headers.value(HttpHeaders.cacheControlHeader),
           'no-store',
@@ -595,8 +594,6 @@ void main() {
   });
 
   group('启停与端口立即生效', () {
-    // 这组守护的是「不要提示重启 Hub」：启停和改端口都是当场生效的，
-    // 之前 UI 却提示"重启 Hub 后生效"，而代码同时在立刻启动服务。
     test('开启后立即可用；改端口经 restartWebAdmin 直接换端口', () async {
       final dir = await Directory.systemTemp.createTemp('kostori_hub_admin');
       App.dataPath = dir.path;

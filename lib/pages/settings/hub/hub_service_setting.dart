@@ -1694,8 +1694,7 @@ class _WebAdminSettingsPageState extends ConsumerState<_WebAdminSettingsPage> {
     super.dispose();
   }
 
-  /// 只落盘，不提示也不重绑。dispose 里已经拿不到安全的提示时机了。
-  /// 返回 true 表示端口确实变了。
+  /// 只落盘，不重绑。返回 true 表示端口确实变了。
   bool _persistPort() {
     final port = int.tryParse(_portCtrl.text.trim());
     if (port == null || port <= 0 || port > 65535) {
@@ -1773,8 +1772,7 @@ class _WebAdminSettingsPageState extends ConsumerState<_WebAdminSettingsPage> {
                   dataSource: SwitchDataSource.implicit,
                   subtitle: _enabled ? 'http://localhost:$_port' : t.disabled,
                   onChanged: () async {
-                    // 持久化已由 _SwitchSetting 完成，这里处理服务启停。
-                    // 启停都是立刻生效的，所以不要提示"重启后生效"——那是错的。
+                    // 持久化已由 _SwitchSetting 完成，这里处理服务启停
                     try {
                       if (appdata.implicitData['hub_web_admin_enabled'] ==
                           true) {

@@ -15,10 +15,9 @@ const bots = ref([]);
 const loading = ref(false);
 const busy = ref(false);
 
-// ── 新建入站 Webhook ──
-const hookModal = ref(false);const hookForm = reactive({ name: '', roomId: '' });
+const hookModal = ref(false);
+const hookForm = reactive({ name: '', roomId: '' });
 
-// ── 新建订阅 ──
 const subModal = ref(false);
 const subForm = reactive({
   type: 'webhook',
@@ -31,7 +30,6 @@ const subForm = reactive({
   note: '',
 });
 
-// ── 新建 Satori 机器人 ──
 const botModal = ref(false);
 const botForm = reactive({ name: '', avatarUrl: '', biography: '' });
 

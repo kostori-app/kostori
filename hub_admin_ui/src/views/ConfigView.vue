@@ -25,8 +25,7 @@ const form = reactive({
   tlsPassword: '',
 });
 
-// 首屏加载失败不再弹 toast：侧栏已经显示连接状态，
-// 逐个页面弹一次只会盖住真正的操作反馈
+// 首屏加载不弹 toast：连接状态由侧栏统一显示
 async function load() {
   const [c, k] = await Promise.all([
     run(() => api.config(), { failure: () => '' }),
@@ -55,9 +54,8 @@ async function load() {
 
 onMounted(load);
 
-// 只列真正要重启的项：端口/绑定/TLS 属于 HubService.init() 一次性读取，
-// 心跳间隔在 _startHeartbeatCheck 建定时器时被捕获，其余项都是实时生效。
-// 笼统地说「部分设置重启后生效」会让人白重启，也让人以为存完就好了。
+// 端口/绑定/TLS 在 HubService.init() 一次性读取，心跳间隔在建定时器时被捕获，
+// 其余项实时生效
 const NEEDS_RESTART = {
   hubPort: 'Hub 端口',
   hubBindMode: 'Hub 绑定',

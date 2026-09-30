@@ -792,8 +792,7 @@ abstract class BaseHttpService implements BaseService {
     return Future.sync(() => _corsPipeline!(request));
   }
 
-  /// 请求访问日志的 title。管理后台默认按它过滤：管理页自己在轮询，
-  /// 不排除的话几秒就把 300 条窗口刷满，真正的错误反而看不见了。
+  /// 请求访问日志的 title。管理后台默认按它过滤，否则自身的轮询会刷满窗口。
   static const accessLogTitle = 'HTTP';
 
   String _remoteAddressOf(shelf.Request request) =>
@@ -877,8 +876,7 @@ abstract class BaseHttpService implements BaseService {
   );
 
   /// 发送 HTML 页面
-  /// HTML 由服务端按当前构建产物/路由表现场生成，且本机改一次构建就变一次。
-  /// 不显式禁用缓存的话浏览器会启发式缓存旧页面，用户看到的仍是上一版。
+  /// 现场生成、随构建产物变化，必须禁缓存，否则浏览器会继续用上一版。
   shelf.Response sendHtml(
     shelf.Request req,
     String html, {

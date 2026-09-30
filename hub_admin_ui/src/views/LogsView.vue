@@ -20,7 +20,6 @@ const LEVELS = [
 ];
 
 async function load(silent = false) {
-  // 自动轮询不转圈：每 4 秒闪一次 spinner 本身就是噪声
   if (!silent) loading.value = true;
   const res = await run(
     () => api.logs({ limit: 300, level: level.value || undefined, access: showAccess.value }),
