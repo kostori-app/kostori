@@ -50,9 +50,18 @@ class HubWebAdminService extends BaseHttpService {
 
   @override
   void registerRoutes() {
-    // 管理后台首页（嵌入的单文件 HTML）
+    // 管理后台页面（Vite 构建产物，随应用一起打包，源码见 hub_admin_ui/）
     addGet('/', _serveAdminPage);
     addGet('/admin', _serveAdminPage);
+    addGet(
+      '/app.js',
+      (req, params) =>
+          _serveAsset(req, 'app.js', 'text/javascript; charset=utf-8'),
+    );
+    addGet(
+      '/app.css',
+      (req, params) => _serveAsset(req, 'app.css', 'text/css; charset=utf-8'),
+    );
 
     // ── 状态总览（用户层可读） ──
     addGet('/api/admin/overview', _overview, middlewares: [authMiddleware]);
@@ -176,17 +185,61 @@ class HubWebAdminService extends BaseHttpService {
   //  页面
   // ═══════════════════════════════════════════════════════════════
 
+  /// Vite 构建产物的资源目录（相对 assets/）
+  static const _assetDir = 'assets/hub_admin';
+
   Future<shelf.Response> _serveAdminPage(
     shelf.Request request,
     Map<String, String> params,
   ) async {
-    String html;
     try {
-      html = await rootBundle.loadString('assets/hub_admin.html');
-    } catch (_) {
-      html = '<!DOCTYPE html><html><body><h1>Hub Admin</h1><p>页面资源缺失</p></body></html>';
+      final html = await rootBundle.loadString('$_assetDir/index.html');
+      return sendHtml(request, html);
+    } catch (e) {
+      HubLog.error('$runtimeType', '管理后台页面资源缺失: $e');
+      return sendHtml(
+        request,
+        '<!DOCTYPE html><html><head><meta charset="utf-8">'
+        '<title>Kostori Hub</title></head><body style="font:14px system-ui;'
+        'padding:40px;color:#e8ecf6;background:#0b0f1a">'
+        '<h1>管理后台资源缺失</h1>'
+        '<p>未找到 $_assetDir/index.html。请确认已执行 '
+        '<code>cd hub_admin_ui &amp;&amp; npm run build</code>。</p>'
+        '</body></html>',
+        status: HttpStatus.internalServerError,
+      );
     }
-    return sendHtml(request, html);
+  }
+
+  /// 提供 JS/CSS 产物。
+  ///
+  /// 文件名由路由表写死，不来自请求，因此不存在路径穿越面；
+  /// 也无需解析 index.html 去找 hash 后的真实文件名（Vite 侧已固定命名）。
+  Future<shelf.Response> _serveAsset(
+    shelf.Request request,
+    String name,
+    String mime,
+  ) async {
+    try {
+      final data = await rootBundle.load('$_assetDir/$name');
+      return shelf.Response(
+        HttpStatus.ok,
+        body: data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        headers: {
+          'content-type': mime,
+          // 名字固定（无 hash），改完刷新即可生效，不要缓存
+          'cache-control': 'no-cache',
+        },
+      );
+    } catch (e) {
+      HubLog.error('$runtimeType', '管理后台资源 $_assetDir/$name 缺失: $e');
+      return sendError(
+        request,
+        HttpStatus.notFound,
+        'ASSET_MISSING',
+        'Asset not found: $name',
+      );
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════

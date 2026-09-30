@@ -484,6 +484,75 @@ void main() {
     });
   });
 
+  group('管理后台页面与静态资源', () {
+    test('/ 返回构建产物并引用 app.js / app.css', () async {
+      await _withAdmin((port, key) async {
+        final client = HttpClient();
+        final req = await client.getUrl(Uri.parse('http://127.0.0.1:$port/'));
+        final res = await req.close();
+        final html = await res.transform(const SystemEncoding().decoder).join();
+        expect(res.statusCode, 200, reason: '管理后台首页应可公开访问');
+        expect(html, contains('./app.js'));
+        expect(html, contains('./app.css'));
+        expect(html, isNot(contains('hub_admin.html')), reason: '旧的单文件页面应已下线');
+        client.close(force: true);
+      }, port: 47896);
+    });
+
+    test('app.js / app.css 可访问且带正确 Content-Type', () async {
+      await _withAdmin((port, key) async {
+        final client = HttpClient();
+        for (final entry in {
+          '/app.js': 'text/javascript',
+          '/app.css': 'text/css',
+        }.entries) {
+          final req = await client.getUrl(
+            Uri.parse('http://127.0.0.1:$port${entry.key}'),
+          );
+          final res = await req.close();
+          final body = await res
+              .transform(const SystemEncoding().decoder)
+              .join();
+          expect(res.statusCode, 200, reason: '${entry.key} 应存在');
+          expect(
+            res.headers.contentType?.mimeType,
+            entry.value,
+            reason: '${entry.key} 的 MIME 不对，浏览器会拒绝执行',
+          );
+          expect(body, isNotEmpty);
+        }
+        client.close(force: true);
+      }, port: 47897);
+    });
+
+    test('静态资源无需鉴权（登录页自身要能加载）', () async {
+      await _withAdmin((port, _) async {
+        final client = HttpClient();
+        final req = await client.getUrl(
+          Uri.parse('http://127.0.0.1:$port/app.js'),
+        );
+        final res = await req.close();
+        await res.drain<void>();
+        expect(res.statusCode, 200);
+        client.close(force: true);
+      }, port: 47898);
+    });
+
+    test('/admin 与 / 指向同一页面', () async {
+      await _withAdmin((port, key) async {
+        final client = HttpClient();
+        final req = await client.getUrl(
+          Uri.parse('http://127.0.0.1:$port/admin'),
+        );
+        final res = await req.close();
+        final html = await res.transform(const SystemEncoding().decoder).join();
+        expect(res.statusCode, 200);
+        expect(html, contains('./app.js'));
+        client.close(force: true);
+      }, port: 47899);
+    });
+  });
+
   group('鉴权分层', () {
     test('新接口全部要求管理层 Key', () async {
       await _withAdmin((port, _) async {

@@ -235,3 +235,6 @@ flutter:
     - assets/shaders/
     - assets/img/
     - assets/
+    # Hub 管理后台构建产物（Vite，源码见 hub_admin_ui/）。
+    # 显式声明：不能依赖 assets/ 的递归收集，否则子目录可能被漏掉。
+    - assets/hub_admin/
