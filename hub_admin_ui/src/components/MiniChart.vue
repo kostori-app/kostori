@@ -1,8 +1,7 @@
 <script setup>
 /**
- * 轻量图表：柱状图与热力图。
- * 手写 SVG 而不是引图表库：这里只需要这两种图，
- * 一个图表库动辄 150KB+（产物要塞进 APK 的）。
+ * 柱状图与热力图。手写 SVG 而不引图表库：只需要这两种图，
+ * 而产物要塞进 APK，图表库动辄 150KB+。
  */
 import { computed } from 'vue';
 
@@ -26,7 +25,7 @@ const peak = computed(() => {
   return Math.max(1, ...values);
 });
 
-/** 热力格颜色：低 → 蓝，高 → 紫红，与整体色调一致 */
+/** 低 → 蓝，高 → 紫红 */
 function heatColor(v) {
   if (!v) return 'rgba(255,255,255,0.035)';
   const t = Math.min(1, v / peak.value);

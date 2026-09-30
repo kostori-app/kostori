@@ -1,5 +1,4 @@
 <script setup>
-/** 登录门：需要管理层令牌。令牌存 localStorage，刷新免登录。 */
 import { ref } from 'vue';
 import { api, setToken, getToken } from '../api.js';
 
@@ -15,7 +14,7 @@ async function submit() {
   }
   busy.value = true;
   error.value = '';
-  // 先拿令牌去探一个必须用管理层鉴权的接口，验证有效性
+  // 探一个必须用管理层鉴权的接口来验证令牌
   const previous = getToken();
   setToken(token.value.trim());
   try {

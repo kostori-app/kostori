@@ -1,5 +1,4 @@
 <script setup>
-/** 统计磁贴。 */
 defineProps({
   label: { type: String, required: true },
   value: { type: [String, Number], default: '—' },

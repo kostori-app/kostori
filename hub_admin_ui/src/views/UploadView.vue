@@ -62,7 +62,7 @@ async function save() {
     localStorePath: form.localStorePath,
     publicBaseUrl: form.publicBaseUrl,
   };
-  // 留空密钥表示保留原值，由后端处理
+  // 留空密钥 = 保留原值，由后端处理
   payload.oss = { ...form.oss, accessKeySecret: form.oss.accessKeySecret };
   if (form.mode === 'serverLocal') payload.oss = null;
 

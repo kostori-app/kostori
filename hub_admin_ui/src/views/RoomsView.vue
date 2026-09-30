@@ -16,7 +16,7 @@ const props = defineProps({
 const emit = defineEmits(['refresh']);
 
 const messagesFor = ref(null); // { room, messages }
-const sendTarget = ref(null); // room
+const sendTarget = ref(null);
 const sendText = ref('');
 const sendAsBot = ref(false);
 const busy = ref(false);

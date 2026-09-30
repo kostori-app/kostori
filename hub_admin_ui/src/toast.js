@@ -1,6 +1,5 @@
 import { ref } from 'vue';
 
-/** 全局轻量 toast。 */
 const toasts = ref([]);
 let seq = 0;
 
@@ -22,8 +21,8 @@ export const toastOk = (m) => toast(m, 'ok');
 export const toastErr = (m) => toast(m, 'err', 5200);
 
 /**
- * 把一次异步操作包起来：自动 toast 成功/失败，失败时返回 false 而不是抛出。
- * 用于所有「点了按钮就发请求」的场景，避免每个 handler 重复写 try/catch。
+ * 包一次异步操作：自动 toast 成功/失败，失败返回 { ok: false } 而不抛出，
+ * 免得每个 handler 都写一遍 try/catch。
  */
 export async function run(fn, { success, failure } = {}) {
   try {

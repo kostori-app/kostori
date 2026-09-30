@@ -1,9 +1,7 @@
 <script setup>
 /**
  * 管理后台外壳：侧边导航 + 视图切换。
- *
- * 轮询策略：概览 5s，房间/客户端 5s，统计/日志在进入对应视图时才开。
- * 页面不可见时暂停（省电，也避免后台标签页空转请求）。
+ * 轮询：活跃数据 5s；标签页隐藏时暂停，避免后台空转。
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { api, onUnauthorizedOnce, setToken, getToken } from './api.js';

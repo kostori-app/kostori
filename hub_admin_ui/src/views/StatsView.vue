@@ -15,7 +15,7 @@ const s = computed(() => props.stats?.summary || null);
 const hourBars = computed(() =>
   (props.stats?.hourly || []).map((v, h) => ({ label: String(h), value: v })),
 );
-// 7 天热力图：0 = 最早一天
+// 外层索引 0 = 最早一天
 const heatRows = computed(() => props.stats?.heatmap || []);
 const dayLabels = computed(() => {
   const daily = props.stats?.daily || [];

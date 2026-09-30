@@ -1,5 +1,4 @@
 <script setup>
-/** 全局 toast 容器。由 App 挂在根节点。 */
 import { useToasts } from '../toast.js';
 
 const toasts = useToasts();

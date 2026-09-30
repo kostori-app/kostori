@@ -90,8 +90,7 @@ async function restart() {
   if (res.ok) {
     // 服务回来之前不要继续操作
     setTimeout(() => window.location.reload(), 2500);
-  }
-}
+  }}
 
 async function autoIp() {
   const res = await run(() => api.publicIp(), { failure: (e) => e?.message });

@@ -1,8 +1,4 @@
 <script setup>
-/**
- * 集成：入站 Webhook / 订阅 / Satori 机器人。
- * 三块放一起，因为它们都是「让外部系统接入 Hub」的配置。
- */
 import { onMounted, reactive, ref } from 'vue';
 import Card from '../components/Card.vue';
 import AppButton from '../components/AppButton.vue';
@@ -20,8 +16,7 @@ const loading = ref(false);
 const busy = ref(false);
 
 // ── 新建入站 Webhook ──
-const hookModal = ref(false);
-const hookForm = reactive({ name: '', roomId: '' });
+const hookModal = ref(false);const hookForm = reactive({ name: '', roomId: '' });
 
 // ── 新建订阅 ──
 const subModal = ref(false);

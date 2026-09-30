@@ -50,7 +50,7 @@ class HubWebAdminService extends BaseHttpService {
 
   @override
   void registerRoutes() {
-    // 管理后台页面（Vite 构建产物，随应用一起打包，源码见 hub_admin_ui/）
+    // 管理后台（Vite 构建产物，源码见 hub_admin_ui/）
     addGet('/', _serveAdminPage);
     addGet('/admin', _serveAdminPage);
     addGet(
@@ -185,7 +185,6 @@ class HubWebAdminService extends BaseHttpService {
   //  页面
   // ═══════════════════════════════════════════════════════════════
 
-  /// Vite 构建产物的资源目录（相对 assets/）
   static const _assetDir = 'assets/hub_admin';
 
   Future<shelf.Response> _serveAdminPage(
@@ -211,10 +210,7 @@ class HubWebAdminService extends BaseHttpService {
     }
   }
 
-  /// 提供 JS/CSS 产物。
-  ///
-  /// 文件名由路由表写死，不来自请求，因此不存在路径穿越面；
-  /// 也无需解析 index.html 去找 hash 后的真实文件名（Vite 侧已固定命名）。
+  /// 文件名由路由表写死，不来自请求，因此没有路径穿越面。
   Future<shelf.Response> _serveAsset(
     shelf.Request request,
     String name,

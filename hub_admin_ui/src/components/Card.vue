@@ -1,5 +1,4 @@
 <script setup>
-/** 卡片容器：统一标题栏 + 内容区。 */
 defineProps({
   title: { type: String, default: '' },
   subtitle: { type: String, default: '' },
