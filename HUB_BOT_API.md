@@ -48,7 +48,7 @@ Content-Type: application/json
 **示例（curl）**
 
 ```bash
-curl -X POST "http://192.168.1.5:9100/hub/webhook/1a2b3c4d..." \
+curl -X POST "http://192.168.1.5:9101/hub/webhook/1a2b3c4d..." \
   -H "Content-Type: application/json" \
   -d '{"text": "打卡成功 ✅"}'
 ```

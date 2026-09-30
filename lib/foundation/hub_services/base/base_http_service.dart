@@ -136,7 +136,8 @@ abstract class BaseHttpService implements BaseService {
   }
 
   int get savedHubPort {
-    return appdata.implicitData[_hubPortKey] as int? ?? 9100;
+    // 9100 是 flutter run 的 DevTools 端口，避免冲突
+    return appdata.implicitData[_hubPortKey] as int? ?? 9101;
   }
 
   BindMode get savedBindMode {
