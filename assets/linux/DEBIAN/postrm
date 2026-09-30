@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+rm -f /usr/bin/kostori
+update-mime-database /usr/share/mime 2>/dev/null || true
+update-desktop-database /usr/share/applications 2>/dev/null || true
+exit 0

@@ -3,3 +3,7 @@
 *.yaml text eol=lf
 *.yml text eol=lf
 *.json text eol=lf
+
+# deb 的 maintainer script 必须在 Linux 下可执行，CRLF 会让 dpkg 报错
+assets/linux/DEBIAN/* text eol=lf
+assets/linux/*.desktop text eol=lf

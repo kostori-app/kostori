@@ -91,9 +91,104 @@ jobs:
           path: |
             Kostori-windows-*.msix
 
+  #linux
+  Build_Linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get tag name and set as environment variable
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          echo "tag=$tag" >> "$GITHUB_ENV"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libwebkit2gtk-4.1-dev libsoup-3.0-dev libjson-glib-dev \
+            libasound2-dev libpulse-dev libudev-dev libdbus-1-dev \
+            libmpv-dev libsecret-1-dev libepoxy-dev libglu1-mesa \
+            libdrm-dev libgbm-dev libegl1-mesa-dev libgles2-mesa-dev \
+            libglvnd-dev libxkbcommon-dev libxdamage-dev \
+            dpkg-dev
+
+      - name: Enable Git longpaths
+        run: git config --system core.longpaths true
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2.16.0
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          architecture: x64
+
+      # rhttp / super_native_extensions / dtorrent_task_v2 是 Rust 原生依赖
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check rust-toolchain.toml
+        run: rustup show
+
+      - run: flutter pub get
+
+      - run: flutter build linux --release
+
+      - name: Package Linux outputs
+        run: |
+          NAME="Kostori_linux_${TAG}_amd64"
+          BUNDLE=build/linux/x64/release/bundle
+
+          # tarball：直接解压即用
+          tar -czf "${NAME}.tar.gz" -C "$BUNDLE" .
+
+          # deb：装到 /opt/kostori，postinst 建 /usr/bin 软链与桌面项
+          rm -rf "pkg_${NAME}"
+          mkdir -p "pkg_${NAME}/opt/kostori"
+          mkdir -p "pkg_${NAME}/usr/share/applications"
+          mkdir -p "pkg_${NAME}/usr/share/icons/hicolor/512x512/apps"
+          cp -r "$BUNDLE"/. "pkg_${NAME}/opt/kostori/"
+          cp -r assets/linux/DEBIAN "pkg_${NAME}/"
+          chmod 0755 "pkg_${NAME}/DEBIAN/postinst" "pkg_${NAME}/DEBIAN/postrm"
+          cp assets/linux/com.axlmly.kostori.desktop "pkg_${NAME}/usr/share/applications/"
+          cp assets/linux/logo_linux.png \
+            "pkg_${NAME}/usr/share/icons/hicolor/512x512/apps/com.axlmly.kostori.png"
+
+          cat > "pkg_${NAME}/DEBIAN/control" <<EOF
+          Package: kostori
+          Version: ${TAG}
+          Section: x11
+          Priority: optional
+          Architecture: amd64
+          Maintainer: axlmly <https://github.com/kostori-app/kostori>
+          Installed-Size: $(du -sk "pkg_${NAME}/opt" | cut -f1)
+          Description: An anime streaming app.
+           Supports browsing, watching and downloading anime, with a built-in
+           headless service for remote control and LAN playback.
+          Homepage: https://github.com/kostori-app/kostori
+          Depends: libgtk-3-0, libwebkit2gtk-4.1-0, libmpv2, libasound2t64, libsecret-1-0
+          EOF
+
+          # dpkg-deb 输出 pkg_<NAME>.deb，需改名才能被 glob 匹配到
+          dpkg-deb --build --root-owner-group "pkg_${NAME}"
+          mv "pkg_${NAME}.deb" "${NAME}.deb"
+          rm -rf "pkg_${NAME}"
+          sha256sum "${NAME}.tar.gz" "${NAME}.deb" > "${NAME}.sha256"
+          cat "${NAME}.sha256"
+
+      - name: Upload Linux outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kostori_linux_amd64
+          path: Kostori_linux_*.tar.gz*
+            Kostori_linux_*.deb*
+
   Release:
     runs-on: ubuntu-22.04
-    needs: [ Build_Android, Build_Windows ]
+    needs: [ Build_Android, Build_Windows, Build_Linux ]
     if: github.event_name == 'release'
 
     steps:
@@ -114,6 +209,12 @@ jobs:
           name: Kostori_windows_msix
           path: outputs
 
+      - name: Download Linux outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: Kostori_linux_amd64
+          path: outputs
+
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -121,5 +222,8 @@ jobs:
             outputs/*.apk
             outputs/Kostori-windows-*.zip
             outputs/Kostori-windows-*.msix
+            outputs/Kostori_linux_*.tar.gz
+            outputs/Kostori_linux_*.deb
+            outputs/Kostori_linux_*.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
