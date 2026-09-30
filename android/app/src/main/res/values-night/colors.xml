@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="launch_background">#0F1114</color>
+    <!-- 必须在这里也覆盖：否则 Android 12+ 闪屏图标在深色下仍带白底板 -->
+    <color name="ic_launcher_background">#0F1114</color>
 </resources>

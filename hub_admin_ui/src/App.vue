@@ -22,6 +22,7 @@ import AiView from './views/AiView.vue';
 const authed = ref(!!getToken());
 const tab = ref('overview');
 const online = ref(false);
+const drawer = ref(false);
 
 const overview = ref(null);
 const stats = ref(null);
@@ -63,6 +64,16 @@ const VIEWS = {
   ai: AiView,
 };
 const current = computed(() => VIEWS[tab.value]);
+const currentLabel = computed(
+  () => NAV.find((n) => n.key === tab.value)?.label ?? '',
+);
+
+/** 窄屏下选完就收起抽屉，否则会挡住刚打开的视图 */
+function pick(key) {
+  tab.value = key;
+  drawer.value = false;
+  window.scrollTo({ top: 0 });
+}
 
 let ticker = null;
 
@@ -143,7 +154,18 @@ function signOut() {
 <template>
   <LoginGate v-if="!authed" @authenticated="authed = true; refreshAll(); startPolling()" />
 
-  <div v-else class="shell">
+  <div v-else class="shell" :class="{ 'drawer-open': drawer }">
+    <header class="topbar">
+      <button class="burger" aria-label="打开菜单" @click="drawer = true">
+        <span /><span /><span />
+      </button>
+      <span class="mark">◆</span>
+      <strong class="grow truncate">{{ currentLabel }}</strong>
+      <span class="dot" :class="online ? 'ok' : 'off'" :title="online ? '已连接' : '连接中断'" />
+    </header>
+
+    <div v-if="drawer" class="scrim" @click="drawer = false" />
+
     <aside class="side">
       <div class="brand">
         <span class="mark">◆</span>
@@ -151,6 +173,7 @@ function signOut() {
           <div class="b-name">Kostori Hub</div>
           <div class="b-ver faint">{{ overview?.version || '' }}</div>
         </div>
+        <button class="close" aria-label="关闭菜单" @click="drawer = false">×</button>
       </div>
 
       <nav>
@@ -161,7 +184,7 @@ function signOut() {
             :key="item.key"
             class="nav"
             :class="{ on: tab === item.key }"
-            @click="tab = item.key"
+            @click="pick(item.key)"
           >
             {{ item.label }}
           </button>
@@ -198,6 +221,65 @@ function signOut() {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   min-height: 100vh;
+}
+
+/* 顶栏只在窄屏出现 */
+.topbar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(11, 15, 26, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.burger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  cursor: pointer;
+  flex: none;
+}
+.burger span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.close {
+  display: none;
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+  flex: none;
+}
+.close:hover {
+  color: var(--text);
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(4, 7, 15, 0.6);
+  backdrop-filter: blur(2px);
 }
 
 .side {
@@ -322,37 +404,57 @@ nav {
   min-width: 0;
 }
 
+/* ── 窄屏：侧栏改为抽屉 ──────────────────────────────
+   早前把 10 个导航项塞进一条横向滚动条，结果在手机上挤成一团、
+   点击目标过小、也没有任何提示说明还能往右滑。改成抽屉。 */
 @media (max-width: 860px) {
   .shell {
     grid-template-columns: 1fr;
   }
+
+  .topbar {
+    display: flex;
+  }
+
   .side {
-    position: static;
-    height: auto;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    overflow-x: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 80;
+    width: 264px;
+    height: 100dvh;
+    transform: translateX(-100%);
+    /* 收起时移出 tab 顺序，否则键盘能聚焦到屏幕外的导航项 */
+    visibility: hidden;
+    transition: transform 0.22s ease, visibility 0.22s ease;
+    border-right: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-lg);
   }
-  nav {
-    flex-direction: row;
-    gap: 6px;
-    overflow-x: auto;
+  .drawer-open .side {
+    transform: translateX(0);
+    visibility: visible;
   }
-  .g-label {
-    display: none;
+
+  .close {
+    display: block;
   }
+
   .nav {
-    width: auto;
-    white-space: nowrap;
+    /* 保证触摸目标足够大 */
+    padding: 11px 12px;
+    font-size: 14px;
+    border-radius: var(--r);
   }
-  .side-foot {
-    display: none;
-  }
+
   .main {
-    padding: 16px 14px 40px;
+    padding: 14px 12px 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side {
+    transition: none;
   }
 }
 </style>

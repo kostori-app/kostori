@@ -110,11 +110,13 @@ const badge = (l) =>
   overflow: auto;
   font-family: var(--mono);
   font-size: 12px;
+  /* 日志内容不换行，窄屏下横向滚动而不是撑破布局 */
+  overflow-x: auto;
 }
 
 .log li {
   display: grid;
-  grid-template-columns: 62px 66px 130px 1fr;
+  grid-template-columns: 62px 66px 130px minmax(0, 1fr);
   gap: 8px;
   padding: 3px 6px;
   border-radius: 4px;
@@ -151,7 +153,7 @@ const badge = (l) =>
   word-break: break-word;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 860px) {
   .log li {
     grid-template-columns: 58px 1fr;
   }

@@ -426,7 +426,7 @@ select:focus {
   line-height: 1.5;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 860px) {
   .items li {
     flex-direction: column;
     align-items: stretch;

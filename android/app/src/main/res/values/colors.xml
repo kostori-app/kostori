@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#ffffff</color>
-    <!-- 与 Flutter 启动页 surface 一致，避免原生启动窗口到首帧之间底色跳变 -->
-    <color name="launch_background">#FFFFFF</color>
+    <!--
+      原生启动窗口在 Dart 运行之前显示，读不到应用内的 themeMode/amoled 设置，
+      只能跟系统走。但 Flutter 的 BootSplash 用的是 colorScheme.surface（跟应用设置走），
+      两者不同源时会出现「白闪屏 → 黑启动页」的跳变。
+      这里统一压成深色：与深色主题下的 BootSplash 一致，浅色主题用户也只是一次常规
+      的启动页→应用过渡，而不是刺眼的白闪。
+    -->
+    <color name="launch_background">#0F1114</color>
 </resources>

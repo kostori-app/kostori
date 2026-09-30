@@ -226,7 +226,7 @@ function toggleAdmin(c) {
   max-width: 260px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 860px) {
   .client {
     flex-direction: column;
   }
