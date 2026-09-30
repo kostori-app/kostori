@@ -105,9 +105,10 @@ export const api = {
   pinned: (room) =>
     get(`/api/admin/pinned${room ? `?room=${enc(room)}` : ''}`),
 
-  logs: ({ limit = 200, level } = {}) => {
+  logs: ({ limit = 200, level, access } = {}) => {
     const params = new URLSearchParams({ limit: String(limit) });
     if (level) params.set('level', level);
+    if (access) params.set('access', '1');
     return get(`/api/admin/logs?${params}`);
   },
 

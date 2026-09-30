@@ -8,6 +8,7 @@ import { run } from '../toast.js';
 const logs = ref([]);
 const level = ref('');
 const auto = ref(true);
+const showAccess = ref(false);
 const loading = ref(false);
 let timer = null;
 
@@ -18,11 +19,13 @@ const LEVELS = [
   { value: 'info', label: '信息' },
 ];
 
-async function load() {
-  loading.value = true;
-  const res = await run(() => api.logs({ limit: 300, level: level.value || undefined }), {
-    failure: () => '',
-  });
+async function load(silent = false) {
+  // 自动轮询不转圈：每 4 秒闪一次 spinner 本身就是噪声
+  if (!silent) loading.value = true;
+  const res = await run(
+    () => api.logs({ limit: 300, level: level.value || undefined, access: showAccess.value }),
+    { failure: () => '' },
+  );
   if (res.ok) logs.value = res.result.logs || [];
   loading.value = false;
 }
@@ -34,10 +37,10 @@ function stop() {
 
 function schedule() {
   stop();
-  if (auto.value) timer = setInterval(load, 4000);
+  if (auto.value) timer = setInterval(() => load(true), 4000);
 }
 
-onMounted(load);
+onMounted(() => load(true));
 
 // 视图被 KeepAlive 缓存：切走只是「停用」而不是「卸载」，
 // 只在 onMounted 起定时器的话，离开日志页后仍会一直每 4 秒轮询。
@@ -45,7 +48,7 @@ onActivated(schedule);
 onDeactivated(stop);
 onUnmounted(stop);
 
-watch([level, auto], () => {
+watch([level, auto, showAccess], () => {
   load();
   if (auto.value) schedule();
   else stop();
@@ -65,13 +68,17 @@ const badge = (l) =>
         <input v-model="auto" type="checkbox" />
         <span>自动刷新</span>
       </label>
-      <AppButton size="sm" :busy="loading" @click="load">刷新</AppButton>
+      <label class="auto" title="管理页自己在轮询，不排除的话几秒就把日志刷满">
+        <input v-model="showAccess" type="checkbox" />
+        <span>请求日志</span>
+      </label>
+      <AppButton size="sm" :busy="loading" @click="load()">刷新</AppButton>
     </template>
 
     <div v-if="!logs.length" class="empty">暂无日志</div>
 
     <ul v-else class="log">
-      <li v-for="(l, i) in logs" :key="i">
+      <li v-for="(l, i) in logs" :key="l.time + i">
         <span class="lv" :class="badge(l.level)">{{ l.level }}</span>
         <span class="mono ts">{{ l.time.slice(11, 19) }}</span>
         <span class="ti truncate">{{ l.title }}</span>
@@ -108,6 +115,8 @@ const badge = (l) =>
   list-style: none;
   max-height: 62vh;
   overflow: auto;
+  /* 行数跨过阈值时滚动条会闪现，导致整列表横向抖动 */
+  scrollbar-gutter: stable;
   font-family: var(--mono);
   font-size: 12px;
   overflow-x: auto;

@@ -587,7 +587,14 @@ class HubWebAdminService extends BaseHttpService {
     final limit =
         int.tryParse(req.requestedUri.queryParameters['limit'] ?? '') ?? 100;
     final level = req.requestedUri.queryParameters['level'];
+    // 默认剔除请求访问日志：本页自己在轮询，留着会把窗口占满
+    final includeAccess = req.requestedUri.queryParameters['access'] == '1';
     var logs = Log.logs;
+    if (!includeAccess) {
+      logs = logs
+          .where((l) => l.title != BaseHttpService.accessLogTitle)
+          .toList();
+    }
     if (level != null && level.isNotEmpty) {
       logs = logs.where((l) => l.level.name == level).toList();
     }

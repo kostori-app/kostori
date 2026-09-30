@@ -439,6 +439,42 @@ void main() {
     });
   });
 
+  group('日志：默认剔除请求访问日志', () {
+    test('不带 access=1 时不含 HTTP 访问行，access=1 时含', () async {
+      await _withAdmin((port, key) async {
+        // 先打一次请求，确保产生了访问日志
+        await _call(port, 'GET', '/api/admin/keys', adminKey: key);
+
+        final (code, hidden) = await _call(
+          port,
+          'GET',
+          '/api/admin/logs?limit=500',
+          adminKey: key,
+        );
+        expect(code, 200);
+        final titles = (hidden!['logs'] as List)
+            .map((e) => e['title'])
+            .toList();
+        expect(
+          titles,
+          isNot(contains(BaseHttpService.accessLogTitle)),
+          reason: '默认不该返回请求访问日志，否则管理页自己的轮询会刷满窗口',
+        );
+
+        final (_, shown) = await _call(
+          port,
+          'GET',
+          '/api/admin/logs?limit=500&access=1',
+          adminKey: key,
+        );
+        final shownTitles = (shown!['logs'] as List)
+            .map((e) => e['title'])
+            .toList();
+        expect(shownTitles, contains(BaseHttpService.accessLogTitle));
+      }, port: 47894);
+    });
+  });
+
   group('LAN 远程控制不在管理面板里', () {
     test('相关路由不存在', () async {
       await _withAdmin((port, key) async {

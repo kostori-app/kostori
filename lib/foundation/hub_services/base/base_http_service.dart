@@ -792,6 +792,10 @@ abstract class BaseHttpService implements BaseService {
     return Future.sync(() => _corsPipeline!(request));
   }
 
+  /// 请求访问日志的 title。管理后台默认按它过滤：管理页自己在轮询，
+  /// 不排除的话几秒就把 300 条窗口刷满，真正的错误反而看不见了。
+  static const accessLogTitle = 'HTTP';
+
   String _remoteAddressOf(shelf.Request request) =>
       (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
           ?.remoteAddress
@@ -821,7 +825,7 @@ abstract class BaseHttpService implements BaseService {
         }, status: HttpStatus.methodNotAllowed);
       }
 
-      HubLog.info('$runtimeType', '→ $method $path  (from $from)');
+      HubLog.info(accessLogTitle, '$runtimeType → $method $path  (from $from)');
       final match = _router.resolve(method, path);
 
       if (match == null) {
@@ -842,8 +846,8 @@ abstract class BaseHttpService implements BaseService {
 
       watch.stop();
       HubLog.info(
-        '$runtimeType',
-        '← $method $path  ${watch.elapsedMilliseconds}ms',
+        accessLogTitle,
+        '$runtimeType ← $method $path  ${watch.elapsedMilliseconds}ms',
       );
       return response;
     } on BodyTooLarge catch (e) {
