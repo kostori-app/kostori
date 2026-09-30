@@ -90,17 +90,39 @@ class HubWebhookManager {
   static const _outboundKey = 'hub_outbound_webhooks';
   static const _wsBotsKey = 'hub_ws_bot_connections';
 
+  // ── 缓存 ──
+  //
+  // 这两个 load 原本在「每条房间消息 + 每条系统事件」里被调用。缓存以底层
+  // List 的对象身份为键：保存配置或整体恢复 implicitData 都会换上新的 List，
+  // 两种情况自动失效，无需手工维护。
+  Object? _inboundSource;
+  List<HubWebhook>? _inboundCache;
+
+  Object? _outboundSource;
+  List<HubOutboundWebhook>? _outboundCache;
+
+  Object? _wsBotsSource;
+  List<HubWsBotConnection>? _wsBotsCache;
+
   // ── 入站 ──
 
   List<HubWebhook> loadInbound() {
     final raw = appdata.implicitData[_inboundKey];
-    if (raw is List) {
-      return raw
-          .whereType<Map>()
-          .map((m) => HubWebhook.fromJson(Map<String, dynamic>.from(m)))
-          .toList();
+    if (raw is! List) {
+      _inboundSource = null;
+      _inboundCache = null;
+      return const [];
     }
-    return [];
+    if (identical(raw, _inboundSource) && _inboundCache != null) {
+      return _inboundCache!;
+    }
+    final parsed = raw
+        .whereType<Map>()
+        .map((m) => HubWebhook.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+    _inboundSource = raw;
+    _inboundCache = parsed;
+    return parsed;
   }
 
   void _saveInbound(List<HubWebhook> list) {
@@ -136,13 +158,21 @@ class HubWebhookManager {
 
   List<HubOutboundWebhook> loadOutbound() {
     final raw = appdata.implicitData[_outboundKey];
-    if (raw is List) {
-      return raw
-          .whereType<Map>()
-          .map((m) => HubOutboundWebhook.fromJson(Map<String, dynamic>.from(m)))
-          .toList();
+    if (raw is! List) {
+      _outboundSource = null;
+      _outboundCache = null;
+      return const [];
     }
-    return [];
+    if (identical(raw, _outboundSource) && _outboundCache != null) {
+      return _outboundCache!;
+    }
+    final parsed = raw
+        .whereType<Map>()
+        .map((m) => HubOutboundWebhook.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+    _outboundSource = raw;
+    _outboundCache = parsed;
+    return parsed;
   }
 
   void _saveOutbound(List<HubOutboundWebhook> list) {
@@ -186,13 +216,21 @@ class HubWebhookManager {
 
   List<HubWsBotConnection> loadWsBots() {
     final raw = appdata.implicitData[_wsBotsKey];
-    if (raw is List) {
-      return raw
-          .whereType<Map>()
-          .map((m) => HubWsBotConnection.fromJson(Map<String, dynamic>.from(m)))
-          .toList();
+    if (raw is! List) {
+      _wsBotsSource = null;
+      _wsBotsCache = null;
+      return const [];
     }
-    return [];
+    if (identical(raw, _wsBotsSource) && _wsBotsCache != null) {
+      return _wsBotsCache!;
+    }
+    final parsed = raw
+        .whereType<Map>()
+        .map((m) => HubWsBotConnection.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+    _wsBotsSource = raw;
+    _wsBotsCache = parsed;
+    return parsed;
   }
 
   void _saveWsBots(List<HubWsBotConnection> list) {

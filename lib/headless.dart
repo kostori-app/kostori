@@ -147,7 +147,7 @@ Future<void> _startHeadlessService(
   Map<String, dynamic> started,
 ) async {
   final service = HeadlessService();
-  service.setHubNoAuth(noAuth);
+  service.setHubNoAuth(noAuth, persist: false);
   final preferred = port ?? 9001;
   // 命令行 --cert/--key 优先；否则读应用内 TLS 配置（与 hub 服务一致）
   if (cert != null && key != null) {
@@ -185,13 +185,14 @@ Future<void> _startHubService(
   String? key,
   Map<String, dynamic> started,
 ) async {
-  final service = HubService();
-  service.setHubNoAuth(noAuth);
-  // 命令行 --cert/--key 优先：显式指定时强制启用 HTTPS（覆盖应用内配置）
+  final service = HubService.instance;
+  service.setHubNoAuth(noAuth, persist: false);
+  // 命令行 --cert/--key 优先：显式指定时强制启用 HTTPS（覆盖应用内配置）。
+  // persist: false —— 不写进应用配置，否则 GUI 会用这里的一次性路径启 HTTPS。
   if (cert != null && key != null) {
-    service.setTlsEnabled(true);
-    service.setTlsCertificatePath(cert);
-    service.setTlsPrivateKeyPath(key);
+    service.setTlsEnabled(true, persist: false);
+    service.setTlsCertificatePath(cert, persist: false);
+    service.setTlsPrivateKeyPath(key, persist: false);
   }
   await service.init(preferredPort: port, mode: mode);
   started['port'] = service.port;
@@ -226,7 +227,8 @@ Future<void> _waitForShutdown(Map<String, dynamic> started) async {
     await HeadlessService().dispose();
   } catch (_) {}
   try {
-    await HubService().dispose();
+    // 必须用 instance：HubService() 会拿到一个从未初始化的新实例
+    await HubService.instance.dispose();
   } catch (_) {}
   try {
     await LanControlService.instance.stop();

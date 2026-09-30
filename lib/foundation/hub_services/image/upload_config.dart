@@ -56,13 +56,23 @@ class OssConfig {
     return '$host/$key';
   }
 
-  /// 生成带前缀的存储 key
+  /// 生成带前缀的存储 key。扩展名必须清洗，否则 `a.png/../x` 会被
+  /// URL 归一化成 bucket 内任意路径。
   String buildKey(String filename, Uint8List bytes) {
-    final ext = filename.contains('.')
-        ? filename.substring(filename.lastIndexOf('.'))
-        : '.bin';
     final hash = md5.convert(bytes).toString();
-    return '${prefix ?? "hub/"}$hash$ext';
+    return '${prefix ?? "hub/"}$hash${_safeExtension(filename)}';
+  }
+
+  /// 只保留 [a-z0-9] 组成的短扩展名（最长 8 位），其余一律 .bin。
+  static String _safeExtension(String filename) {
+    final dot = filename.lastIndexOf('.');
+    if (dot < 0) return '.bin';
+    final ext = filename
+        .substring(dot + 1)
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z0-9]'), '');
+    if (ext.isEmpty || ext.length > 8) return '.bin';
+    return '.$ext';
   }
 
   Map<String, dynamic> toJson() => {

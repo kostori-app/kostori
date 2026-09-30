@@ -21,9 +21,16 @@ extension HubServiceUploadHandler on HubService {
     appdata.writeImplicitData();
   }
 
-  // ── 本地存储目录（固定写死，不随配置更改）──
+  // ── 本地存储目录 ──
 
-  String get _uploadDir => p.join(App.dataPath, 'hub_uploads');
+  /// 默认固定写死；配置了 localStorePath 时以其为准
+  String get _uploadDir {
+    final configured = uploadConfig.localStorePath;
+    if (configured == null || configured.trim().isEmpty) {
+      return p.join(App.dataPath, 'hub_uploads');
+    }
+    return p.join(configured.trim(), 'hub_uploads');
+  }
 
   Future<void> _ensureUploadDir() async {
     final dir = Directory(_uploadDir);
@@ -60,10 +67,10 @@ extension HubServiceUploadHandler on HubService {
   Future<_MultipartFile?> parseMultipartFile(Uint8List body, String boundary) =>
       _parseMultipart(Stream.value(body), boundary);
 
-  /// Satori 适配层使用：收集请求体原始字节
+  /// Satori 适配层使用：收集请求体原始字节（带上限，避免大包打满内存）
   Future<Uint8List> collectRequestBodyBytes(shelf.Request request) async {
     final builder = BytesBuilder(copy: false);
-    await for (final chunk in request.read()) {
+    await for (final chunk in Middleware.readBodyCapped(request)) {
       builder.add(chunk);
     }
     return builder.takeBytes();
@@ -127,7 +134,7 @@ extension HubServiceUploadHandler on HubService {
       _MultipartFile? parsed;
       try {
         parsed = await _parseMultipart(
-          request.read(),
+          Middleware.readBodyCapped(request, maxBytes: config.maxSizeBytes),
           boundary,
           maxBytes: config.maxSizeBytes,
         );
@@ -144,8 +151,7 @@ extension HubServiceUploadHandler on HubService {
       }
 
       // 仅接受图片类型（防上传非图片文件被存储/分发）
-      final allowedMime = _isAllowedImageMime(parsed.mimeType);
-      if (!allowedMime) {
+      if (!isAllowedImageMime(parsed.mimeType)) {
         return sendJson(request, {
           'error': 'Only image uploads are allowed',
         }, status: HttpStatus.unsupportedMediaType);
@@ -196,10 +202,16 @@ extension HubServiceUploadHandler on HubService {
         '✅ ${parsed.filename} (${parsed.bytes.length}B) $hash → $url',
       );
       return sendJson(request, {'url': url});
+    } on BodyTooLarge catch (e) {
+      final maxMb = (e.maxBytes / (1024 * 1024)).toStringAsFixed(0);
+      return sendJson(request, {
+        'error': 'File too large (max ${maxMb}MB)',
+      }, status: HttpStatus.requestEntityTooLarge);
     } catch (e, st) {
+      // 不回显 $e：可能带 OSS endpoint / bucket / 本地路径
       HubLog.error('HubUpload', 'upload failed: $e\n$st');
       return sendJson(request, {
-        'error': 'Upload failed: $e',
+        'error': 'Upload failed',
       }, status: HttpStatus.internalServerError);
     }
   }
@@ -409,7 +421,11 @@ extension HubServiceUploadHandler on HubService {
     'image/svg+xml',
   };
 
-  bool _isAllowedImageMime(String mime) {
+  /// 上传内容是否属于允许的图片类型。Satori 上传通道复用同一份白名单。
+  ///
+  /// 客户端可自由声明 Content-Type，这里只校验声明值；真正的兜底是
+  /// [_handleServeFile] 的 `nosniff` 与 SVG 强制 attachment。
+  bool isAllowedImageMime(String mime) {
     final normalized = mime.toLowerCase().split(';').first.trim();
     return _allowedImageMimes.contains(normalized);
   }

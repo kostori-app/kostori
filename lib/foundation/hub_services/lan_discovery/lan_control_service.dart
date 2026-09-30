@@ -4,6 +4,12 @@ enum LanControlServiceState { idle, listening, connected, error, pinRequired }
 
 const int _kMaxPinAttempts = 3;
 
+/// 跨连接的总闸门。逐连接计数按随机 deviceId 记账且断开即清零，
+/// 攻击者每新建一条连接就能再试 _kMaxPinAttempts 次。
+const int _kMaxPinFailures = 20;
+const Duration _kPinFailureWindow = Duration(minutes: 10);
+const Duration _kPinLockout = Duration(minutes: 5);
+
 typedef LanControlCallback = void Function(LanControlMessage message);
 
 class LanControlService {
@@ -25,6 +31,35 @@ class LanControlService {
   final _pendingPinConnections = <String, WebSocketChannel>{};
   final _pinAttempts = <String, int>{};
   final _pinTimeouts = <String, Timer>{};
+
+  /// 全局 PIN 失败时间戳（滑动窗口）与锁定截止时间
+  final _pinFailures = <DateTime>[];
+  DateTime? _pinLockedUntil;
+
+  bool get _pinLockedOut {
+    final until = _pinLockedUntil;
+    if (until == null) return false;
+    if (DateTime.now().isBefore(until)) return true;
+    _pinLockedUntil = null;
+    return false;
+  }
+
+  bool _pinBudgetExhausted() {
+    final cutoff = DateTime.now().subtract(_kPinFailureWindow);
+    _pinFailures.removeWhere((t) => t.isBefore(cutoff));
+    return _pinFailures.length >= _kMaxPinFailures;
+  }
+
+  void _recordPinFailure() {
+    _pinFailures.add(DateTime.now());
+    if (_pinFailures.length >= _kMaxPinFailures && _pinLockedUntil == null) {
+      _pinLockedUntil = DateTime.now().add(_kPinLockout);
+      HubLog.warning(
+        'LanControlService',
+        'PIN 连续失败过多，锁定 ${_kPinLockout.inMinutes} 分钟',
+      );
+    }
+  }
 
   final _onMessageListeners = <LanControlCallback>[];
   final _onConnectListeners = <void Function(String)>[];
@@ -178,6 +213,8 @@ class LanControlService {
     }
     _pinTimeouts.clear();
     _pinAttempts.clear();
+    _pinFailures.clear();
+    _pinLockedUntil = null;
 
     final connections = List<WebSocketChannel>.of(_connections.values);
     _connections.clear();
@@ -247,6 +284,19 @@ class LanControlService {
     _sendToSocket(ws, _buildHelloMessage(requiresPin));
 
     if (requiresPin) {
+      // 全局预算耗尽或锁定期：直接拒绝，不给逐连接计数留空子
+      if (_pinLockedOut || _pinBudgetExhausted()) {
+        _sendToSocket(
+          ws,
+          LanControlMessage(
+            type: LanControlMessageType.error,
+            requestId: '',
+            data: {'error': 'PIN 尝试次数过多，请稍后再试'},
+          ),
+        );
+        closeWebSocket(ws);
+        return;
+      }
       _pendingPinConnections[deviceId] = ws;
       _pinTimeouts[deviceId] = Timer(const Duration(seconds: 30), () {
         if (_pendingPinConnections.remove(deviceId) != null) {
@@ -296,7 +346,7 @@ class LanControlService {
     requestId: LanControlMessage.generateRequestId(),
     data: {
       'requiresPin': requiresPin,
-      if (requiresPin) 'pinLength': _pinCode.length,
+      // 刻意不下发 pinLength：等于告诉攻击者 PIN 几位数
     },
   );
 
@@ -335,12 +385,15 @@ class LanControlService {
         _pinTimeouts.remove(deviceId);
         _pinAttempts.remove(deviceId);
         _pendingPinConnections.remove(deviceId);
+        _pinFailures.clear();
+        _pinLockedUntil = null;
         _registerConnection(deviceId, ws);
         _sendToSocket(ws, LanControlResponseMessage.success(message.requestId));
         HubLog.info('LanControlService', 'PIN 码验证通过: $deviceId');
         return;
       }
 
+      _recordPinFailure();
       final attempts = (_pinAttempts[deviceId] ?? 0) + 1;
       _pinAttempts[deviceId] = attempts;
       final remaining = _kMaxPinAttempts - attempts;

@@ -355,8 +355,10 @@ class HubWebAdminService extends BaseHttpService {
     Map<String, String> params,
   ) async {
     final roomId = params['roomId'] ?? '';
+    // 必须 clamp：?limit=-1 会让 sublist(hist.length + 1) 抛 RangeError
     final limit =
-        int.tryParse(req.requestedUri.queryParameters['limit'] ?? '') ?? 50;
+        (int.tryParse(req.requestedUri.queryParameters['limit'] ?? '') ?? 50)
+            .clamp(1, 500);
     final room = _hub.findRoom(roomId);
     if (room == null) {
       return sendJson(req, {'error': 'Room not found'}, status: 404);
@@ -768,8 +770,15 @@ class HubWebAdminService extends BaseHttpService {
     shelf.Request req,
     Map<String, String> params,
   ) async {
-    unawaited(_hub.restart());
-    return sendJson(req, {'restarting': true});
+    // restart() 会 force-close 掉自己所在的监听器，响应写不出去，
+    // 所以先返回再延迟重启。
+    final response = sendJson(req, {'restarting': true});
+    unawaited(
+      Future<void>.delayed(const Duration(milliseconds: 300)).then((_) {
+        return _hub.restart();
+      }),
+    );
+    return response;
   }
 
   // ── 公网 IP 探测 ─────────────────────────────────────────────────────────

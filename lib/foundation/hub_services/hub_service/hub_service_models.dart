@@ -56,8 +56,10 @@ class HubClientInfo {
   void send(Map<String, dynamic> data) {
     if (connection == null) return; // 机器人无连接
     try {
-      HubLog.info('send', '服务端发送: ${jsonEncode(data)}');
-      connection!.sink.add(jsonEncode(data));
+      // 只编码一次：日志和发送共用，避免广播时按成员数重复编码
+      final encoded = jsonEncode(data);
+      HubLog.info('send', '服务端发送: $encoded');
+      connection!.sink.add(encoded);
     } catch (_) {}
   }
 }

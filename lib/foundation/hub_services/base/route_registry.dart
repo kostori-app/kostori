@@ -136,16 +136,21 @@ class _ParamRoute {
   _ParamRoute._(this.pattern, this.entry, this._regex, this._paramNames);
 
   factory _ParamRoute(String pattern, RouteEntry entry) {
-    final paramNames = RegExp(r':(\w+)')
-        .allMatches(pattern)
-        .map((m) => m.group(1)!)
-        .toList();
+    // 字面量部分走 RegExp.escape，否则路径里的 . + ( ) 等会被当成正则语法
+    final paramPattern = RegExp(r':(\w+)');
+    final paramNames = <String>[];
+    final regex = StringBuffer('^');
+    var cursor = 0;
+    for (final match in paramPattern.allMatches(pattern)) {
+      regex.write(RegExp.escape(pattern.substring(cursor, match.start)));
+      regex.write('([^/]+)');
+      paramNames.add(match.group(1)!);
+      cursor = match.end;
+    }
+    regex.write(RegExp.escape(pattern.substring(cursor)));
+    regex.write(r'$');
 
-    // 先处理好pattern，再拼接正则字符串
-    final regexPattern = pattern.replaceAll(RegExp(r':(\w+)'), r'([^/]+)');
-    final regex = RegExp('^$regexPattern\$');
-
-    return _ParamRoute._(pattern, entry, regex, paramNames);
+    return _ParamRoute._(pattern, entry, RegExp(regex.toString()), paramNames);
   }
 
   Map<String, String>? match(String path) {

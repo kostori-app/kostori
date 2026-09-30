@@ -21,7 +21,9 @@ abstract class BaseHttpService implements BaseService {
   final _binder = ServerBinder();
   final _router = RouteRegistry();
 
-  bool _hubNoAuth = false;
+  // 无头 CLI（--cert/--key/--no-auth）的进程内覆盖，null = 读 appdata。
+  // 这类参数不落盘，否则会污染 GUI 的 Hub 配置。
+  bool? _hubNoAuthOverride;
 
   int get port => _binder.port;
 
@@ -33,7 +35,9 @@ abstract class BaseHttpService implements BaseService {
 
   List<String> get boundWsAddresses => _binder.boundWsAddresses;
 
-  bool get hubNoAuth => _hubNoAuth;
+  bool get hubNoAuth =>
+      _hubNoAuthOverride ??
+      (appdata.implicitData[_hubNoAuthKey] as bool? ?? false);
 
   final _startTime = DateTime.now();
 
@@ -51,22 +55,37 @@ abstract class BaseHttpService implements BaseService {
   static const _tlsKeyKey = 'hub_tls_key_path';
   static const _tlsPasswordKey = 'hub_tls_password';
 
+  // 同上：无头 CLI 的进程内覆盖，null = 读 appdata
+  bool? _tlsEnabledOverride;
+  String? _tlsCertOverride;
+  String? _tlsKeyOverride;
+  String? _tlsPasswordOverride;
+
   /// Hub 是否启用 HTTPS/WSS
-  bool get tlsEnabled => appdata.implicitData[_tlsEnabledKey] as bool? ?? false;
+  bool get tlsEnabled =>
+      _tlsEnabledOverride ??
+      (appdata.implicitData[_tlsEnabledKey] as bool? ?? false);
 
   String? get tlsCertificatePath =>
-      appdata.implicitData[_tlsCertKey] as String?;
+      _tlsCertOverride ?? (appdata.implicitData[_tlsCertKey] as String?);
 
-  String? get tlsPrivateKeyPath => appdata.implicitData[_tlsKeyKey] as String?;
+  String? get tlsPrivateKeyPath =>
+      _tlsKeyOverride ?? (appdata.implicitData[_tlsKeyKey] as String?);
 
-  String? get tlsPassword => appdata.implicitData[_tlsPasswordKey] as String?;
+  String? get tlsPassword =>
+      _tlsPasswordOverride ??
+      (appdata.implicitData[_tlsPasswordKey] as String?);
 
-  void setTlsEnabled(bool v) {
+  void setTlsEnabled(bool v, {bool persist = true}) {
+    _tlsEnabledOverride = v;
+    if (!persist) return;
     appdata.implicitData[_tlsEnabledKey] = v;
     appdata.writeImplicitData();
   }
 
-  void setTlsCertificatePath(String? p) {
+  void setTlsCertificatePath(String? p, {bool persist = true}) {
+    _tlsCertOverride = p;
+    if (!persist) return;
     if (p == null || p.isEmpty) {
       appdata.implicitData.remove(_tlsCertKey);
     } else {
@@ -75,7 +94,9 @@ abstract class BaseHttpService implements BaseService {
     appdata.writeImplicitData();
   }
 
-  void setTlsPrivateKeyPath(String? p) {
+  void setTlsPrivateKeyPath(String? p, {bool persist = true}) {
+    _tlsKeyOverride = p;
+    if (!persist) return;
     if (p == null || p.isEmpty) {
       appdata.implicitData.remove(_tlsKeyKey);
     } else {
@@ -84,7 +105,9 @@ abstract class BaseHttpService implements BaseService {
     appdata.writeImplicitData();
   }
 
-  void setTlsPassword(String? p) {
+  void setTlsPassword(String? p, {bool persist = true}) {
+    _tlsPasswordOverride = p;
+    if (!persist) return;
     if (p == null || p.isEmpty) {
       appdata.implicitData.remove(_tlsPasswordKey);
     } else {
@@ -154,9 +177,10 @@ abstract class BaseHttpService implements BaseService {
     appdata.writeImplicitData();
   }
 
-  void setHubNoAuth(bool val) {
-    _hubNoAuth = val;
-    appdata.implicitData[_hubNoAuthKey] = _hubNoAuth;
+  void setHubNoAuth(bool val, {bool persist = true}) {
+    _hubNoAuthOverride = val;
+    if (!persist) return;
+    appdata.implicitData[_hubNoAuthKey] = val;
     appdata.writeImplicitData();
   }
 
@@ -167,7 +191,7 @@ abstract class BaseHttpService implements BaseService {
 
   /// Hub 专用：根据开关决定是否需要鉴权
   List<MiddlewareHandler> get _hubAuthMiddleware =>
-      _hubNoAuth ? [] : [authMiddleware];
+      hubNoAuth ? [] : [authMiddleware];
 
   /// 管理层鉴权（不免验，任何来源都必须提供管理 Key）
   MiddlewareHandler get adminAuthMiddleware => Middleware.auth(admin: true);
@@ -205,7 +229,13 @@ abstract class BaseHttpService implements BaseService {
   shelf.Handler _wsShelfHandler(String path, shelf.Request raw) {
     final handler = _wsRoutes[path]!;
     return webSocketHandler((WebSocketChannel channel, String? protocol) {
-      unawaited(handler(channel, raw));
+      // 兜住异常，否则 unawaited 的错误会静默丢失
+      unawaited(
+        handler(channel, raw).catchError((Object e, StackTrace s) {
+          HubLog.error('$runtimeType', '❌ WS $path 处理器异常: $e\n$s');
+          closeWebSocket(channel, WebSocketStatus.internalServerError);
+        }),
+      );
     }, pingInterval: pingInterval);
   }
 
@@ -316,7 +346,7 @@ abstract class BaseHttpService implements BaseService {
   // ── WebSocket 鉴权工具 ────────────────────────
   /// 从 WebSocket 请求中提取 token 并校验
   bool _validateWsToken(shelf.Request req, {bool admin = false}) {
-    final token = req.requestedUri.queryParameters['token'];
+    final token = Middleware.readToken(req);
     if (token == null) return false;
     return admin
         ? ApiKeyManager().validateAdmin(token)
@@ -754,6 +784,8 @@ abstract class BaseHttpService implements BaseService {
 
   // ── 请求处理 ──────────────────────────────────
   shelf.Handler? _corsPipeline;
+  late final MiddlewareHandler _bodySizeLimitMiddleware =
+      Middleware.bodySizeLimit();
 
   Future<shelf.Response> _handleRequest(shelf.Request request) {
     _corsPipeline ??= Middleware.cors()(_dispatch);
@@ -775,7 +807,7 @@ abstract class BaseHttpService implements BaseService {
     }
 
     try {
-      final limit = await Middleware.bodySizeLimit()(request);
+      final limit = await _bodySizeLimitMiddleware(request);
       if (limit != null) return limit;
 
       final method = request.method;
@@ -814,13 +846,17 @@ abstract class BaseHttpService implements BaseService {
         '← $method $path  ${watch.elapsedMilliseconds}ms',
       );
       return response;
+    } on BodyTooLarge catch (e) {
+      // chunked 请求没有 content-length，只能在流式读取时才发现超限
+      return Middleware._tooLarge(e.maxBytes, null);
     } catch (e, stack) {
       HubLog.error('$runtimeType', '❌ $e\n$stack');
+      // 细节只进日志，不回显内部路径/endpoint
       return sendError(
         request,
         HttpStatus.internalServerError,
         'SERVER_ERROR',
-        e.toString(),
+        'Internal server error',
       );
     }
   }
@@ -873,9 +909,20 @@ abstract class BaseHttpService implements BaseService {
     body: bytes,
     headers: {
       'content-type': mimeType,
-      'content-disposition': 'attachment; filename="$filename"',
+      // filename 会进 header，剥掉引号/反斜杠/控制字符防头注入
+      'content-disposition':
+          "attachment; filename=\"${_sanitizeHeaderFilename(filename)}\"",
     },
   );
+
+  static final _unsafeHeaderChars = RegExp(r'["\\\r\n\x00-\x1f\x7f]');
+
+  static String _sanitizeHeaderFilename(String name) {
+    final cleaned = _unsafeHeaderChars.allMatches(name).isEmpty
+        ? name
+        : name.replaceAll(_unsafeHeaderChars, '_');
+    return cleaned.isEmpty ? 'download' : cleaned;
+  }
 
   shelf.Response sendAuto(
     shelf.Request req,
@@ -904,16 +951,21 @@ abstract class BaseHttpService implements BaseService {
   }, status: status);
 
   // ── 请求体解析 ────────────────────────────────
+  // 统一走 Middleware 的带上限读取，不依赖客户端提供的 content-length。
+
   Future<Map<String, dynamic>?> readJson(shelf.Request req) async {
     try {
-      final body = await req.readAsString();
+      final body = await Middleware.readBodyStringCapped(req);
       return jsonDecode(body) as Map<String, dynamic>;
+    } on BodyTooLarge {
+      rethrow; // 交给 _dispatch 转 413
     } catch (_) {
       return null;
     }
   }
 
-  Future<String> readBody(shelf.Request req) => req.readAsString();
+  Future<String> readBody(shelf.Request req) =>
+      Middleware.readBodyStringCapped(req);
 
   // ── 静态文件 ──────────────────────────────────
   void serveStatic(String urlPrefix, String dirPath) {

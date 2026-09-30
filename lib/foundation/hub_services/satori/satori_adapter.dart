@@ -103,12 +103,7 @@ class SatoriServer {
 
   /// Satori REST 鉴权：接受专属 bot 令牌或用户/管理层 Key。
   FutureOr<shelf.Response?> _satoriAuth(shelf.Request request) {
-    final header = request.headers['authorization'];
-    final bearerToken = header != null && header.startsWith('Bearer ')
-        ? header.substring(7)
-        : null;
-    final queryToken = request.requestedUri.queryParameters['token'];
-    final token = bearerToken ?? queryToken;
+    final token = Middleware.readToken(request);
     final valid =
         token != null &&
         (SatoriBotProfileStore.instance.findByToken(token) != null ||
@@ -868,10 +863,13 @@ class SatoriServer {
 
   Future<Map<String, dynamic>?> _readJsonBody(shelf.Request request) async {
     try {
-      final body = await request.readAsString();
+      // 带上限的流式读取：chunked 请求没有 content-length，只查头拦不住
+      final body = await Middleware.readBodyStringCapped(request);
       if (body.isEmpty) return {};
       final decoded = jsonDecode(body);
       return decoded is Map<String, dynamic> ? decoded : {};
+    } on BodyTooLarge {
+      rethrow;
     } catch (_) {
       return null;
     }
@@ -917,6 +915,10 @@ class SatoriServer {
     final body = await hub.collectRequestBodyBytes(request);
     final parsed = await hub.parseMultipartFile(body, boundary);
     if (parsed == null) throw StateError('no file found');
+    // 与 /hub/upload 共用图片白名单，否则此通道可绕过，任意类型文件都会落盘
+    if (!hub.isAllowedImageMime(parsed.mimeType)) {
+      throw StateError('only image uploads are allowed');
+    }
     final url = await hub.storeUploadedFile(parsed);
     return {parsed.filename: url};
   }

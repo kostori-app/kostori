@@ -136,11 +136,11 @@ extension HubServiceActions on HubService {
       client?.send({'type': 'error', 'message': '需要 keyword'});
       return;
     }
+    // 关键词只 lower 一次，不放进 where 闭包里逐条重算
+    final needle = keyword.toLowerCase();
     final results =
         _rooms[roomId]?.messageHistory
-            .where(
-              (m) => m.plainText.toLowerCase().contains(keyword.toLowerCase()),
-            )
+            .where((m) => m.plainText.toLowerCase().contains(needle))
             .toList() ??
         [];
     client?.send({
@@ -179,7 +179,16 @@ extension HubServiceActions on HubService {
   ) {
     if (client == null) return;
     if (data['displayName'] != null) {
-      client.displayName = data['displayName'] as String;
+      // 改名会绕过连接时的 _resolveClientName 重名消解，可冒充 Server 或他人
+      final name = (data['displayName'] as String).trim();
+      final taken = _clients.values.any(
+        (c) => c.userId != fromId && c.displayName == name,
+      );
+      if (name.isEmpty || taken || name.toLowerCase() == 'server') {
+        client.send({'type': 'error', 'message': '该昵称不可用'});
+        return;
+      }
+      client.displayName = name;
     }
     if (data['avatarUrl'] != null) {
       client.avatarUrl = data['avatarUrl'] as String;
@@ -451,6 +460,12 @@ extension HubServiceActions on HubService {
     }
     if (targetRoom.bannedUserIds.contains(fromId)) {
       client?.send({'type': 'error', 'message': '你已被禁止进入该房间'});
+      return;
+    }
+    // 已在房间内的成员重进不算超限
+    final alreadyInRoom = targetRoom.participants.containsKey(fromId);
+    if (!alreadyInRoom && targetRoom.isFull && client?.isGlobalAdmin != true) {
+      client?.send({'type': 'error', 'message': '房间人数已满'});
       return;
     }
     _rooms[currentRoomId]?.participants.remove(fromId);

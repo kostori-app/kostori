@@ -1,9 +1,12 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-final hubServiceProvider = Provider<HubService>((ref) => HubService());
+/// 进程内唯一实例。无头模式的启动与关闭路径必须拿到同一个服务。
+final hubServiceProvider = Provider<HubService>((ref) => HubService.instance);
 
 class HubService extends BaseHttpService {
   HubService();
+
+  static final HubService instance = HubService();
 
   final Map<String, HubClientInfo> _clients = {};
   final Map<String, HubRoom> _rooms = {};
@@ -11,6 +14,12 @@ class HubService extends BaseHttpService {
   final Set<String> _blacklist = {};
   final Set<String> _adminIds = {};
   final List<String> eventLog = [];
+
+  /// 同时接入的 /hub WebSocket 连接数（含尚未鉴权的）
+  int _hubSocketCount = 0;
+
+  /// 单连接限流按连接计算，多开连接即可绕过，故另设总量上限
+  static const int maxHubSockets = 64;
 
   /// 已与房主建立直连同步的成员（一起看 P2P），广播时跳过这些成员
   final Map<String, bool> _directSyncMembers = {};
@@ -396,17 +405,20 @@ class HubService extends BaseHttpService {
     final isSyncMsg = msg.segments.whereType<TextSegment>().any(
       (s) => isHubSyncText(s.text),
     );
+    // 成员无关的部分只序列化一次；只有 segments 需按各成员 token 单独加密
+    final baseJson = msg.toJson();
+    final baseSegments = baseJson['segments'];
     for (final member in room.participants.values) {
       if (member.userId == exclude) continue;
       if (isSyncMsg && _directSyncMembers[member.userId] == true) continue;
-      final json = msg.toJson();
+      final json = Map<String, dynamic>.of(baseJson);
       // 逐人加密：用该成员自己的 token 派生密钥，避免多客户端互相污染全局密钥
-      if (json['segments'] != null) {
+      if (baseSegments != null) {
         final token = member.authToken;
         if (token != null && token.isNotEmpty) {
           json['segments'] = HubCrypto.encryptWith(
             token,
-            jsonEncode(json['segments']),
+            jsonEncode(baseSegments),
           );
           json['encrypted'] = true;
         }

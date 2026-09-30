@@ -134,6 +134,20 @@ class _SubRuntime {
   }
 
   // ── ws forward：Hub 作为 WS 服务端监听 ────────────────────────────────────
+
+  /// 缺了它半开连接不会被回收，会一直留在 _clients 里
+  static const _wsForwardPingInterval = Duration(seconds: 30);
+
+  void _registerForwardClient(WebSocketChannel socket) {
+    _clients.add(socket);
+    // 用 then(onError:) 而非 whenComplete：后者会把 done 的错误转交给被丢弃的
+    // Future，每次异常断开都产生一条未捕获异步异常。
+    socket.sink.done.then(
+      (_) => _clients.remove(socket),
+      onError: (_) => _clients.remove(socket),
+    );
+  }
+
   Future<void> _startWsForward() async {
     final port = sub.listenPort ?? 0;
     final host = sub.listenHost?.trim().isNotEmpty == true
@@ -156,45 +170,37 @@ class _SubRuntime {
         'message': '仅支持 WebSocket 连接',
       });
     }
-    final queryToken = req.requestedUri.queryParameters['token'];
-    if (sub.token?.isNotEmpty == true && queryToken != sub.token) {
+    // 鉴权失败直接 401，不升级连接。auth 帧是可选的，若先入 _clients 再等它，
+    // 不带 token 的连接会静默收到全部广播（派发的是明文 text）。
+    final requiresAuth = sub.token?.isNotEmpty == true;
+    if (requiresAuth && Middleware.readToken(req) != sub.token) {
       return shelf.Response(HttpStatus.unauthorized);
     }
-    final authenticatedByQuery =
-        sub.token?.isNotEmpty == true && queryToken != null;
     final handler = webSocketHandler((
       WebSocketChannel socket,
       String? protocol,
     ) {
-      _clients.add(socket);
-      socket.sink.done.whenComplete(() => _clients.remove(socket));
-      if (authenticatedByQuery) return;
-      // 监听认证消息（token 未通过 query 传入时）
-      socket.stream.listen(
-        (data) {
-          try {
-            final map = data is String ? jsonDecode(data) : data;
-            if (map is Map && map['type'] == 'auth') {
-              final t = map['token']?.toString();
-              if (sub.token?.isNotEmpty == true && t != sub.token) {
-                socket.sink.add(
-                  jsonEncode({'type': 'error', 'message': 'Unauthorized'}),
-                );
-                closeWebSocket(
-                  socket,
-                  WebSocketStatus.policyViolation,
-                  'Unauthorized',
-                );
-              } else {
-                socket.sink.add(jsonEncode({'type': 'auth_ok'}));
-              }
-            }
-          } catch (_) {}
-        },
-        onDone: () => _clients.remove(socket),
-        onError: (_) => _clients.remove(socket),
-      );
-    });
+      _registerForwardClient(socket);
+      // 保留 auth 帧：支持运行中轮换 token
+      socket.stream.listen((data) {
+        try {
+          final map = data is String ? jsonDecode(data) : data;
+          if (map is! Map || map['type'] != 'auth') return;
+          if (map['token']?.toString() == sub.token) {
+            socket.sink.add(jsonEncode({'type': 'auth_ok'}));
+          } else {
+            socket.sink.add(
+              jsonEncode({'type': 'error', 'message': 'Unauthorized'}),
+            );
+            closeWebSocket(
+              socket,
+              WebSocketStatus.policyViolation,
+              'Unauthorized',
+            );
+          }
+        } catch (_) {}
+      });
+    }, pingInterval: _wsForwardPingInterval);
     return handler(req);
   }
 
@@ -308,11 +314,23 @@ class _SubRuntime {
         });
       }
       if (path == '/message' && req.method == 'POST') {
-        final body = await req.readAsString();
-        HubLog.info('HubSubscription', '📨 HTTP 收到消息（${sub.note}）：$body');
+        // 独立 HttpServer，不经过 BaseHttpService._dispatch，需自带上限读取
+        String body;
+        try {
+          body = await Middleware.readBodyStringCapped(req);
+        } on BodyTooLarge catch (e) {
+          return _json(HttpStatus.requestEntityTooLarge, {
+            'error': 'Request Entity Too Large',
+            'maxBytes': e.maxBytes,
+          });
+        }
+        // 不回显/不落完整 body，避免变成反射与日志放大器
+        final preview = _preview(body);
+        HubLog.info('HubSubscription', '📨 HTTP 收到消息（${sub.note}）：$preview');
         return _json(HttpStatus.ok, {
           'ok': true,
-          'received': body,
+          'received': preview,
+          'bytes': body.length,
           'timestamp': DateTime.now().toIso8601String(),
         });
       }
@@ -324,14 +342,19 @@ class _SubRuntime {
     );
   }
 
+  static const _maxLogPreview = 200;
+
+  static String _preview(String body) => body.length <= _maxLogPreview
+      ? body
+      : '${body.substring(0, _maxLogPreview)}…(${body.length}B)';
+
   bool _authOk(shelf.Request req) {
-    if (sub.token?.isEmpty != false) return true;
-    final header = req.headers['authorization'];
-    if (header != null) {
-      return header == 'Bearer ${sub.token}' || header == sub.token;
-    }
-    final query = req.requestedUri.queryParameters['token'];
-    return query != null && query == sub.token;
+    final expected = sub.token;
+    // 未配置 token 时不鉴权（显式的用户选择，仅暴露 /hello /health /message）
+    if (expected == null || expected.isEmpty) return true;
+    if (Middleware.readToken(req) == expected) return true;
+    // 兼容不带 "Bearer " 前缀的裸 Authorization 头
+    return req.headers['authorization'] == expected;
   }
 
   // ── 心跳 ──────────────────────────────────────────────────────────────────

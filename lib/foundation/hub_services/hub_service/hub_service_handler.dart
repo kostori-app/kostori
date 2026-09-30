@@ -436,6 +436,16 @@ extension HubServiceHandler on HubService {
     // 同意则移入房间
     final room = _rooms[roomId];
     if (room == null || client == null) return;
+    // 邀请路径同样要受人数上限约束，否则可以绕过 join_room 的检查
+    if (!room.participants.containsKey(fromId) &&
+        room.isFull &&
+        client.isGlobalAdmin != true) {
+      client.send({'type': 'error', 'message': '房间人数已满'});
+      return;
+    }
+    // validatePassword 按「被邀请者免密码」语义写的；只在内存中生效，
+    // 不写进 _roomMeta，避免变成跨会话的永久越权。
+    room.invitedUserIds.add(fromId);
     final fromRoomId = client.currentRoomId;
     _rooms[fromRoomId]?.participants.remove(fromId);
     _rooms[roomId]!.participants[fromId] = client;
