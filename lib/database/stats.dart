@@ -1299,6 +1299,7 @@ extension StatsHelper on StatsManager {
     required FavoriteAction action,
   }) async {
     final manager = StatsManager();
+    if (!manager.isInitialized) return;
     if (!manager.isExist(id, AnimeType(type))) {
       try {
         final history = HistoryManager().find(id, AnimeType(type));

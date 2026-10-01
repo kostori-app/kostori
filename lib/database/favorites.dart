@@ -965,42 +965,21 @@ class LocalFavoritesManager with ChangeNotifier {
     list.removeWhere((e) => e.item.id == id && e.item.type == type);
   }
 
-  void moveFavorite(
-    List<String> sources,
-    List<String> targets,
-    String id,
-    AnimeType type,
-  ) {
-    if (sources.isEmpty || targets.isEmpty) return;
-    for (final source in sources) {
-      final e = _findEntry(source, id, type);
-      if (e == null) continue;
-      for (final target in targets) {
-        if (target == source) continue;
-        _copyInto(target, e);
-      }
-    }
-    for (final source in sources) {
-      removeFavoriteFromFolder(source, id, type);
-    }
-    final uniqueTargets = targets.where((t) => !sources.contains(t)).toList();
-    StatsManager().addFavoriteRecord(
-      id: id,
-      type: type.value,
-      folder: '${sources.join("|")},${uniqueTargets.join("|")}',
-      action: FavoriteAction.move,
-    );
-    _rebuildHashedIds();
-    _notify();
-    _schedulePersist();
-  }
-
+  /// 复制条目到目标文件夹（目标已存在则只补齐观看时间，不产生副本）
   void _copyInto(String targetFolder, _FavEntry src) {
     final list = _byFolder[_resolveFolder(targetFolder)];
     if (list == null) return;
-    if (list.any(
+    final existing = list.indexWhere(
       (e) => e.item.id == src.item.id && e.item.type == src.item.type,
-    )) {
+    );
+    if (existing != -1) {
+      // 同一条目在各文件夹的观看时间应一致，来源更新就同步过去
+      if ((src.recentlyWatched ?? '').compareTo(
+            list[existing].recentlyWatched ?? '',
+          ) >
+          0) {
+        list[existing].recentlyWatched = src.recentlyWatched;
+      }
       return;
     }
     list.add(_FavEntry(_cloneItem(src.item), src.recentlyWatched));
@@ -1016,30 +995,48 @@ class LocalFavoritesManager with ChangeNotifier {
     viewMore: src.viewMore,
   )..time = src.time;
 
+  /// 把 [items] 从 [sourceFolder] 移到 [targetFolders]（可为多个）。
+  ///
+  /// 单表结构下移动只是改归属：先按来源顺序取出条目快照，逐个写入目标，
+  /// 最后统一从来源移除。若边移边删，第一轮之后条目已不在来源里，
+  /// 后续目标会拿到空快照而丢失。
   void batchMoveFavorites(
     String sourceFolder,
-    String targetFolder,
+    List<String> targetFolders,
     List<FavoriteItem> items,
   ) {
     if (!existsFolder(sourceFolder)) {
       throw Exception("Source folder does not exist");
     }
-    if (!existsFolder(targetFolder)) {
-      throw Exception("Target folder does not exist");
-    }
-    for (var item in items) {
-      final e = _findEntry(sourceFolder, item.id, item.type);
-      if (e != null && sourceFolder != targetFolder) {
-        _copyInto(targetFolder, e);
+    final targets = targetFolders
+        .where((f) => f != sourceFolder)
+        .toSet()
+        .toList(growable: false);
+    for (final target in targets) {
+      if (!existsFolder(target)) {
+        throw Exception("Target folder does not exist");
       }
-      removeFavoriteFromFolder(sourceFolder, item.id, item.type);
     }
-    for (var i in items) {
-      if (sourceFolder != targetFolder) {
+    if (targets.isEmpty) return;
+
+    final moved = <_FavEntry>[];
+    for (final item in items) {
+      final e = _findEntry(sourceFolder, item.id, item.type);
+      if (e != null) moved.add(e);
+    }
+
+    for (final e in moved) {
+      for (final target in targets) {
+        _copyInto(target, e);
+      }
+    }
+    for (final e in moved) {
+      removeFavoriteFromFolder(sourceFolder, e.item.id, e.item.type);
+      for (final target in targets) {
         StatsManager().addFavoriteRecord(
-          id: i.id,
-          type: i.type.value,
-          folder: '$sourceFolder,$targetFolder',
+          id: e.item.id,
+          type: e.item.type.value,
+          folder: '$sourceFolder,$target',
           action: FavoriteAction.move,
         );
       }

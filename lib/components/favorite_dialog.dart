@@ -167,16 +167,15 @@ class _FavoriteDialogState extends State<FavoriteDialog> {
     if (selectedFolders.isEmpty) return false;
     final source = widget.sourceFolder;
     if (source != null) {
-      // 本地收藏页：含来源文件夹的多选 = 移动；只选来源 = 取消收藏；否则新增到选中项
-      if (selectedFolders.length > 1 && selectedFolders.contains(source)) {
-        final targets = [...selectedFolders.where((f) => f != source), source];
-        for (final f in targets) {
-          manager.batchMoveFavorites(source, f, widget.items);
-        }
-      } else if (selectedFolders.length == 1 &&
-          selectedFolders.contains(source)) {
-        for (final a in widget.items) {
-          manager.deleteAnimeWithId(source, a.id, a.type);
+      // 本地收藏页：勾选含来源 = 移出到其余选中项；只选来源 = 取消收藏
+      if (selectedFolders.contains(source)) {
+        final targets = selectedFolders.where((f) => f != source).toList();
+        if (targets.isEmpty) {
+          for (final a in widget.items) {
+            manager.deleteAnimeWithId(source, a.id, a.type);
+          }
+        } else {
+          manager.batchMoveFavorites(source, targets, widget.items);
         }
       } else {
         for (final f in selectedFolders) {
@@ -202,15 +201,21 @@ class _FavoriteDialogState extends State<FavoriteDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final adding = selectedFolders.where((f) => !_alreadyIn(f)).length;
-    final removing = selectedFolders.where(_alreadyIn).length;
     final String counts;
-    if (adding > 0 && removing > 0) {
-      counts = t.aToMove(a: '${widget.items.length}');
-    } else if (adding > 0) {
-      counts = t.aToAdd(a: '$adding');
+    if (widget.sourceFolder != null &&
+        selectedFolders.length == 1 &&
+        selectedFolders.contains(widget.sourceFolder)) {
+      counts = t.aToRemove(a: '${widget.items.length}');
     } else {
-      counts = t.aToRemove(a: '$removing');
+      final adding = selectedFolders.where((f) => !_alreadyIn(f)).length;
+      final removing = selectedFolders.where(_alreadyIn).length;
+      if (adding > 0 && removing > 0) {
+        counts = t.aToMove(a: '${widget.items.length}');
+      } else if (adding > 0) {
+        counts = t.aToAdd(a: '$adding');
+      } else {
+        counts = t.aToRemove(a: '$removing');
+      }
     }
 
     return ContentDialog(
