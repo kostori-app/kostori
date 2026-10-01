@@ -38,6 +38,29 @@ class I18nUtils {
     }
   }
 
+  /// 归一语言写法：`zh_cn` / `zh-CN` / `zh-Hant` 等 → slang 可识别取值
+  static String normalizeLocale(String? raw) {
+    final v = (raw ?? '').trim().toLowerCase().replaceAll('_', '-');
+    if (v.isEmpty) return 'zh-CN';
+    if (v == 'system') return 'system';
+    if (v.startsWith('zh')) {
+      final traditional =
+          v.contains('tw') || v.contains('hk') || v.contains('hant');
+      return traditional ? 'zh-TW' : 'zh-CN';
+    }
+    return 'en';
+  }
+
+  /// 无头模式指定语言：`--lang` / `KOSTORI_LANG`，缺省 `zh_cn`
+  static Future<void> applyHeadlessLocale(String? raw) async {
+    final lang = normalizeLocale(raw);
+    if (lang == 'system') {
+      await LocaleSettings.useDeviceLocale();
+    } else {
+      await LocaleSettings.setLocaleRaw(lang);
+    }
+  }
+
   /// 翻译 - 直接用 t 对象
   static String translate(String key) {
     return t[key]; // ← 用中括号访问！

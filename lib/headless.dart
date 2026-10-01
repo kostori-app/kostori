@@ -11,6 +11,7 @@ import 'package:kostori/foundation/main_isolate_runner.dart';
 import 'package:kostori/foundation/offscreen_host.dart';
 import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/init.dart';
+import 'package:kostori/i18n/i18n_utils.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// 结构化输出，供外部脚本解析
@@ -91,6 +92,11 @@ Future<void> runHeadlessMode(List<String> args) async {
 
   await init();
 
+  final lang =
+      _stringArg(args, '--lang') ?? Platform.environment['KOSTORI_LANG'];
+  final normalizedLang = I18nUtils.normalizeLocale(lang);
+  await I18nUtils.applyHeadlessLocale(lang);
+
   // 挂离屏渲染树：部分接口（如番剧时间表截图）需要活的 widget 树与 Overlay，
   // 无头模式没有 runApp，只能靠 attachRootWidget 提供不可见的渲染环境
   OffscreenHost.instance.attach(
@@ -101,7 +107,7 @@ Future<void> runHeadlessMode(List<String> args) async {
     },
   );
 
-  final started = <String, dynamic>{};
+  final started = <String, dynamic>{'lang': normalizedLang};
   try {
     switch (serviceName) {
       case 'hub':
@@ -132,6 +138,7 @@ void _printStartupInfo(
   _startupLog('══════════════════════════════════════════════');
   _startupLog('Kostori 无头服务已启动: $serviceName');
   _startupLog('端口: ${started['port']}   绑定: ${started['bound']}');
+  _startupLog('语言: ${started['lang'] ?? 'zh_cn'}');
   if (started['https'] == true) _startupLog('HTTPS: 已启用');
   if (noAuth) {
     _startupLog('鉴权: 已关闭 (--no-auth)，无需令牌');

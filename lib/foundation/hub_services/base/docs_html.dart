@@ -698,10 +698,11 @@ function renderCard(r) {
   const params = (op.parameters ?? []);
   const needsAuth = (op.security?.length ?? 0) > 0;
 
-  const fields = params.map((p) => `
+  const fields = params.map((p, i) => `
     <div class="field">
       <label>${esc(p.name)}${p.required ? '<span class="req">*</span>' : ''}</label>
-      <input id="in_${domId}_${esc(p.name)}" placeholder="${esc(p.example ?? '')}"
+      <input id="in_${domId}_${i}" data-param-name="${esc(p.name)}"
+             data-param-in="${esc(p.in ?? 'query')}" placeholder="${esc(p.example ?? '')}"
              autocomplete="off" spellcheck="false">
       ${p.description ? `<div class="note">${esc(p.description)}</div>` : ''}
     </div>`).join('');
@@ -759,18 +760,25 @@ async function sendReq(btn) {
   const inputs = $$('.field input', pane);
 
   const query = new URLSearchParams();
-  let body;
+  const headers = {};
+  const bodyObj = {};
+  let hasBody = false;
   for (const el of inputs) {
     const v = el.value.trim();
     if (!v) continue;
-    const name = el.id.split('_').slice(2).join('_');
-    if (name.toLowerCase() === 'authorization' || name.toLowerCase() === 'api_key'
-        || name.toLowerCase() === 'token') {
-      query.set(name, v);
-    } else if (method === 'GET' || method === 'WS') {
-      query.set(name, v);
+    const name = el.dataset.paramName || '';
+    const loc = (el.dataset.paramIn || 'query').toLowerCase();
+    if (loc === 'path') {
+      path = path.split('{' + name + '}').join(encodeURIComponent(v));
+    } else if (loc === 'header') {
+      headers[name] = (name.toLowerCase() === 'authorization' && !/^bearer\s/i.test(v))
+        ? 'Bearer ' + v
+        : v;
+    } else if (loc === 'body') {
+      bodyObj[name] = v;
+      hasBody = true;
     } else {
-      body = v;
+      query.set(name, v);
     }
   }
 
@@ -782,10 +790,10 @@ async function sendReq(btn) {
 
   const t0 = performance.now();
   try {
-    const opt = { method: method === 'WS' ? 'GET' : method };
-    if (body !== undefined) {
-      opt.headers = { 'Content-Type': 'application/json' };
-      opt.body = body;
+    const opt = { method: method === 'WS' ? 'GET' : method, headers: headers };
+    if (hasBody) {
+      headers['Content-Type'] = 'application/json';
+      opt.body = JSON.stringify(bodyObj);
     }
     const res = await fetch(url, opt);
     const ms = Math.round(performance.now() - t0);
