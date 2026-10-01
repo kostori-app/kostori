@@ -566,12 +566,9 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
 
       int lastPastIndex = -1;
       if (shouldInsertDivider) {
-        // 当日列表是从傍晚延续到次日凌晨的连续时间轴，
-        // 按 HH:mm 字符串比会把次日凌晨的档误判成已播
         for (int i = 0; i < bangumiList.length; i++) {
-          if (BangumiAirTime.sortKey(bangumiList[i].airTime) <= nowMinutes) {
-            lastPastIndex = i;
-          }
+          final key = BangumiAirTime.sortKey(bangumiList[i].airTime);
+          if (key <= nowMinutes) lastPastIndex = i;
         }
       }
 

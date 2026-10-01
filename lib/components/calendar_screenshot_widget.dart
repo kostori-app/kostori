@@ -149,15 +149,11 @@ class CalendarScreenshotWidget extends StatelessWidget {
               if (dayList.isEmpty) return const SizedBox();
 
               final isToday = weekdayIndex == todayIdx;
-              // 当日列表是从傍晚延续到次日凌晨的连续时间轴，
-              // 按 HH:mm 字符串比会把次日凌晨的档误判成已播
               int lastPastIndex = -1;
               if (isToday) {
                 for (int i = 0; i < dayList.length; i++) {
-                  if (BangumiAirTime.sortKey(dayList[i].airTime) <=
-                      nowMinutes) {
-                    lastPastIndex = i;
-                  }
+                  final key = BangumiAirTime.sortKey(dayList[i].airTime);
+                  if (key <= nowMinutes) lastPastIndex = i;
                 }
               }
 

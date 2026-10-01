@@ -417,16 +417,12 @@ abstract final class BangumiAirTime {
               '${dt.minute.toString().padLeft(2, '0')}';
   }
 
-  /// 排序用分钟数，凌晨档（次日 00:30）视为 1470 而非 30
+  /// 当日分钟数，无数据返回最大值以便排到末尾
   static int sortKey(String? raw) {
     final dt = parse(raw);
-    if (dt == null) return 0;
-    final minutes = dt.hour * 60 + dt.minute;
-    return minutes < _lateNightCutoff ? minutes + 24 * 60 : minutes;
+    if (dt == null) return 24 * 60;
+    return dt.hour * 60 + dt.minute;
   }
-
-  /// 早于此时刻视为次日（凌晨档）
-  static const _lateNightCutoff = 5 * 60;
 
   static DateTime _wallClock(DateTime utc) {
     final bj = utc.toUtc().add(_bjOffset);

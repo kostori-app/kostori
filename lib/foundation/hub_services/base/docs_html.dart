@@ -208,7 +208,7 @@ String _buildDocsHtml() {
   /* ── Main ────────────────────────────────────────────────────────── */
   #main { flex: 1; overflow-y: auto; scroll-padding-top: 24px; }
 
-  #hero { padding: 40px 48px 28px; border-bottom: 1px solid var(--line); }
+  #hero { padding: 40px 48px 28px; border-bottom: 1px solid var(--line); max-width: 1496px; }
   #hero h1 {
     margin: 0 0 8px; font-size: 30px; font-weight: 680;
     letter-spacing: -.8px;
@@ -249,7 +249,7 @@ String _buildDocsHtml() {
   }
   .auth-row .hint { color: var(--text-3); font-size: 12px; }
 
-  #content { padding: 32px 48px 96px; max-width: 1080px; }
+  #content { padding: 32px 48px 96px; max-width: 1400px; }
 
   .sec-title {
     display: flex; align-items: baseline; gap: 10px;
