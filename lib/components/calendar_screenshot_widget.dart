@@ -24,10 +24,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
   static final DateFormat _dateTimeFormat = DateFormat('yyyy-MM-dd HH:mm');
   static DateFormat get _monthDayFormat => DateFormat(t.monthDayFormat);
 
-  /// 番剧时刻表按北京时间（UTC+8）渲染，与宿主机时区无关。
-  ///
-  /// 无头容器时区通常是 UTC，而 `airTime` 带 `+08:00` 偏移，
-  /// 直接 `toLocal()` 会让 16:30 显示成 08:30。
+  /// 时刻表按北京时间渲染，与宿主机时区无关（无头容器通常是 UTC）
   static const _bjOffset = Duration(hours: 8);
 
   static DateTime _toBeijing(DateTime dt) => dt.toUtc().add(_bjOffset);
@@ -48,8 +45,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
     if (raw == null || raw.isEmpty) return null;
     try {
       final dt = DateTime.parse(raw);
-      // 带偏移/Z 的会解析成 UTC，需换算到北京时间；
-      // 无偏移量的是字面量，原样格式化（宿主时区无关）
+      // 带偏移的解析成 UTC 需换算；无偏移量的是字面量，原样格式化
       return _timeFormat.format(dt.isUtc ? _toBeijing(dt) : dt);
     } catch (_) {
       // 有些源给的是纯 "HH:mm" 文本
@@ -67,7 +63,6 @@ class CalendarScreenshotWidget extends StatelessWidget {
       0,
       (sum, day) => sum + day.length,
     );
-    // 全部按北京时间归一，避免宿主时区影响"今天"与当前时间
     final beijingNow = _toBeijing(DateTime.now());
     final beijingCapture = _toBeijing(captureTime);
     final todayCount = bangumiCalendar[beijingCapture.weekday - 1].length;
