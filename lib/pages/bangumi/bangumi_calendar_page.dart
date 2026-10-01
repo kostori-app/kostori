@@ -411,11 +411,16 @@ Future<_EpisodeBatch> _fetchBatchEpisodes(
   return (episodes, totals);
 }
 
-/// 解析 bangumi 播出时间（支持深夜番 `25:00` 等超过 24 点的时间，
-/// 会进位到次日，如 `2026-08-17 25:00` → 2026-08-18 01:00）
+/// 解析 bangumi 播出时间，返回北京时间的挂钟时刻（UTC+8）。
+///
+/// 支持深夜番 `25:00` 等超过 24 点的时间，会进位到次日，
+/// 如 `2026-08-17 25:00` → 2026-08-18 01:00。
+///
+/// bangumi 的时间戳带 Z（UTC）或 +08:00 偏移，统一换算到 +08:00：
+/// 无头容器时区通常是 UTC，直接 `toLocal()` 会让深夜档排到前一天。
 DateTime? parseBangumiAirTime(String str) {
   final t = DateTime.tryParse(str);
-  if (t != null) return t.toLocal();
+  if (t != null) return t.isUtc ? _beijingWallClock(t) : t;
   final m = RegExp(
     r'^(\d{4})-(\d{2})-(\d{2})[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?',
   ).firstMatch(str);
@@ -427,7 +432,14 @@ DateTime? parseBangumiAirTime(String str) {
     int.parse(m[4]!),
     int.parse(m[5]!),
     int.parse(m[6] ?? '0'),
-  ).toLocal();
+  );
+}
+
+/// 把 UTC 时刻换算成北京时间的挂钟值（用一个非 UTC 的 DateTime 承载，
+/// 让调用方的 hour / weekday / DateFormat 都直接可读）
+DateTime _beijingWallClock(DateTime utc) {
+  final bj = utc.toUtc().add(const Duration(hours: 8));
+  return DateTime(bj.year, bj.month, bj.day, bj.hour, bj.minute);
 }
 
 class BangumiCalendarPage extends ConsumerStatefulWidget {

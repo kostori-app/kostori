@@ -24,6 +24,14 @@ class CalendarScreenshotWidget extends StatelessWidget {
   static final DateFormat _dateTimeFormat = DateFormat('yyyy-MM-dd HH:mm');
   static DateFormat get _monthDayFormat => DateFormat(t.monthDayFormat);
 
+  /// 番剧时刻表按北京时间（UTC+8）渲染，与宿主机时区无关。
+  ///
+  /// 无头容器时区通常是 UTC，而 `airTime` 带 `+08:00` 偏移，
+  /// 直接 `toLocal()` 会让 16:30 显示成 08:30。
+  static const _bjOffset = Duration(hours: 8);
+
+  static DateTime _toBeijing(DateTime dt) => dt.toUtc().add(_bjOffset);
+
   String _weekdayName(int weekdayIndex) => switch (weekdayIndex) {
     0 => t.monday,
     1 => t.tuesday,
@@ -40,7 +48,9 @@ class CalendarScreenshotWidget extends StatelessWidget {
     if (raw == null || raw.isEmpty) return null;
     try {
       final dt = DateTime.parse(raw);
-      return _timeFormat.format(dt.toLocal());
+      // 带偏移/Z 的会解析成 UTC，需换算到北京时间；
+      // 无偏移量的是字面量，原样格式化（宿主时区无关）
+      return _timeFormat.format(dt.isUtc ? _toBeijing(dt) : dt);
     } catch (_) {
       // 有些源给的是纯 "HH:mm" 文本
       if (raw.contains(':')) return raw.substring(0, 5);
@@ -57,11 +67,13 @@ class CalendarScreenshotWidget extends StatelessWidget {
       0,
       (sum, day) => sum + day.length,
     );
-    final todayCount = bangumiCalendar[captureTime.weekday - 1].length;
+    // 全部按北京时间归一，避免宿主时区影响"今天"与当前时间
+    final beijingNow = _toBeijing(DateTime.now());
+    final beijingCapture = _toBeijing(captureTime);
+    final todayCount = bangumiCalendar[beijingCapture.weekday - 1].length;
     final activeDays = bangumiCalendar.where((d) => d.isNotEmpty).length;
-    final todayIdx = captureTime.weekday - 1;
-    final now = DateTime.now();
-    final todayTime = _timeFormat.format(now);
+    final todayIdx = beijingCapture.weekday - 1;
+    final todayTime = _timeFormat.format(beijingNow);
 
     return Container(
       color: colorScheme.surface,
@@ -102,7 +114,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
                         ),
                       ),
                     Text(
-                      _dateTimeFormat.format(captureTime),
+                      _dateTimeFormat.format(beijingCapture),
                       style: TextStyle(
                         fontSize: 12,
                         color: colorScheme.outline,
@@ -136,7 +148,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
                   ),
                 ] else
                   _StatCard(
-                    label: _monthDayFormat.format(captureTime),
+                    label: _monthDayFormat.format(beijingCapture),
                     value: _weekdayName(todayIdx),
                     icon: Icons.today,
                   ),
@@ -160,8 +172,8 @@ class CalendarScreenshotWidget extends StatelessWidget {
                 }
               }
 
-              final weekday = captureTime.add(
-                Duration(days: weekdayIndex - captureTime.weekday + 1),
+              final weekday = beijingCapture.add(
+                Duration(days: weekdayIndex - beijingCapture.weekday + 1),
               );
 
               return Column(
