@@ -104,8 +104,8 @@ String _buildDocsHtml() {
 
   /* ── Sidebar ─────────────────────────────────────────────────────── */
   #sidebar {
-    width: 288px;
-    flex: 0 0 288px;
+    width: 232px;
+    flex: 0 0 232px;
     display: flex;
     flex-direction: column;
     background: var(--surface);
@@ -147,6 +147,11 @@ String _buildDocsHtml() {
   .icon-btn:hover { background: var(--surface-3); color: var(--text); border-color: var(--line-2); }
   .icon-btn[hidden] { display: none; }
 
+  .side-foot {
+    margin-top: auto; padding: 0 20px 20px;
+    font-size: 11.5px; color: var(--text-3);
+  }
+
   #search-wrap { padding: 0 20px 14px; position: relative; }
   #search-wrap::before {
     content: '⌕'; position: absolute; left: 31px; top: 50%;
@@ -166,34 +171,6 @@ String _buildDocsHtml() {
     box-shadow: 0 0 0 3px var(--brand-soft);
   }
 
-  #nav { flex: 1; overflow-y: auto; padding: 0 12px 24px; }
-
-  .nav-group {
-    padding: 14px 8px 6px;
-    font-size: 10.5px; font-weight: 650; letter-spacing: .7px;
-    text-transform: uppercase; color: var(--text-3);
-  }
-  .nav-item {
-    display: flex; align-items: center; gap: 9px;
-    padding: 7px 9px; margin-bottom: 1px;
-    border-radius: var(--radius-sm);
-    cursor: pointer; color: var(--text-2);
-    font-size: 13px; text-decoration: none;
-    transition: background .12s, color .12s;
-  }
-  .nav-item:hover { background: var(--surface-2); color: var(--text); }
-  .nav-item.active { background: var(--brand-soft); color: var(--brand-2); font-weight: 550; }
-  .nav-item.hidden { display: none; }
-  .nav-path {
-    flex: 1; overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap; font-family: var(--mono); font-size: 12px;
-  }
-  .nav-count {
-    font-size: 10px; font-weight: 600; color: var(--text-3);
-    background: var(--surface-2); padding: 1px 6px; border-radius: 100px;
-  }
-  .nav-item.active .nav-count { background: var(--surface); color: var(--brand-2); }
-
   .badge {
     flex: 0 0 auto; width: 42px; text-align: center;
     font-size: 9.5px; font-weight: 700; letter-spacing: .4px;
@@ -208,7 +185,7 @@ String _buildDocsHtml() {
   /* ── Main ────────────────────────────────────────────────────────── */
   #main { flex: 1; overflow-y: auto; scroll-padding-top: 24px; }
 
-  #hero { padding: 40px 48px 28px; border-bottom: 1px solid var(--line); max-width: 1496px; }
+  #hero { padding: 40px 48px 28px; border-bottom: 1px solid var(--line); }
   #hero h1 {
     margin: 0 0 8px; font-size: 30px; font-weight: 680;
     letter-spacing: -.8px;
@@ -249,7 +226,7 @@ String _buildDocsHtml() {
   }
   .auth-row .hint { color: var(--text-3); font-size: 12px; }
 
-  #content { padding: 32px 48px 96px; max-width: 1400px; }
+  #content { padding: 32px 48px 96px; }
 
   .sec-title {
     display: flex; align-items: baseline; gap: 10px;
@@ -480,7 +457,7 @@ String _buildDocsHtml() {
     <input type="search" id="q" placeholder="搜索路径、说明…" autocomplete="off" spellcheck="false">
   </div>
 
-  <div id="nav"></div>
+  <div class="side-foot" id="endpoints-count"></div>
 </nav>
 
 <main id="main">
@@ -586,24 +563,7 @@ $('#nav-toggle').addEventListener('click', () =>
     `<div class="fact"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`
   ).join('');
 
-  // ── Sidebar ─────────────────────────────────────────────────────────────
-  const groups = new Map();
-  for (const r of routes) {
-    const seg = r.path.split('/')[1] || 'root';
-    if (!groups.has(seg)) groups.set(seg, []);
-    groups.get(seg).push(r);
-  }
-
-  let navHtml = '';
-  for (const [seg, list] of groups) {
-    navHtml += `<div class="nav-group">${esc(seg)} <span class="nav-count">${list.length}</span></div>`;
-    for (const r of list) {
-      navHtml += `<a class="nav-item" href="#${cssId(r.id)}" data-id="${cssId(r.id)}">`
-        + `<span class="badge ${METHOD_CLASS[r.method] ?? 'b-get'}">${r.method === 'WS' ? 'WS' : r.method.slice(0, 3)}</span>`
-        + `<span class="nav-path">${esc(r.path.replace(/^\//, ''))}</span></a>`;
-    }
-  }
-  $('#nav').innerHTML = navHtml;
+  $('#endpoints-count').textContent = `共 ${routes.length} 个接口`;
 
   // 默认展开：卡片收起时首屏看不到任何接口内容
   $('#content').innerHTML =
@@ -628,28 +588,15 @@ $('#nav-toggle').addEventListener('click', () =>
     $('#expand-all').textContent = anyClosed ? '⊟' : '⊞';
   });
 
-  // Scroll-spy
-  const spy = new IntersectionObserver((entries) => {
-    for (const en of entries) {
-      if (!en.isIntersecting) continue;
-      const id = en.target.id;
-      $$('.nav-item').forEach((n) =>
-        n.classList.toggle('active', n.dataset.id === id));
-    }
-  }, { rootMargin: '-72px 0px -70% 0px', threshold: 0 });
-  $$('.ep').forEach((el) => spy.observe(el));
-
   // ── Search ──────────────────────────────────────────────────────────────
   const filter = (q) => {
     const needle = q.trim().toLowerCase();
     let visible = 0;
     for (const r of routes) {
       const card = $('#' + cssId(r.id));
-      const nav = $(`.nav-item[data-id="${cssId(r.id)}"]`);
       const hay = (r.path + ' ' + (r.op.summary || '') + ' ' + (r.op.description || '')).toLowerCase();
       const hit = !needle || hay.includes(needle);
       card?.classList.toggle('hidden', !hit);
-      nav?.classList.toggle('hidden', !hit);
       if (hit) visible++;
     }
     $('#content').querySelectorAll('.sec-title').forEach((s) => {
