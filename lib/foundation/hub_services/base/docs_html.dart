@@ -1,1061 +1,843 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
+/// `/docs` 页面。样式与脚本都内联，避免额外资源请求与 CSP 配置。
+/// 数据来自同源的 `/openapi.json`。
 String _buildDocsHtml() {
   return r'''<!DOCTYPE html>
-<html lang="zh">
+<html lang="zh" data-theme="light">
 <head>
-  <title>Kostori API</title>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="/icon" type="image/png">
-  <script>
-    // 在样式生效前定色，避免暗色用户看到白屏闪烁
-    (() => {
-      const saved = localStorage.getItem('kostori-docs-theme');
-      const theme = saved ?? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-      document.documentElement.dataset.theme = theme;
-    })();
-  </script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
- 
-    :root {
-      --bg: #080c14;
-      --surface: #0d1420;
-      --surface2: #111a2a;
-      --surface3: #162033;
-      --border: #1e2d45;
-      --border2: #243550;
-      --accent: #3b82f6;
-      --accent2: #2563eb;
-      --accent-glow: rgba(59,130,246,0.15);
-      --text: #dde6f5;
-      --text-muted: #6b82a0;
-      --green: #34d399;
-      --blue: #60a5fa;
-      --cyan: #22d3ee;
-      --orange: #fb923c;
-      --red: #f87171;
-      --yellow: #fbbf24;
-      --shadow: 0 1px 3px rgba(0,0,0,0.4);
-      --shadow-lg: 0 12px 32px rgba(0,0,0,0.45);
-      --code-bg: rgba(0,0,0,0.28);
-      --header-grad: linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%);
-      --nav-hover: rgba(255,255,255,0.045);
-      --logo-ring: 0 0 0 1px var(--border2), 0 0 12px rgba(59,130,246,0.25);
-    }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="/icon" type="image/png">
+<script>
+  // 提前定色，避免深色偏好用户看到白闪
+  document.documentElement.dataset.theme =
+    localStorage.getItem('kostori-docs-theme') ?? 'light';
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
 
-    :root[data-theme="light"] {
-      --bg: #f5f7fa;
-      --surface: #ffffff;
-      --surface2: #f0f3f8;
-      --surface3: #e6ebf3;
-      --border: #dde3ed;
-      --border2: #c9d3e2;
-      --accent: #2563eb;
-      --accent2: #1d4ed8;
-      --accent-glow: rgba(37,99,235,0.10);
-      --text: #1a2233;
-      --text-muted: #64748b;
-      --green: #059669;
-      --blue: #2563eb;
-      --cyan: #0891b2;
-      --orange: #ea580c;
-      --red: #dc2626;
-      --yellow: #ca8a04;
-      --shadow: 0 1px 2px rgba(15,23,42,0.08);
-      --shadow-lg: 0 12px 28px rgba(15,23,42,0.12);
-      --code-bg: rgba(15,23,42,0.045);
-      --header-grad: linear-gradient(180deg, rgba(37,99,235,0.05) 0%, transparent 100%);
-      --nav-hover: rgba(15,23,42,0.045);
-      --logo-ring: 0 0 0 1px var(--border2), 0 0 10px rgba(37,99,235,0.18);
-    }
- 
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
- 
-    /* ── Sidebar ── */
+  :root {
+    --bg: #fafbfc;
+    --surface: #ffffff;
+    --surface-2: #f4f6f9;
+    --surface-3: #eceff4;
+    --text: #0f172a;
+    --text-2: #475569;
+    --text-3: #94a3b8;
+    --line: #e6eaf0;
+    --line-2: #d3dae4;
+    --brand: #4f46e5;
+    --brand-2: #4338ca;
+    --brand-soft: #eef2ff;
+    --get: #0f766e;
+    --get-soft: #ccfbf1;
+    --post: #b45309;
+    --post-soft: #fef3c7;
+    --put: #7c3aed;
+    --put-soft: #ede9fe;
+    --del: #b91c1c;
+    --del-soft: #fee2e2;
+    --ok: #047857;
+    --ok-soft: #d1fae5;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
+    --err: #b91c1c;
+    --err-soft: #fee2e2;
+    --radius: 10px;
+    --radius-sm: 7px;
+    --shadow: 0 1px 2px rgba(15,23,42,.05);
+    --shadow-md: 0 4px 16px rgba(15,23,42,.08);
+    --shadow-lg: 0 12px 40px rgba(15,23,42,.12);
+    --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0a0c10;
+    --surface: #11141a;
+    --surface-2: #171b23;
+    --surface-3: #1f242e;
+    --text: #e8ecf3;
+    --text-2: #a3adbd;
+    --text-3: #6b7688;
+    --line: #232936;
+    --line-2: #2f3745;
+    --brand: #818cf8;
+    --brand-2: #6366f1;
+    --brand-soft: #1e1b3a;
+    --get: #2dd4bf;
+    --get-soft: #11312e;
+    --post: #fbbf24;
+    --post-soft: #33260c;
+    --put: #c4b5fd;
+    --put-soft: #251f3d;
+    --del: #f87171;
+    --del-soft: #3a1616;
+    --ok: #34d399;
+    --ok-soft: #0f2e26;
+    --warn: #fbbf24;
+    --warn-soft: #33260c;
+    --err: #f87171;
+    --err-soft: #3a1616;
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.45);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.6);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto,
+                 'Noto Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, pre, .mono { font-family: var(--mono); font-variant-ligatures: none; }
+
+  /* ── Sidebar ─────────────────────────────────────────────────────── */
+  #sidebar {
+    width: 288px;
+    flex: 0 0 288px;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+  }
+
+  .side-top { padding: 20px 20px 16px; }
+
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand img {
+    width: 32px; height: 32px; border-radius: 9px;
+    box-shadow: var(--shadow);
+  }
+  .brand-name { font-size: 15px; font-weight: 650; letter-spacing: -.2px; }
+
+  .brand-meta {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 12px; font-size: 12px; color: var(--text-3);
+  }
+  .chip {
+    padding: 2px 8px; border-radius: 100px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    font-size: 11px; font-weight: 550; color: var(--text-2);
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft);
+  }
+
+  .side-actions { display: flex; gap: 8px; padding: 0 20px 14px; }
+
+  .icon-btn {
+    width: 32px; height: 32px; display: grid; place-items: center;
+    background: var(--surface-2); color: var(--text-2);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 14px; line-height: 1;
+    transition: background .14s, color .14s, border-color .14s;
+  }
+  .icon-btn:hover { background: var(--surface-3); color: var(--text); border-color: var(--line-2); }
+  .icon-btn[hidden] { display: none; }
+
+  #search-wrap { padding: 0 20px 14px; position: relative; }
+  #search-wrap::before {
+    content: '⌕'; position: absolute; left: 31px; top: 50%;
+    transform: translateY(-50%); color: var(--text-3); font-size: 15px;
+    pointer-events: none;
+  }
+  #q {
+    width: 100%; padding: 9px 12px 9px 34px;
+    background: var(--surface-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font-size: 13px; outline: none;
+    transition: border-color .14s, box-shadow .14s, background .14s;
+  }
+  #q::placeholder { color: var(--text-3); }
+  #q:focus {
+    border-color: var(--brand); background: var(--surface);
+    box-shadow: 0 0 0 3px var(--brand-soft);
+  }
+
+  #nav { flex: 1; overflow-y: auto; padding: 0 12px 24px; }
+
+  .nav-group {
+    padding: 14px 8px 6px;
+    font-size: 10.5px; font-weight: 650; letter-spacing: .7px;
+    text-transform: uppercase; color: var(--text-3);
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 9px; margin-bottom: 1px;
+    border-radius: var(--radius-sm);
+    cursor: pointer; color: var(--text-2);
+    font-size: 13px; text-decoration: none;
+    transition: background .12s, color .12s;
+  }
+  .nav-item:hover { background: var(--surface-2); color: var(--text); }
+  .nav-item.active { background: var(--brand-soft); color: var(--brand-2); font-weight: 550; }
+  .nav-item.hidden { display: none; }
+  .nav-path {
+    flex: 1; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; font-family: var(--mono); font-size: 12px;
+  }
+  .nav-count {
+    font-size: 10px; font-weight: 600; color: var(--text-3);
+    background: var(--surface-2); padding: 1px 6px; border-radius: 100px;
+  }
+  .nav-item.active .nav-count { background: var(--surface); color: var(--brand-2); }
+
+  .badge {
+    flex: 0 0 auto; width: 42px; text-align: center;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .4px;
+    padding: 2px 0; border-radius: 4px;
+  }
+  .b-get  { background: var(--get-soft);  color: var(--get); }
+  .b-post { background: var(--post-soft); color: var(--post); }
+  .b-put  { background: var(--put-soft);  color: var(--put); }
+  .b-del  { background: var(--del-soft);  color: var(--del); }
+  .b-ws   { background: var(--brand-soft);color: var(--brand-2); }
+
+  /* ── Main ────────────────────────────────────────────────────────── */
+  #main { flex: 1; overflow-y: auto; scroll-padding-top: 24px; }
+
+  #hero { padding: 40px 48px 28px; border-bottom: 1px solid var(--line); }
+  #hero h1 {
+    margin: 0 0 8px; font-size: 30px; font-weight: 680;
+    letter-spacing: -.8px;
+  }
+  #hero > p { margin: 0 0 26px; color: var(--text-2); font-size: 14.5px; max-width: 62ch; }
+
+  .facts { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+  .fact {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 12px 16px; min-width: 148px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .fact .k {
+    font-size: 10.5px; font-weight: 600; letter-spacing: .5px;
+    text-transform: uppercase; color: var(--text-3);
+  }
+  .fact .v { font-size: 14px; font-weight: 560; font-family: var(--mono); }
+
+  .auth-box {
+    padding: 16px 18px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .auth-box h4 {
+    margin: 0 0 10px; font-size: 12px; font-weight: 620;
+    letter-spacing: .3px; color: var(--text-2);
+    text-transform: uppercase;
+  }
+  .auth-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 6px 0; font-size: 13px;
+  }
+  .auth-row + .auth-row { border-top: 1px dashed var(--line); }
+  .auth-row code {
+    padding: 3px 8px; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 5px; font-size: 12.5px;
+  }
+  .auth-row .hint { color: var(--text-3); font-size: 12px; }
+
+  #content { padding: 32px 48px 96px; max-width: 1080px; }
+
+  .sec-title {
+    display: flex; align-items: baseline; gap: 10px;
+    margin: 40px 0 14px;
+  }
+  .sec-title:first-child { margin-top: 0; }
+  .sec-title h2 {
+    margin: 0; font-size: 12px; font-weight: 650;
+    letter-spacing: .8px; text-transform: uppercase; color: var(--text-3);
+  }
+  .sec-title .count { font-size: 12px; color: var(--text-3); }
+
+  /* ── Endpoint card ───────────────────────────────────────────────── */
+  .ep {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); margin-bottom: 10px;
+    box-shadow: var(--shadow); overflow: hidden;
+    transition: box-shadow .16s, border-color .16s;
+    scroll-margin-top: 24px;
+  }
+  .ep:hover { box-shadow: var(--shadow-md); border-color: var(--line-2); }
+  .ep.hidden { display: none; }
+
+  .ep-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; cursor: pointer; user-select: none;
+  }
+  .ep-head:hover { background: var(--surface-2); }
+  .ep-path {
+    flex: 1; font-family: var(--mono); font-size: 13.5px;
+    font-weight: 500; min-width: 0; overflow-wrap: anywhere;
+  }
+  .ep-sum {
+    color: var(--text-2); font-size: 12.5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 42%;
+  }
+  .caret {
+    flex: 0 0 auto; color: var(--text-3); font-size: 11px;
+    transition: transform .2s;
+  }
+  .ep.open .caret { transform: rotate(90deg); }
+
+  .ep-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .22s ease; }
+  .ep.open .ep-body { grid-template-rows: 1fr; }
+  .ep-body > div { overflow: hidden; }
+  .ep-inner { padding: 4px 18px 18px; border-top: 1px solid var(--line); }
+
+  .desc { margin: 14px 0 0; color: var(--text-2); font-size: 13.5px; }
+
+  .lock {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--warn);
+    background: var(--warn-soft); padding: 2px 7px; border-radius: 100px;
+  }
+
+  .tabs {
+    display: flex; gap: 2px; margin: 18px 0 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab {
+    padding: 8px 14px; border: 0; background: none; cursor: pointer;
+    font-size: 13px; font-weight: 520; color: var(--text-3);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--text-2); }
+  .tab.on { color: var(--brand-2); border-bottom-color: var(--brand); }
+
+  .pane { display: none; padding-top: 16px; }
+  .pane.on { display: block; }
+
+  .kv { margin-bottom: 14px; }
+  .kv-label {
+    margin-bottom: 6px; font-size: 10.5px; font-weight: 620;
+    letter-spacing: .5px; text-transform: uppercase; color: var(--text-3);
+  }
+  .kv-val {
+    padding: 9px 12px; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font-family: var(--mono); font-size: 12.5px;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+  }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; margin-bottom: 5px;
+    font-size: 11.5px; font-weight: 560; color: var(--text-2);
+  }
+  .req { color: var(--del); margin-left: 3px; }
+  .field input {
+    width: 100%; padding: 8px 11px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+    font-size: 13px; font-family: var(--mono); outline: none;
+    transition: border-color .14s, box-shadow .14s;
+  }
+  .field input:focus {
+    border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft);
+  }
+  .field .note { margin-top: 4px; font-size: 11.5px; color: var(--text-3); }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 560; font-family: inherit;
+    cursor: pointer; border: 1px solid transparent;
+    transition: filter .14s, background .14s;
+  }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover { background: var(--brand-2); }
+  .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+  .btn-ghost {
+    background: var(--surface); color: var(--text-2); border-color: var(--line-2);
+  }
+  .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+  .res {
+    margin-top: 14px; border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .res-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 13px; background: var(--surface-2);
+    border-bottom: 1px solid var(--line); font-size: 12px;
+  }
+  .status-pill {
+    padding: 2px 9px; border-radius: 100px;
+    font-size: 11px; font-weight: 680; font-family: var(--mono);
+  }
+  .s-ok   { background: var(--ok-soft);   color: var(--ok); }
+  .s-warn { background: var(--warn-soft); color: var(--warn); }
+  .s-err  { background: var(--err-soft);  color: var(--err); }
+  .res-meta { color: var(--text-3); font-family: var(--mono); font-size: 11.5px; }
+  .res-copy {
+    margin-left: auto; cursor: pointer; color: var(--text-2);
+    font-size: 11.5px; padding: 2px 8px; border-radius: 5px;
+    border: 1px solid var(--line-2); background: var(--surface);
+  }
+  .res-copy:hover { color: var(--text); background: var(--surface-3); }
+  .res-body {
+    padding: 13px; font-family: var(--mono); font-size: 12px;
+    line-height: 1.65; overflow-x: auto; max-height: 460px;
+    white-space: pre; color: var(--text);
+  }
+  .img-out { padding: 13px; text-align: center; background: var(--surface-2); }
+  .img-out img {
+    max-width: 100%; border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+  }
+
+  .k-json { color: var(--brand-2); }
+  .s-json { color: var(--get); }
+  .n-json { color: var(--post); }
+  .b-json { color: var(--put); }
+
+  .spin {
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 2px solid var(--line-2); border-top-color: var(--brand);
+    animation: sp .7s linear infinite;
+  }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  .empty { padding: 60px 20px; text-align: center; color: var(--text-3); }
+
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line-2); border-radius: 100px;
+    border: 2px solid transparent; background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-3); background-clip: content-box; }
+
+  #scrim { display: none; }
+
+  @media (max-width: 900px) {
     #sidebar {
-      width: 268px;
-      min-width: 268px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      position: fixed; inset: 0 auto 0 0; z-index: 30;
+      transform: translateX(-100%);
+      transition: transform .24s cubic-bezier(.32,.72,0,1);
+      box-shadow: var(--shadow-lg);
     }
- 
-    #sidebar-header {
-      padding: 20px 18px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--header-grad);
+    body.nav-open #sidebar { transform: none; }
+    body.nav-open #scrim {
+      display: block; position: fixed; inset: 0; z-index: 20;
+      background: rgba(15,23,42,.45); backdrop-filter: blur(2px);
     }
- 
-    #sidebar-header .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
- 
-    #sidebar-header .logo img {
-      width: 30px; height: 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 0 1px var(--border2), 0 0 12px rgba(59,130,246,0.25);
-    }
- 
-    #sidebar-header .logo span {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.3px;
-    }
- 
-    .version-row { display: flex; align-items: center; gap: 8px; }
- 
-    #sidebar-header .version {
-      font-size: 10px;
-      color: var(--text-muted);
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 2px 7px;
-    }
- 
-    .status-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 6px rgba(52,211,153,0.6);
-    }
- 
-    .status-text { font-size: 11px; color: var(--text-muted); }
- 
-    #search-box {
-      margin: 12px 14px 0;
-      position: relative;
-    }
- 
-    #search-box input {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 8px 10px 8px 32px;
-      color: var(--text);
-      font-size: 13px;
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
- 
-    #search-box input:focus {
-      border-color: var(--accent2);
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
-    }
- 
-    #search-box input::placeholder { color: var(--text-muted); }
- 
-    #search-box .icon {
-      position: absolute; left: 10px; top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted); font-size: 14px; pointer-events: none;
-    }
- 
-    #nav {
-      flex: 1; overflow-y: auto;
-      padding: 8px 10px 20px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
- 
-    .nav-group-label {
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--text-muted); padding: 10px 8px 4px;
-    }
- 
-    .nav-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 7px 10px; border-radius: 6px; cursor: pointer;
-      font-size: 12.5px; color: var(--text-muted);
-      transition: all 0.12s; text-decoration: none;
-    }
- 
-    .nav-item:hover { background: var(--surface2); color: var(--text); }
- 
-    .nav-item.active {
-      background: rgba(59,130,246,0.14);
-      color: var(--blue);
-      border-left: 2px solid var(--accent);
-      padding-left: 8px;
-    }
- 
-    .nav-item .method-badge {
-      font-size: 9px; font-weight: 700;
-      padding: 2px 5px; border-radius: 4px;
-      min-width: 34px; text-align: center; flex-shrink: 0;
-    }
- 
-    .badge-get    { background: rgba(96,165,250,0.15);  color: #60a5fa; }
-    .badge-post   { background: rgba(52,211,153,0.15);  color: #34d399; }
-    .badge-put    { background: rgba(251,191,36,0.15);  color: #fbbf24; }
-    .badge-delete { background: rgba(248,113,113,0.15); color: #f87171; }
-    .badge-ws     { background: rgba(34,211,238,0.15);  color: #22d3ee; }
- 
-    .nav-item .path-text {
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
- 
-    /* ── Main ── */
-    #main {
-      flex: 1; overflow-y: auto;
-      padding: 32px 44px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
- 
-    /* ── Hero ── */
-    #hero {
-      margin-bottom: 36px; padding-bottom: 28px;
-      border-bottom: 1px solid var(--border);
-    }
- 
-    #hero h1 {
-      font-size: 28px; font-weight: 800;
-      margin: 0 0 6px; letter-spacing: -0.6px;
-      background: linear-gradient(135deg, #60a5fa 0%, #22d3ee 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
- 
-    #hero p {
-      color: var(--text-muted); font-size: 14px; margin: 0 0 18px;
-    }
- 
-    .info-cards { display: flex; gap: 12px; flex-wrap: wrap; }
- 
-    .info-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px; padding: 12px 16px; min-width: 180px;
-    }
- 
-    .info-card .label {
-      font-size: 10px; color: var(--text-muted);
-      margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.06em;
-    }
- 
-    .info-card .value {
-      font-size: 13px; font-weight: 600; color: var(--text);
-      font-family: 'SF Mono', 'Fira Code', monospace; word-break: break-all;
-    }
- 
-    .auth-guide {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent);
-      border-radius: 8px; padding: 14px 18px; margin-top: 16px;
-    }
- 
-    .auth-guide .auth-title {
-      font-size: 11px; font-weight: 700; color: var(--blue);
-      margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em;
-    }
- 
-    .auth-row {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 7px; font-size: 13px;
-    }
- 
-    .auth-row:last-child { margin-bottom: 0; }
- 
-    .auth-row .tag {
-      background: var(--surface3); border: 1px solid var(--border);
-      border-radius: 4px; padding: 2px 8px;
-      font-size: 10px; color: var(--text-muted);
-      min-width: 68px; text-align: center;
-    }
- 
-    .auth-row code {
-      color: var(--cyan);
-      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
-      background: rgba(34,211,238,0.08); padding: 2px 7px; border-radius: 4px;
-    }
- 
-    /* ── Endpoint cards ── */
-    .endpoint-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px; margin-bottom: 12px;
-      overflow: visible; transition: border-color 0.15s, box-shadow 0.15s;
-    }
- 
-    .endpoint-card.expanded {
-      border-color: var(--accent2);
-      box-shadow: 0 0 0 1px rgba(59,130,246,0.15), 0 4px 20px var(--shadow-lg);
-    }
- 
-    .endpoint-header {
-      display: flex; align-items: center; gap: 12px;
-      padding: 13px 18px; cursor: pointer; user-select: none;
-      border-radius: 10px;
-    }
- 
-    .endpoint-header:hover { background: var(--nav-hover); }
-    .expanded .endpoint-header { border-radius: 10px 10px 0 0; }
- 
-    .method-pill {
-      font-size: 11px; font-weight: 700;
-      padding: 4px 9px; border-radius: 5px;
-      min-width: 50px; text-align: center; flex-shrink: 0;
-    }
- 
-    .endpoint-path {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 13px; color: var(--text); flex: 1;
-    }
- 
-    .endpoint-summary { font-size: 13px; color: var(--text-muted); }
- 
-    .auth-lock { font-size: 12px; color: var(--yellow); flex-shrink: 0; }
- 
-    .chevron {
-      color: var(--text-muted); font-size: 10px;
-      transition: transform 0.2s; flex-shrink: 0;
-    }
- 
-    .expanded .chevron { transform: rotate(90deg); }
- 
-    .endpoint-body {
-      display: none; border-top: 1px solid var(--border);
-    }
- 
-    .expanded .endpoint-body { display: block; }
- 
-    /* tabs */
-    .ep-tabs {
-      display: flex; gap: 0;
-      border-bottom: 1px solid var(--border);
-      padding: 0 18px;
-    }
- 
-    .ep-tab {
-      padding: 10px 16px; font-size: 12px; font-weight: 600;
-      color: var(--text-muted); cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px; transition: all 0.15s;
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
- 
-    .ep-tab:hover { color: var(--text); }
-    .ep-tab.active { color: var(--blue); border-bottom-color: var(--accent); }
- 
-    .ep-panel { display: none; padding: 16px 18px 18px; }
-    .ep-panel.active { display: block; }
- 
-    .detail-section { margin-top: 0; }
- 
-    .detail-section .section-title {
-      font-size: 10px; font-weight: 700; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
-    }
- 
-    .param-row {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 8px 12px; background: var(--surface2);
-      border-radius: 6px; margin-bottom: 6px; font-size: 13px;
-    }
- 
-    .param-name {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      color: var(--cyan); min-width: 130px; flex-shrink: 0;
-    }
- 
-    .param-in {
-      font-size: 10px; background: var(--surface3); border: 1px solid var(--border);
-      color: var(--text-muted); padding: 2px 6px; border-radius: 3px;
-      flex-shrink: 0; margin-top: 1px;
-    }
- 
-    .param-required {
-      font-size: 10px; background: rgba(248,113,113,0.12); color: var(--red);
-      padding: 2px 6px; border-radius: 3px; flex-shrink: 0; margin-top: 1px;
-    }
- 
-    .param-desc { color: var(--text-muted); flex: 1; }
- 
-    .response-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 12px; background: var(--surface2);
-      border-radius: 6px; margin-bottom: 6px; font-size: 13px;
-    }
- 
-    .status-code {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-weight: 700; min-width: 42px;
-    }
- 
-    .s200 { color: var(--green); }
-    .s101 { color: var(--cyan); }
-    .s401 { color: var(--red); }
-    .s404 { color: var(--orange); }
-    .desc-text { color: var(--text-muted); }
- 
-    /* ── Try it out ── */
-    .try-panel { }
- 
-    .try-section-title {
-      font-size: 10px; font-weight: 700; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
-    }
- 
-    .try-field { margin-bottom: 12px; }
- 
-    .try-field label {
-      display: block; font-size: 11px; font-weight: 600;
-      color: var(--text-muted); margin-bottom: 5px;
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
- 
-    .try-field label .req { color: var(--red); margin-left: 2px; }
- 
-    .try-field input,
-    .try-field textarea,
-    .try-field select {
-      width: 100%;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 6px; padding: 8px 11px;
-      color: var(--text); font-size: 13px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
-      resize: vertical;
-    }
- 
-    .try-field input:focus,
-    .try-field textarea:focus,
-    .try-field select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-    }
- 
-    .try-field textarea { min-height: 80px; }
- 
-    .try-field input::placeholder,
-    .try-field textarea::placeholder { color: var(--text-muted); }
- 
-    .try-row { display: flex; gap: 10px; align-items: flex-start; }
- 
-    .try-row .try-field { flex: 1; }
- 
-    .try-actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
- 
-    .btn-send {
-      background: var(--accent); color: #fff;
-      border: none; border-radius: 7px;
-      padding: 9px 22px; font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: background 0.15s, box-shadow 0.15s;
-      letter-spacing: 0.02em;
-    }
- 
-    .btn-send:hover {
-      background: #1d4ed8;
-      box-shadow: 0 0 16px rgba(59,130,246,0.3);
-    }
- 
-    .btn-send:active { transform: scale(0.98); }
-    .btn-send:disabled { background: var(--border2); cursor: not-allowed; opacity: 0.6; }
- 
-    .btn-clear {
-      background: transparent; color: var(--text-muted);
-      border: 1px solid var(--border); border-radius: 7px;
-      padding: 8px 16px; font-size: 13px;
-      cursor: pointer; transition: all 0.15s;
-    }
- 
-    .btn-clear:hover { border-color: var(--border2); color: var(--text); }
- 
-    .try-response { margin-top: 16px; }
- 
-    .try-response-header {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 8px;
-    }
- 
-    .res-status-badge {
-      font-size: 11px; font-weight: 700;
-      padding: 3px 9px; border-radius: 5px;
-      font-family: 'SF Mono', monospace;
-    }
- 
-    .res-badge-ok   { background: rgba(52,211,153,0.15); color: var(--green); }
-    .res-badge-err  { background: rgba(248,113,113,0.15); color: var(--red); }
-    .res-badge-warn { background: rgba(251,191,36,0.15);  color: var(--yellow); }
- 
-    .res-time { font-size: 11px; color: var(--text-muted); }
-    .res-size { font-size: 11px; color: var(--text-muted); }
- 
-    .res-copy {
-      margin-left: auto; font-size: 11px; color: var(--text-muted);
-      cursor: pointer; padding: 3px 8px;
-      border: 1px solid var(--border); border-radius: 4px;
-      transition: all 0.12s;
-    }
- 
-    .res-copy:hover { color: var(--text); border-color: var(--border2); }
- 
-    .res-body {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 7px; padding: 14px 16px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 12px; line-height: 1.6;
-      color: var(--text); white-space: pre-wrap;
-      overflow-x: auto; max-height: 380px; overflow-y: auto;
-      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
-    }
- 
-    .sending-indicator {
-      display: none; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--text-muted);
-    }
- 
-    .sending-indicator.visible { display: flex; }
- 
-    /* JSON syntax highlight */
-    .json-key    { color: #60a5fa; }
-    .json-str    { color: #34d399; }
-    .json-num    { color: #fb923c; }
-    .json-bool   { color: #f472b6; }
-    .json-null   { color: #6b82a0; }
- 
-    /* ── Loading ── */
-    #loading {
-      display: flex; align-items: center; justify-content: center;
-      height: 200px; color: var(--text-muted); font-size: 14px; gap: 10px;
-    }
- 
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
- 
-    @keyframes spin { to { transform: rotate(360deg); } }
- 
-    .empty { color: var(--text-muted); font-size: 13px; padding: 6px 0; }
- 
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    #nav-toggle { display: grid !important; }
+    #hero { padding: 28px 20px 22px; }
+    #hero h1 { font-size: 24px; }
+    #content { padding: 24px 20px 72px; }
+    .fact { flex: 1 1 calc(50% - 5px); min-width: 0; }
+    .ep-head { flex-wrap: wrap; gap: 8px; }
+    .ep-sum { max-width: 100%; flex-basis: 100%; white-space: normal; }
+  }
 
-    /* ── Theme toggle ── */
-    #theme-btn {
-      margin-left: auto;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-muted);
-      font-size: 13px;
-      line-height: 1;
-      padding: 4px 7px;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s, background 0.15s;
-    }
-    #theme-btn:hover { color: var(--text); border-color: var(--border2); background: var(--surface3); }
-
-    #nav-toggle { display: none; }
-
-    /* ── Responsive ── */
-    #scrim { display: none; }
-
-    @media (max-width: 860px) {
-      #sidebar {
-        position: fixed;
-        inset: 0 auto 0 0;
-        z-index: 30;
-        transform: translateX(-100%);
-        transition: transform 0.22s ease;
-        box-shadow: var(--shadow-lg);
-      }
-      body.nav-open #sidebar { transform: none; }
-      body.nav-open #scrim {
-        display: block;
-        position: fixed;
-        inset: 0;
-        z-index: 20;
-        background: rgba(0,0,0,0.45);
-      }
-      #nav-toggle {
-        display: block;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        color: var(--text);
-        font-size: 15px;
-        line-height: 1;
-        padding: 5px 9px;
-        cursor: pointer;
-      }
-      #hero { padding: 22px 16px 12px; }
-      #hero h1 { font-size: 22px; }
-      #main { width: 100%; }
-    }
-  </style>
+  @media (max-width: 520px) {
+    .fact { flex-basis: 100%; }
+    .auth-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+  }
+</style>
 </head>
 <body>
- 
+
 <div id="scrim" onclick="document.body.classList.remove('nav-open')"></div>
-<div id="sidebar">
-  <div id="sidebar-header">
-    <div class="logo">
-      <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
-      <img src="/icon" alt="Kostori" onerror="this.style.display='none'">
-      <span>Kostori API</span>
-      <button id="theme-btn" title="Toggle theme" aria-label="切换主题">◐</button>
+
+<nav id="sidebar">
+  <div class="side-top">
+    <div class="brand">
+      <img src="/icon" alt="" onerror="this.style.display='none'">
+      <span class="brand-name">Kostori API</span>
     </div>
-    <div class="version-row">
-      <span class="version" id="api-version">v—</span>
-      <span class="status-dot"></span>
-      <span class="status-text">Online</span>
+    <div class="brand-meta">
+      <span class="chip" id="ver">v—</span>
+      <span class="live-dot"></span>
+      <span>Online</span>
     </div>
   </div>
-  <div id="search-box">
-    <span class="icon">⌕</span>
-    <input type="text" placeholder="Search endpoints..." id="search-input">
+
+  <div class="side-actions">
+    <button class="icon-btn" id="nav-toggle" title="菜单" aria-label="切换导航">☰</button>
+    <button class="icon-btn" id="theme-btn" title="切换主题" aria-label="切换主题">◐</button>
+    <button class="icon-btn" id="expand-all" title="全部展开" aria-label="全部展开">⊞</button>
   </div>
+
+  <div id="search-wrap">
+    <input type="search" id="q" placeholder="搜索路径、说明…" autocomplete="off" spellcheck="false">
+  </div>
+
   <div id="nav"></div>
-</div>
- 
-<div id="main">
-  <div id="hero">
-    <h1>Kostori API Docs</h1>
-    <p id="api-desc">Local service API — browse endpoints and test them directly from your browser.</p>
-    <div class="info-cards" id="info-cards"></div>
-    <div class="auth-guide">
-      <div class="auth-title">🔑 Authentication</div>
+</nav>
+
+<main id="main">
+  <header id="hero">
+    <h1>Kostori API</h1>
+    <p id="desc">本地服务接口 — 在浏览器中直接查看并试用各接口。</p>
+    <div class="facts" id="facts"></div>
+    <div class="auth-box">
+      <h4>鉴权方式</h4>
       <div class="auth-row">
-        <span class="tag">HTTP</span>
+        <span class="chip">HTTP</span>
         <code>Authorization: Bearer &lt;key&gt;</code>
-        <span style="color:var(--text-muted);font-size:12px">— user or admin key</span>
+        <span class="hint">用户令牌或管理令牌</span>
       </div>
       <div class="auth-row">
-        <span class="tag">WebSocket</span>
+        <span class="chip">WebSocket</span>
         <code>?token=&lt;key&gt;</code>
-        <span style="color:var(--text-muted);font-size:12px">— query param</span>
+        <span class="hint">作为查询参数传入</span>
       </div>
     </div>
+  </header>
+
+  <div id="content">
+    <div class="empty"><div class="spin" style="margin:0 auto 12px"></div>正在加载接口…</div>
   </div>
- 
-  <div id="loading"><div class="spinner"></div> Loading endpoints...</div>
-  <div id="endpoints" style="display:none"></div>
-</div>
- 
+</main>
+
 <script>
-// ── JSON syntax highlighter ──────────────────────────────────────────────────
-function highlight(json) {
-  return json
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
-      if (/^"/.test(m)) {
-        if (/:$/.test(m)) return `<span class="json-key">${m}</span>`;
-        return `<span class="json-str">${m}</span>`;
-      }
-      if (/true|false/.test(m)) return `<span class="json-bool">${m}</span>`;
-      if (/null/.test(m))       return `<span class="json-null">${m}</span>`;
-      return `<span class="json-num">${m}</span>`;
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const METHOD_CLASS = { GET: 'b-get', POST: 'b-post', PUT: 'b-put', DELETE: 'b-del', WS: 'b-ws' };
+
+function highlight(text) {
+  return esc(text).replace(
+    /("(\\u[\w]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+    (m) => {
+      if (m.startsWith('"')) return `<span class="${m.endsWith(':') ? 'k-json' : 's-json'}">${m}</span>`;
+      if (m === 'true' || m === 'false') return `<span class="b-json">${m}</span>`;
+      if (m === 'null') return `<span class="n-json">${m}</span>`;
+      return `<span class="n-json">${m}</span>`;
     });
 }
- 
-function formatSize(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+
+function formatSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
 }
 
-// ── Theme ────────────────────────────────────────────────────────────────────
-function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  localStorage.setItem('kostori-docs-theme', theme);
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem('kostori-docs-theme', t);
 }
-document.getElementById('theme-btn').addEventListener('click', () => {
-  applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
-});
-matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
-  if (!localStorage.getItem('kostori-docs-theme')) {
-    document.documentElement.dataset.theme = e.matches ? 'light' : 'dark';
-  }
-});
 
-// ── Mobile nav ───────────────────────────────────────────────────────────────
-document.getElementById('nav-toggle').addEventListener('click', () => {
-  document.body.classList.toggle('nav-open');
-});
- 
+$('#theme-btn').addEventListener('click', () =>
+  applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'));
+
+$('#nav-toggle').addEventListener('click', () =>
+  document.body.classList.toggle('nav-open'));
+
+// ── Load & render ──────────────────────────────────────────────────────────
 (async () => {
-  // ── Fetch spec ───────────────────────────────────────────────────────────
   let spec;
   try {
-    const res = await fetch(window.location.origin + '/openapi.json');
+    const res = await fetch(location.origin + '/openapi.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     spec = await res.json();
   } catch (e) {
-    document.getElementById('loading').innerHTML = '❌ Failed to load API spec';
+    $('#content').innerHTML =
+      `<div class="empty">无法加载接口定义：${esc(e.message)}</div>`;
     return;
   }
- 
-  const info   = spec.info   ?? {};
-  const server = (spec.servers ?? [])[0]?.url ?? window.location.origin;
- 
-  document.getElementById('api-version').textContent = 'v' + (info.version ?? '?');
- 
-  document.getElementById('info-cards').innerHTML = `
-    <div class="info-card">
-      <div class="label">Server</div>
-      <div class="value">${server}</div>
-    </div>
-    <div class="info-card">
-      <div class="label">Version</div>
-      <div class="value">${info.version ?? '—'}</div>
-    </div>
-    <div class="info-card">
-      <div class="label">Spec</div>
-      <div class="value"><a href="/openapi.json" style="color:var(--blue);text-decoration:none">openapi.json ↗</a></div>
-    </div>
-  `;
- 
-  // ── Parse endpoints ──────────────────────────────────────────────────────
-  const endpoints = [];
-  for (const [path, methods] of Object.entries(spec.paths ?? {})) {
-    for (const [method, op] of Object.entries(methods)) {
-      endpoints.push({ path, method: method.toUpperCase(), op });
+
+  const info = spec.info ?? {};
+  const server = spec.servers?.[0]?.url ?? location.origin;
+  const routes = [];
+
+  for (const [path, ops] of Object.entries(spec.paths ?? {})) {
+    for (const [method, op] of Object.entries(ops)) {
+      if (!['get', 'post', 'put', 'delete', 'patch', 'ws'].includes(method)) continue;
+      routes.push({ method: method.toUpperCase(), path, op, id: method + ' ' + path });
     }
   }
- 
-  // ── Sidebar nav ──────────────────────────────────────────────────────────
-  const nav = document.getElementById('nav');
- 
-  function renderNav(list) {
-    nav.innerHTML = '';
-    if (!list.length) {
-      nav.innerHTML = '<div class="empty" style="padding:10px 8px">No results</div>';
-      return;
-    }
-    const lbl = document.createElement('div');
-    lbl.className = 'nav-group-label';
-    lbl.textContent = `Endpoints (${list.length})`;
-    nav.appendChild(lbl);
- 
-    list.forEach((ep, idx) => {
-      const globalIdx = endpoints.indexOf(ep);
-      const item = document.createElement('a');
-      item.className = 'nav-item';
-      item.href = '#ep-' + globalIdx;
-      item.dataset.index = globalIdx;
-      const bc = ep.method === 'GET' ? 'badge-get'
-        : ep.method === 'POST'   ? 'badge-post'
-        : ep.method === 'PUT'    ? 'badge-put'
-        : ep.method === 'DELETE' ? 'badge-delete' : 'badge-ws';
-      item.innerHTML = `<span class="method-badge ${bc}">${ep.method}</span><span class="path-text">${ep.path}</span>`;
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        item.classList.add('active');
-      });
-      nav.appendChild(item);
-    });
+
+  routes.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
+
+  $('#ver').textContent = 'v' + (info.version ?? '?');
+  // info.description 首行是简介，其余是 markdown 形式的鉴权说明，
+  // 下方已有专门的鉴权卡片展示，避免重复
+  $('#desc').textContent =
+    (info.description ?? '本地服务接口 — 在浏览器中直接查看并试用各接口。').split('\n')[0].trim();
+
+  const authCount = routes.filter((r) => r.op.security?.length).length;
+  $('#facts').innerHTML = [
+    ['Server', server],
+    ['Endpoints', routes.length],
+    ['Auth Required', authCount],
+  ].map(([k, v]) =>
+    `<div class="fact"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`
+  ).join('');
+
+  // ── Sidebar ─────────────────────────────────────────────────────────────
+  const groups = new Map();
+  for (const r of routes) {
+    const seg = r.path.split('/')[1] || 'root';
+    if (!groups.has(seg)) groups.set(seg, []);
+    groups.get(seg).push(r);
   }
- 
-  renderNav(endpoints);
- 
-  // ── Method colors ────────────────────────────────────────────────────────
-  function methodColor(m) {
-    return m === 'GET' ? '#60a5fa' : m === 'POST' ? '#34d399'
-      : m === 'PUT' ? '#fbbf24' : m === 'DELETE' ? '#f87171' : '#22d3ee';
+
+  let navHtml = '';
+  for (const [seg, list] of groups) {
+    navHtml += `<div class="nav-group">${esc(seg)} <span class="nav-count">${list.length}</span></div>`;
+    for (const r of list) {
+      navHtml += `<a class="nav-item" href="#${cssId(r.id)}" data-id="${cssId(r.id)}">`
+        + `<span class="badge ${METHOD_CLASS[r.method] ?? 'b-get'}">${r.method === 'WS' ? 'WS' : r.method.slice(0, 3)}</span>`
+        + `<span class="nav-path">${esc(r.path.replace(/^\//, ''))}</span></a>`;
+    }
   }
- 
-  function methodBg(m) {
-    return m === 'GET' ? 'rgba(96,165,250,0.12)' : m === 'POST' ? 'rgba(52,211,153,0.12)'
-      : m === 'PUT' ? 'rgba(251,191,36,0.12)' : m === 'DELETE' ? 'rgba(248,113,113,0.12)'
-      : 'rgba(34,211,238,0.12)';
-  }
- 
-  // ── Render endpoint cards ────────────────────────────────────────────────
-  const container = document.getElementById('endpoints');
-  document.getElementById('loading').style.display = 'none';
-  container.style.display = 'block';
- 
-  endpoints.forEach((ep, i) => {
-    const op       = ep.op;
-    const params   = op.parameters ?? [];
-    const responses= op.responses  ?? {};
-    const requiresAuth = (op.security ?? []).length > 0;
-    const isWs     = ep.method === 'GET' && responses['101'];
-    const httpMethod = isWs ? 'WS' : ep.method;
- 
-    // ── Params tab HTML ──
-    const paramsHtml = params.length > 0
-      ? params.map(p => `
-          <div class="param-row">
-            <span class="param-name">${p.name ?? p.Name ?? ''}</span>
-            <span class="param-in">${p.in ?? p.type ?? ''}</span>
-            ${p.required ? '<span class="param-required">required</span>' : ''}
-            <span class="param-desc">${p.description ?? ''}</span>
-          </div>`).join('')
-      : '<div class="empty">No parameters</div>';
- 
-    const responsesHtml = Object.entries(responses).map(([code, r]) => {
-      const cls = code==='200'?'s200':code==='101'?'s101':code==='401'?'s401':'s404';
-      return `<div class="response-row">
-        <span class="status-code ${cls}">${code}</span>
-        <span class="desc-text">${r.description ?? ''}</span>
-      </div>`;
-    }).join('');
- 
-    // ── Try-it-out inputs ──
-    // Auth header input
-    const authInput = requiresAuth
-      ? `<div class="try-field">
-           <label>Authorization <span class="req">*</span></label>
-           <input type="text" class="try-auth" placeholder="Bearer your-api-key">
-         </div>`
-      : '';
- 
-    // Path + query params
-    const pathParams  = params.filter(p => (p.in ?? p.type) === 'path');
-    const queryParams = params.filter(p => (p.in ?? p.type) === 'query');
-    const headerParams= params.filter(p => (p.in ?? p.type) === 'header');
-    const bodyParams  = params.filter(p => (p.in ?? p.type) === 'body');
- 
-    let tryPathHtml = '';
-    if (pathParams.length) {
-      tryPathHtml = '<div class="try-section-title" style="margin-bottom:8px">Path Parameters</div>'
-        + pathParams.map(p => `<div class="try-field">
-            <label>${p.name}${p.required ? '<span class="req">*</span>' : ''}</label>
-            <input type="text" class="try-param-path" data-name="${p.name}" placeholder="${p.description ?? p.name}">
-          </div>`).join('');
-    }
- 
-    let tryQueryHtml = '';
-    if (queryParams.length) {
-      tryQueryHtml = '<div class="try-section-title" style="margin-bottom:8px;margin-top:12px">Query Parameters</div>'
-        + queryParams.map(p => `<div class="try-field">
-            <label>${p.name}${p.required ? '<span class="req">*</span>' : ''}</label>
-            <input type="text" class="try-param-query" data-name="${p.name}" placeholder="${p.description ?? p.name}">
-          </div>`).join('');
-    }
- 
-    let tryBodyHtml = '';
-    if (['POST','PUT','PATCH'].includes(ep.method)) {
-      tryBodyHtml = `<div class="try-field" style="margin-top:12px">
-        <label>Request Body <span style="color:var(--text-muted);font-weight:400;text-transform:none;font-size:11px">(JSON)</span></label>
-        <textarea class="try-body" placeholder='{\n  "key": "value"\n}'></textarea>
-      </div>`;
-    }
- 
-    const card = document.createElement('div');
-    card.className = 'endpoint-card';
-    card.id = 'ep-' + i;
- 
-    card.innerHTML = `
-      <div class="endpoint-header" onclick="toggleCard(this)">
-        <span class="method-pill" style="background:${methodBg(httpMethod)};color:${methodColor(httpMethod)}">${httpMethod}</span>
-        <span class="endpoint-path">${ep.path}</span>
-        <span class="endpoint-summary">${op.summary ?? ''}</span>
-        ${requiresAuth ? '<span class="auth-lock">🔒</span>' : ''}
-        <span class="chevron">▶</span>
-      </div>
-      <div class="endpoint-body">
-        ${op.description ? `<div style="font-size:13px;color:var(--text-muted);padding:12px 18px 0">
-          ${op.description}</div>` : ''}
-        <div class="ep-tabs">
-          <div class="ep-tab active" onclick="switchTab(this,'docs')">Docs</div>
-          ${!isWs ? `<div class="ep-tab" onclick="switchTab(this,'try')">Try it out ▶</div>` : ''}
-        </div>
-        <div class="ep-panel active" data-panel="docs">
-          <div class="detail-section">
-            <div class="section-title">Parameters</div>
-            ${paramsHtml}
-          </div>
-          <div class="detail-section" style="margin-top:14px">
-            <div class="section-title">Responses</div>
-            ${responsesHtml}
-          </div>
-        </div>
-        ${!isWs ? `
-        <div class="ep-panel try-panel" data-panel="try">
-          ${authInput}
-          ${tryPathHtml}
-          ${tryQueryHtml}
-          ${tryBodyHtml}
-          <div class="try-actions">
-            <button class="btn-send" onclick="sendRequest(this)" data-method="${ep.method}" data-path="${ep.path}">
-              Send Request
-            </button>
-            <button class="btn-clear" onclick="clearTry(this)">Clear</button>
-            <div class="sending-indicator">
-              <div class="spinner"></div> Sending...
-            </div>
-          </div>
-          <div class="try-response" style="display:none"></div>
-        </div>` : ''}
-      </div>
-    `;
-    container.appendChild(card);
+  $('#nav').innerHTML = navHtml;
+
+  // ── Cards ───────────────────────────────────────────────────────────────
+  $('#content').innerHTML = routes.map(renderCard).join('')
+    || '<div class="empty">没有接口</div>';
+
+  $$('.ep').forEach((el) => {
+    $('.ep-head', el).addEventListener('click', () => el.classList.toggle('open'));
   });
- 
-  // ── Search ───────────────────────────────────────────────────────────────
-  document.getElementById('search-input').addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
-    const filtered = endpoints.filter(ep =>
-      ep.path.toLowerCase().includes(q) ||
-      ep.method.toLowerCase().includes(q) ||
-      (ep.op.summary ?? '').toLowerCase().includes(q)
-    );
-    renderNav(filtered);
-    endpoints.forEach((ep, i) => {
-      const el = document.getElementById('ep-' + i);
-      if (!el) return;
-      const matches = !q || ep.path.toLowerCase().includes(q) ||
-        ep.method.toLowerCase().includes(q) ||
-        (ep.op.summary ?? '').toLowerCase().includes(q);
-      el.style.display = matches ? '' : 'none';
+  $$('.tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const card = tab.closest('.ep');
+      $$('.tab', card).forEach((t) => t.classList.toggle('on', t === tab));
+      $$('.pane', card).forEach((p) =>
+        p.classList.toggle('on', p.dataset.pane === tab.dataset.tab));
     });
   });
- 
-  // ── Scroll spy ───────────────────────────────────────────────────────────
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const idx = entry.target.id.replace('ep-','');
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.querySelector(`.nav-item[data-index="${idx}"]`)?.classList.add('active');
+
+  $('#expand-all').addEventListener('click', () => {
+    const anyClosed = $$('.ep:not(.open)').length;
+    $$('.ep').forEach((el) => el.classList.toggle('open', anyClosed));
+    $('#expand-all').textContent = anyClosed ? '⊟' : '⊞';
+  });
+
+  // Scroll-spy
+  const spy = new IntersectionObserver((entries) => {
+    for (const en of entries) {
+      if (!en.isIntersecting) continue;
+      const id = en.target.id;
+      $$('.nav-item').forEach((n) =>
+        n.classList.toggle('active', n.dataset.id === id));
+    }
+  }, { rootMargin: '-72px 0px -70% 0px', threshold: 0 });
+  $$('.ep').forEach((el) => spy.observe(el));
+
+  // ── Search ──────────────────────────────────────────────────────────────
+  const filter = (q) => {
+    const needle = q.trim().toLowerCase();
+    let visible = 0;
+    for (const r of routes) {
+      const card = $('#' + cssId(r.id));
+      const nav = $(`.nav-item[data-id="${cssId(r.id)}"]`);
+      const hay = (r.path + ' ' + (r.op.summary || '') + ' ' + (r.op.description || '')).toLowerCase();
+      const hit = !needle || hay.includes(needle);
+      card?.classList.toggle('hidden', !hit);
+      nav?.classList.toggle('hidden', !hit);
+      if (hit) visible++;
+    }
+    $('#content').querySelectorAll('.sec-title').forEach((s) => {
+      let n = 0;
+      let el = s.nextElementSibling;
+      while (el && !el.classList.contains('sec-title')) {
+        if (el.classList.contains('ep') && !el.classList.contains('hidden')) n++;
+        el = el.nextElementSibling;
       }
+      s.style.display = n ? '' : 'none';
     });
-  }, { rootMargin: '-30% 0px -60% 0px' });
- 
-  document.querySelectorAll('.endpoint-card').forEach(el => obs.observe(el));
- 
+    if (needle) {
+      let empty = $('#content').querySelector('.empty');
+      if (!visible) {
+        if (!empty) {
+          empty = document.createElement('div');
+          empty.className = 'empty';
+          empty.textContent = '没有匹配的接口';
+          $('#content').appendChild(empty);
+        }
+        empty.style.display = '';
+      } else if (empty) {
+        empty.style.display = 'none';
+      }
+    }
+  };
+  $('#q').addEventListener('input', (e) => filter(e.target.value));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== $('#q')) {
+      e.preventDefault();
+      $('#q').focus();
+    }
+    if (e.key === 'Escape') {
+      document.body.classList.remove('nav-open');
+      $('#q').blur();
+    }
+  });
+
+  function cssId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 })();
- 
-// ── Card toggle ──────────────────────────────────────────────────────────────
-function toggleCard(header) {
-  header.closest('.endpoint-card').classList.toggle('expanded');
+
+function renderCard(r) {
+  const op = r.op;
+  const id = r.method + ' ' + r.path;
+  const domId = id.replace(/[^a-zA-Z0-9]/g, '_');
+  const params = (op.parameters ?? []);
+  const needsAuth = (op.security?.length ?? 0) > 0;
+
+  const fields = params.map((p) => `
+    <div class="field">
+      <label>${esc(p.name)}${p.required ? '<span class="req">*</span>' : ''}</label>
+      <input id="in_${domId}_${esc(p.name)}" placeholder="${esc(p.example ?? '')}"
+             autocomplete="off" spellcheck="false">
+      ${p.description ? `<div class="note">${esc(p.description)}</div>` : ''}
+    </div>`).join('');
+
+  return `<article class="ep" id="${domId}">
+    <div class="ep-head">
+      <span class="badge ${METHOD_CLASS[r.method] ?? 'b-get'}">${r.method === 'WS' ? 'WS' : r.method}</span>
+      <span class="ep-path">${esc(r.path)}</span>
+      ${needsAuth ? '<span class="lock">需鉴权</span>' : ''}
+      <span class="ep-sum">${esc(op.summary || '')}</span>
+      <span class="caret">▶</span>
+    </div>
+    <div class="ep-body"><div>
+      <div class="ep-inner">
+        ${op.description ? `<p class="desc">${esc(op.description)}</p>` : ''}
+        <div class="tabs">
+          <button class="tab on" data-tab="docs">文档</button>
+          <button class="tab" data-tab="try">试用</button>
+        </div>
+        <div class="pane on" data-pane="docs">
+          ${op.response ? `<div class="kv">
+            <div class="kv-label">响应</div>
+            <div class="kv-val">${esc(op.response)}</div>
+          </div>` : ''}
+          ${params.length ? `<div class="kv">
+            <div class="kv-label">参数</div>
+            <div class="kv-val">${esc(params.map((p) =>
+              `${p.name}${p.required ? ' (必填)' : ''}${p.in ? ' · ' + p.in : ''}`).join('\n'))}</div>
+          </div>` : '<div class="kv"><div class="kv-label">参数</div><div class="kv-val">无</div></div>'}
+        </div>
+        <div class="pane" data-pane="try">
+          ${fields || '<div class="field"><label>无参数</label></div>'}
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="sendReq(this)">发送请求</button>
+            <button class="btn btn-ghost" onclick="clearReq(this)">清空</button>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </article>`;
 }
- 
-// ── Tab switch ───────────────────────────────────────────────────────────────
-function switchTab(tab, name) {
-  const body = tab.closest('.endpoint-body');
-  body.querySelectorAll('.ep-tab').forEach(t => t.classList.remove('active'));
-  body.querySelectorAll('.ep-panel').forEach(p => p.classList.remove('active'));
-  tab.classList.add('active');
-  body.querySelector(`[data-panel="${name}"]`)?.classList.add('active');
-}
- 
-// ── Clear Try ────────────────────────────────────────────────────────────────
-function clearTry(btn) {
-  const panel = btn.closest('.try-panel');
-  panel.querySelectorAll('input, textarea').forEach(el => el.value = '');
-  const resDiv = panel.querySelector('.try-response');
-  if (resDiv) { resDiv.style.display = 'none'; resDiv.innerHTML = ''; }
-}
- 
-// ── Send request ─────────────────────────────────────────────────────────────
-async function sendRequest(btn) {
-  const panel  = btn.closest('.try-panel');
-  const method = btn.dataset.method;
-  let   path   = btn.dataset.path;
- 
-  // Replace path params
-  panel.querySelectorAll('.try-param-path').forEach(input => {
-    if (input.value) path = path.replace(`{${input.dataset.name}}`, input.value);
-  });
- 
-  // Build query string
-  const qp = new URLSearchParams();
-  panel.querySelectorAll('.try-param-query').forEach(input => {
-    if (input.value) qp.append(input.dataset.name, input.value);
-  });
- 
-  const qs = qp.toString();
-  const url = window.location.origin + path + (qs ? '?' + qs : '');
- 
-  // Build headers
-  const headers = { 'Content-Type': 'application/json' };
-  const authInput = panel.querySelector('.try-auth');
-  if (authInput?.value?.trim()) {
-    const v = authInput.value.trim();
-    headers['Authorization'] = v.startsWith('Bearer ') ? v : 'Bearer ' + v;
+
+async function sendReq(btn) {
+  const card = btn.closest('.ep');
+  const pane = btn.closest('.pane');
+  let resBox = $('.res', pane);
+  if (!resBox) {
+    resBox = document.createElement('div');
+    resBox.className = 'res';
+    pane.appendChild(resBox);
   }
- 
-  // Build body
-  let body = undefined;
-  const bodyInput = panel.querySelector('.try-body');
-  if (bodyInput?.value?.trim()) {
-    try { JSON.parse(bodyInput.value); body = bodyInput.value; }
-    catch { showResponse(panel, null, null, 'Invalid JSON body'); return; }
+
+  const path = $('.ep-path', card).textContent;
+  const method = $('.badge', card).textContent.trim().toUpperCase();
+  const inputs = $$('.field input', pane);
+
+  const query = new URLSearchParams();
+  let body;
+  for (const el of inputs) {
+    const v = el.value.trim();
+    if (!v) continue;
+    const name = el.id.split('_').slice(2).join('_');
+    if (name.toLowerCase() === 'authorization' || name.toLowerCase() === 'api_key'
+        || name.toLowerCase() === 'token') {
+      query.set(name, v);
+    } else if (method === 'GET' || method === 'WS') {
+      query.set(name, v);
+    } else {
+      body = v;
+    }
   }
- 
-  // Show spinner
-  const indicator = panel.querySelector('.sending-indicator');
-  indicator.classList.add('visible');
+
+  const qs = query.toString();
+  const url = location.origin + path + (qs ? '?' + qs : '');
+
   btn.disabled = true;
- 
+  resBox.innerHTML = '<div class="res-head"><div class="spin"></div></div>';
+
   const t0 = performance.now();
   try {
-    const res = await fetch(url, { method, headers, body });
-    const elapsed = Math.round(performance.now() - t0);
-    const text = await res.text();
-    showResponse(panel, res.status, text, null, elapsed);
+    const opt = { method: method === 'WS' ? 'GET' : method };
+    if (body !== undefined) {
+      opt.headers = { 'Content-Type': 'application/json' };
+      opt.body = body;
+    }
+    const res = await fetch(url, opt);
+    const ms = Math.round(performance.now() - t0);
+    const ct = res.headers.get('content-type') || '';
+    if (ct.startsWith('image/')) {
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      resBox.innerHTML = `<div class="res-head">
+          <span class="status-pill ${res.ok ? 's-ok' : 's-err'}">${res.status}</span>
+          <span class="res-meta">${ms}ms · ${formatSize(blob.size)} · ${esc(ct)}</span>
+        </div>
+        <div class="img-out"><img src="${objUrl}" alt="响应图像"></div>`;
+    } else {
+      const text = await res.text();
+      renderRes(resBox, res, text, ms, ct);
+    }
   } catch (e) {
-    showResponse(panel, null, null, e.message);
+    resBox.innerHTML = `<div class="res-head">
+        <span class="status-pill s-err">ERR</span></div>
+      <div class="res-body" style="color:var(--err)">${esc(e.message)}</div>`;
   } finally {
-    indicator.classList.remove('visible');
     btn.disabled = false;
   }
 }
- 
-function showResponse(panel, status, text, errMsg, elapsed) {
-  const resDiv = panel.querySelector('.try-response');
-  resDiv.style.display = 'block';
- 
-  let badgeClass = 'res-badge-warn';
-  let badgeText  = '—';
-  if (status) {
-    badgeText  = String(status);
-    badgeClass = status >= 200 && status < 300 ? 'res-badge-ok'
-      : status >= 400 ? 'res-badge-err' : 'res-badge-warn';
+
+function renderRes(box, res, text, ms, ct) {
+  const cls = res.ok ? 's-ok' : (res.status >= 500 ? 's-err' : 's-warn');
+  let body;
+  try {
+    body = `<div class="res-body">${highlight(JSON.stringify(JSON.parse(text), null, 2))}</div>`;
+  } catch {
+    body = `<div class="res-body">${esc(text)}</div>`;
   }
- 
-  let bodyHtml = '';
-  if (errMsg) {
-    bodyHtml = `<div class="res-body" style="color:var(--red)">${errMsg}</div>`;
-  } else {
-    let displayText = text ?? '';
-    try {
-      displayText = JSON.stringify(JSON.parse(text), null, 2);
-      bodyHtml = `<div class="res-body">${highlight(displayText)}</div>`;
-    } catch {
-      bodyHtml = `<div class="res-body">${displayText.replace(/</g,'&lt;')}</div>`;
-    }
-  }
- 
-  const size = text ? formatSize(new TextEncoder().encode(text).length) : '—';
- 
-  resDiv.innerHTML = `
-    <div class="try-response-header">
-      <span class="res-status-badge ${badgeClass}">${badgeText}</span>
-      ${elapsed != null ? `<span class="res-time">${elapsed}ms</span>` : ''}
-      ${text ? `<span class="res-size">${size}</span>` : ''}
-      ${text ? `<span class="res-copy" onclick="navigator.clipboard.writeText(${JSON.stringify(text).replace(/'/g,"&#39;")})">Copy</span>` : ''}
-    </div>
-    ${bodyHtml}
-  `;
+  box.innerHTML = `<div class="res-head">
+      <span class="status-pill ${cls}">${res.status}</span>
+      <span class="res-meta">${ms}ms · ${formatSize(new TextEncoder().encode(text).length)}</span>
+      <span class="res-copy" onclick="copyRes(this)">复制</span>
+    </div>${body}`;
+  box.dataset.raw = text;
+}
+
+function copyRes(el) {
+  navigator.clipboard.writeText(el.closest('.res').dataset.raw || '');
+  const old = el.textContent;
+  el.textContent = '已复制';
+  setTimeout(() => { el.textContent = old; }, 1200);
+}
+
+function clearReq(btn) {
+  const pane = btn.closest('.pane');
+  $$('.field input', pane).forEach((i) => { i.value = ''; });
+  $('.res', pane)?.remove();
 }
 </script>
 </body>

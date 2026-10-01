@@ -593,8 +593,8 @@ abstract class BaseHttpService implements BaseService {
       '/docs',
       (req, params) => sendHtml(req, _buildDocsHtml()),
       doc: RouteDoc(
-        summary: 'Swagger UI',
-        description: '在浏览器中查看接口文档',
+        summary: '接口文档',
+        description: '在浏览器中查看并试用各接口',
         response: 'HTML',
       ),
     );

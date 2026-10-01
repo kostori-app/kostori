@@ -35,10 +35,33 @@ String? proxyFromEnvironment() {
     "all_proxy",
   ];
   for (final key in keys) {
-    final value = Platform.environment[key]?.removeAllBlank;
-    if (value != null && value.isNotEmpty) return value;
+    final raw = Platform.environment[key]?.removeAllBlank;
+    if (raw == null || raw.isEmpty) continue;
+    final normalized = normalizeProxyUrl(raw);
+    if (normalized != null) return normalized;
   }
   return null;
+}
+
+/// 把代理地址规整成 `host:port`，不带 scheme。
+///
+/// 环境变量通常是 `http://host:port`，平台通道返回的则是裸 `IP:端口`，
+/// 统一成后者才能同时喂给 rhttp 与 dart:io。无法识别时返回 null。
+String? normalizeProxyUrl(String raw) {
+  var value = raw.removeAllBlank;
+  value = value.replaceFirst(RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*://'), '');
+  value = value.replaceAll(RegExp(r'/+$'), '');
+  if (value.isEmpty) return null;
+
+  final uri = Uri.tryParse(
+    // Uri.parse 认不出裸 host:port，补 scheme 才能取到 host / port
+    value.contains('://') ? value : 'http://$value',
+  );
+  final host = uri?.host ?? '';
+  final port = uri?.port;
+  if (host.isEmpty || port == null || port <= 0) return null;
+  // 丢弃 user:pass —— host:port 形式带不下认证信息
+  return '$host:$port';
 }
 
 Future<String?> _getProxy() async {
@@ -71,14 +94,6 @@ Future<String?> _getProxy() async {
     }
   }
 
-  final RegExp regex = RegExp(
-    r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$',
-    caseSensitive: false,
-    multiLine: false,
-  );
-  if (!regex.hasMatch(res)) {
-    return null;
-  }
-
-  return res;
+  // 环境变量常带 scheme（http://host:port），平台通道给的则是裸 IP:端口
+  return normalizeProxyUrl(res);
 }
