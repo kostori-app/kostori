@@ -176,9 +176,12 @@ class Appdata with Init {
     // 磨砂玻璃效果默认值（外观设置）：默认开启、强度 15（范围 5~20）
     implicitData['blurEnabled'] ??= true;
     implicitData['blurStrength'] ??= 15;
-    // 默认 GitHub 镜像：jsDelivr（release 等大文件会自动跳过 jsDelivr）
+    // 默认 GitHub 镜像。api.github.com 有速率限制（未认证 60 次/小时），
+    // 默认配一条 scope=api 的转发镜像兜底；jsDelivr 只服务仓库内容，
+    // release 等大文件会自动跳过它。
     implicitData['githubMirrors'] ??= [
-      {'name': 'jsDelivr', 'url': 'https://cdn.jsdelivr.net/'},
+      {'name': 'jsDelivr', 'url': 'https://cdn.jsdelivr.net/', 'scope': 'site'},
+      {'name': 'gh-proxy', 'url': 'https://gh-proxy.com/', 'scope': 'api'},
     ];
     implicitData['githubMirror'] ??= 'https://cdn.jsdelivr.net/';
   }

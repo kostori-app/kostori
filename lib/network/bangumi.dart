@@ -739,61 +739,41 @@ class Bangumi {
       _autoCheckedThisLaunch = true;
     }
     _lastAutoCheck = DateTime.now();
+    String? remoteVersion;
     try {
       var res = await _dio.request(
         Api.checkBangumiDataUrl,
         options: Options(method: 'GET', headers: {'user-agent': webUA}),
       );
       final jsonData = res.data;
-      if (appdata.settings['bangumiDataVer'] != jsonData['tag_name']) {
-        NetLog.info('checkBangumiData', '${jsonData['tag_name']}');
-
-        final ok = await getBangumiData();
-        if (!ok) {
-          // 失败不标记版本，保留重试机会（否则会被当成"已最新"，长期不补）
-          App.rootContext.showMessage(
-            message: t.bangumiDataUpdateFailed,
-            level: LogLevel.error,
-          );
-          return;
-        }
-        // bangumi-data 更新后，之前因脏数据被跳过的补全 id 可能有救，清空重试
-        appdata.implicitData['bangumiCalendarSkipIds'] = <int>[];
-        appdata.writeImplicitData();
-        App.rootContext.showMessage(
-          message:
-              'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${jsonData['tag_name']}',
-        );
-        NetLog.info(
-          'checkBangumiData',
-          '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}',
-        );
-        appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
-        appdata.settings['getBangumiDataTime'] = Utils.formatDate(
-          DateTime.now(),
-        );
-        appdata.saveData();
-        NetLog.info(
-          'bangumiDataVer',
-          '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}',
-        );
-      } else {
-        App.rootContext.showMessage(
+      remoteVersion = jsonData['tag_name'] as String?;
+      if (appdata.settings['bangumiDataVer'] == remoteVersion) {
+        App.rootContextOrNull?.showMessage(
           message:
               '当前bangumiData数据版本: ${appdata.settings['bangumiDataVer']} 已是最新',
         );
-      }
-    } catch (e, s) {
-      if (e is DioException && e.response?.statusCode == 403) {
-        NetLog.warning('checkBangumiData', 'Rate limit exceeded, skip');
         return;
       }
-      // 后台启动检查：网络不可达/超时等无响应错误静默失败，不打扰用户
-      if (e is DioException && e.response == null) {
+    } catch (e) {
+      // GitHub API 有速率限制（未认证 60 次/小时），版本检查拿不到时不应
+      // 放弃整个更新流程：降级为直接尝试拉数据，由下载结果决定成败。
+      if (e is DioException && e.response?.statusCode == 403) {
+        NetLog.warning('checkBangumiData', '版本检查被限流，降级为直接拉取数据');
+        remoteVersion = null;
+      } else if (e is DioException && e.response == null) {
+        // 网络不可达/超时：直接放弃，避免无谓的重试
         NetLog.warning('checkBangumiData', '网络请求失败（超时/不可达）: $e');
         return;
+      } else {
+        NetLog.error('checkBangumiData', '版本检查失败: $e');
+        return;
       }
-      // 无头模式没有 UI，rootContext 为 null，此时只记日志不弹提示
+    }
+
+    NetLog.info('checkBangumiData', '开始更新，远端版本: ${remoteVersion ?? '未知'}');
+    final ok = await getBangumiData();
+    if (!ok) {
+      // 失败不标记版本，保留重试机会（否则会被当成"已最新"，长期不补）
       final rootContext = App.rootContextOrNull;
       if (rootContext != null) {
         rootContext.showMessage(
@@ -801,8 +781,31 @@ class Bangumi {
           level: LogLevel.error,
         );
       }
-      NetLog.error('checkBangumiData', '$e\n$s');
+      return;
     }
+    // bangumi-data 更新后，之前因脏数据被跳过的补全 id 可能有救，清空重试
+    appdata.implicitData['bangumiCalendarSkipIds'] = <int>[];
+    appdata.writeImplicitData();
+    final uiContext = App.rootContextOrNull;
+    if (uiContext != null) {
+      uiContext.showMessage(
+        message:
+            'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${remoteVersion ?? '最新'}',
+      );
+    }
+    NetLog.info(
+      'checkBangumiData',
+      '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: $remoteVersion',
+    );
+    if (remoteVersion != null) {
+      appdata.settings['bangumiDataVer'] = remoteVersion;
+    }
+    appdata.settings['getBangumiDataTime'] = Utils.formatDate(DateTime.now());
+    appdata.saveData();
+    NetLog.info(
+      'bangumiDataVer',
+      '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}',
+    );
   }
 
   Future<void> resetBangumiData() async {
