@@ -81,9 +81,12 @@ class MyLogInterceptor extends Interceptor {
       case DioExceptionType.receiveTimeout:
         err = err.copyWith(message: t.receiveTimeout);
       case DioExceptionType.unknown:
-        if (err.toString().contains("Connection terminated during handshake")) {
+        final detail = '${err.error} ${err.message}';
+        if (detail.contains('Connection terminated during handshake') ||
+            detail.contains('handshake')) {
           err = err.copyWith(message: t.connectionTerminatedDuringHandshake);
-        } else if (err.toString().contains("Connection reset by peer")) {
+        } else if (detail.contains('Connection reset by peer') ||
+            detail.contains('ConnectionReset')) {
           err = err.copyWith(message: t.connectionResetByPeer);
         }
       default:
