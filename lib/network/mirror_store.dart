@@ -3,10 +3,25 @@ import 'package:kostori/foundation/appdata.dart';
 /// 规范化镜像地址：补全 scheme（用户常只填 `github.akams.cn` 这类裸域名，
 /// 缺省会被解析成无 host 而静默失效）。
 String normalizeMirrorUrl(String url) {
-  var u = url.trim();
-  if (u.isEmpty) return '';
-  if (!u.contains('://')) u = 'https://$u';
-  return u;
+  final raw = url.trim();
+  if (raw.isEmpty) return '';
+  var rest = raw;
+  for (var i = 0; i < 8; i++) {
+    final m = RegExp(
+      r'^(?:[a-z][a-z0-9+.-]*:)?//',
+      caseSensitive: false,
+    ).firstMatch(rest);
+    if (m == null) break;
+    rest = rest.substring(m.end);
+    if (rest.isEmpty) return '';
+  }
+  // 用户原本指定的协议要保留，其余重复的前缀一律剥掉
+  final firstScheme = RegExp(
+    r'^([a-z][a-z0-9+.-]*):',
+    caseSensitive: false,
+  ).firstMatch(raw);
+  final scheme = firstScheme?.group(1) ?? 'https';
+  return '$scheme://$rest';
 }
 
 /// 镜像用途：决定一个镜像能承接哪些请求。
@@ -238,11 +253,14 @@ String _applyMirror(String url, String mirror, Set<String> hosts) {
   if (mirror.isEmpty) return url;
   final uri = Uri.tryParse(url);
   if (uri == null || !hosts.contains(uri.host)) return url;
-  final base = mirror.endsWith('/')
-      ? mirror.substring(0, mirror.length - 1)
-      : mirror;
+  // 已存的值可能带着重复 scheme，这里再归一一次
+  final base = normalizeMirrorUrl(mirror);
+  if (base.isEmpty) return url;
+  final trimmed = base.endsWith('/')
+      ? base.substring(0, base.length - 1)
+      : base;
   final path = uri.path.isEmpty ? '/' : uri.path;
-  return '$base$path${uri.hasQuery ? '?${uri.query}' : ''}';
+  return '$trimmed$path${uri.hasQuery ? '?${uri.query}' : ''}';
 }
 
 /// 把官方 Bangumi 主接口（api.bgm.tv）地址改写为当前选中的镜像地址。
