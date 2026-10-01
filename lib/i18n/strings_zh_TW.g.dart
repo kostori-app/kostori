@@ -779,7 +779,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get bangumiMirrorV0 => 'v0 介面';
 	@override String get bangumiMirrorP1 => 'p1 介面';
 	@override String get bangumiMirrorImage => '圖片';
-	@override String get bangumiMirrorType => '類型';
 	@override String get networkMirror => '鏡像設定';
 	@override String get githubMirror => 'GitHub 鏡像';
 	@override String get githubMirrorDesc => '支援前綴式鏡像與 jsDelivr（如 https://cdn.jsdelivr.net/）';
@@ -3946,7 +3945,6 @@ extension on TranslationsZhTw {
 			'bangumiMirrorV0' => 'v0 介面',
 			'bangumiMirrorP1' => 'p1 介面',
 			'bangumiMirrorImage' => '圖片',
-			'bangumiMirrorType' => '類型',
 			'networkMirror' => '鏡像設定',
 			'githubMirror' => 'GitHub 鏡像',
 			'githubMirrorDesc' => '支援前綴式鏡像與 jsDelivr（如 https://cdn.jsdelivr.net/）',
@@ -4230,9 +4228,9 @@ extension on TranslationsZhTw {
 			'pagePM' => ({required Object p, required Object m}) => '第 ${p} / ${m} 頁',
 			'first' => '第一頁',
 			'last' => '最後一頁',
+			'invalidPage' => '無效頁碼',
 			_ => null,
 		} ?? switch (path) {
-			'invalidPage' => '無效頁碼',
 			'unknownError' => '未知錯誤',
 			'loadPageAndLoadNextCantBeNull' => 'loadPage and loadNext can\'t be null at the same time',
 			'disableLengthLimitation' => '停用長度限制',
@@ -4744,9 +4742,9 @@ extension on TranslationsZhTw {
 			'publicBaseUrlHint' => '上傳圖片的外網可存取網址（公網 IPv4/IPv6 或網域時填寫）；留空則使用連線網址',
 			'publicIpDetected' => '已偵測到公網 IP',
 			'publicIpDetectFailed' => '公網 IP 偵測失敗',
+			'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
 			_ => null,
 		} ?? switch (path) {
-			'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
 			'imageTooLargeToSend' => '圖片太大，無法發送',
 			'pleaseConfigureServerUploadOrClientOss' => '請設定伺服器上傳或用戶端 OSS。',
 			'stopTheServerToChangeUploadMode' => '停止伺服器以更改上傳模式',
@@ -5258,9 +5256,9 @@ extension on TranslationsZhTw {
 			'tapToShare' => '點擊分享',
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '沒有資料',
+			'loginWithPasswordIsDisabled' => '密碼登入已停用',
 			_ => null,
 		} ?? switch (path) {
-			'loginWithPasswordIsDisabled' => '密碼登入已停用',
 			'cannotBeEmpty' => '不能為空',
 			'invalidCookies' => '無效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
@@ -5772,9 +5770,9 @@ extension on TranslationsZhTw {
 			'skillName' => '技能名稱',
 			'skillKey' => '技能 Key',
 			'builtin' => '內建',
+			'skillMarkdownHint' => '技能支援 Markdown 格式',
 			_ => null,
 		} ?? switch (path) {
-			'skillMarkdownHint' => '技能支援 Markdown 格式',
 			'sendMessage' => '發送訊息',
 			'contextAutoCompressed' => '上下文過長，已自動壓縮',
 			'chatGreeting' => '今天有什麼可以幫你？',
@@ -6286,9 +6284,9 @@ extension on TranslationsZhTw {
 			'torrentSourceDateRegex' => '時間正則',
 			'torrentSourceJsonPath' => 'JSON 路徑',
 			'torrentSourceTitleField' => '標題欄位',
+			'torrentSourceMagnetField' => '磁力欄位',
 			_ => null,
 		} ?? switch (path) {
-			'torrentSourceMagnetField' => '磁力欄位',
 			'torrentSourceHashField' => '雜湊欄位',
 			'torrentSourceSizeField' => '體積欄位',
 			'torrentSourceGroupField' => '分組欄位',

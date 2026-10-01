@@ -780,7 +780,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get bangumiMirrorV0 => 'v0 接口';
 	@override String get bangumiMirrorP1 => 'p1 接口';
 	@override String get bangumiMirrorImage => '图片';
-	@override String get bangumiMirrorType => '类型';
 	@override String get networkMirror => '镜像设置';
 	@override String get githubMirror => 'GitHub 镜像';
 	@override String get githubMirrorDesc => '支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）';
@@ -3948,7 +3947,6 @@ extension on TranslationsZhCn {
 			'bangumiMirrorV0' => 'v0 接口',
 			'bangumiMirrorP1' => 'p1 接口',
 			'bangumiMirrorImage' => '图片',
-			'bangumiMirrorType' => '类型',
 			'networkMirror' => '镜像设置',
 			'githubMirror' => 'GitHub 镜像',
 			'githubMirrorDesc' => '支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）',
@@ -4231,9 +4229,9 @@ extension on TranslationsZhCn {
 			'pagePM' => ({required Object p, required Object m}) => '第 ${p} / ${m} 页',
 			'first' => '首页',
 			'last' => '末页',
+			'invalidPage' => '无效页码',
 			_ => null,
 		} ?? switch (path) {
-			'invalidPage' => '无效页码',
 			'unknownError' => '未知错误',
 			'disableLengthLimitation' => '禁用长度限制',
 			'disableLengthLimitationDesc' => '单条日志放宽到 2 万字符；内存总量与文件大小仍有限制（防止日志占用大量内存）',
@@ -4745,9 +4743,9 @@ extension on TranslationsZhCn {
 			'publicIpDetected' => '已探测到公网 IP',
 			'publicIpDetectFailed' => '公网 IP 探测失败',
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 将使用服务器或 Base64',
+			'imageTooLargeToSend' => '图片太大，无法发送',
 			_ => null,
 		} ?? switch (path) {
-			'imageTooLargeToSend' => '图片太大，无法发送',
 			'pleaseConfigureServerUploadOrClientOss' => '请配置服务器上传或客户端 OSS。',
 			'stopTheServerToChangeUploadMode' => '停止服务器以修改上传模式',
 			'enableClientOss' => '启用客户端 OSS',
@@ -5259,9 +5257,9 @@ extension on TranslationsZhCn {
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '没有数据',
 			'loginWithPasswordIsDisabled' => '密码登录已禁用',
+			'cannotBeEmpty' => '不能为空',
 			_ => null,
 		} ?? switch (path) {
-			'cannotBeEmpty' => '不能为空',
 			'invalidCookies' => '无效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '数据源',
@@ -5773,9 +5771,9 @@ extension on TranslationsZhCn {
 			'noSkillsYet' => '暂无技能',
 			'skillName' => '技能名称',
 			'skillKey' => '技能 Key',
+			'builtin' => '内置',
 			_ => null,
 		} ?? switch (path) {
-			'builtin' => '内置',
 			'skillMarkdownHint' => '技能支持 Markdown 格式',
 			'sendMessage' => '发送消息',
 			'contextAutoCompressed' => '上下文过长，已自动压缩',
@@ -6287,9 +6285,9 @@ extension on TranslationsZhCn {
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '时间正则',
 			'torrentSourceJsonPath' => 'JSON 路径',
+			'torrentSourceTitleField' => '标题字段',
 			_ => null,
 		} ?? switch (path) {
-			'torrentSourceTitleField' => '标题字段',
 			'torrentSourceMagnetField' => '磁力字段',
 			'torrentSourceHashField' => '哈希字段',
 			'torrentSourceSizeField' => '体积字段',

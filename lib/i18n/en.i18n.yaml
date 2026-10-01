@@ -750,7 +750,6 @@ bangumiMirrorSendAuthDesc: When off, login tokens/credentials are not sent to th
 bangumiMirrorV0: v0 API
 bangumiMirrorP1: p1 API
 bangumiMirrorImage: Images
-bangumiMirrorType: Type
 networkMirror: Mirrors
 githubMirror: GitHub mirror
 githubMirrorDesc: Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)

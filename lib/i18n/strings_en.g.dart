@@ -2285,9 +2285,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Images'
 	String get bangumiMirrorImage => 'Images';
 
-	/// en: 'Type'
-	String get bangumiMirrorType => 'Type';
-
 	/// en: 'Mirrors'
 	String get networkMirror => 'Mirrors';
 
@@ -10230,7 +10227,6 @@ extension on Translations {
 			'bangumiMirrorV0' => 'v0 API',
 			'bangumiMirrorP1' => 'p1 API',
 			'bangumiMirrorImage' => 'Images',
-			'bangumiMirrorType' => 'Type',
 			'networkMirror' => 'Mirrors',
 			'githubMirror' => 'GitHub mirror',
 			'githubMirrorDesc' => 'Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)',
@@ -10506,9 +10502,9 @@ extension on Translations {
 			'pagePM' => ({required Object p, required Object m}) => 'Page ${p} / ${m}',
 			'first' => 'First',
 			'last' => 'Last',
+			'invalidPage' => 'Invalid page',
 			_ => null,
 		} ?? switch (path) {
-			'invalidPage' => 'Invalid page',
 			'unknownError' => 'Unknown error',
 			'loadPageAndLoadNextCantBeNull' => 'loadPage and loadNext can\'t be null at the same time',
 			'disableLengthLimitation' => 'Disable Length Limitation',
@@ -11020,9 +11016,9 @@ extension on Translations {
 			'publicBaseUrlHint' => 'External base address for uploaded images (public IPv4/IPv6 or domain); leave empty to use connection address',
 			'publicIpDetected' => 'Public IP detected',
 			'publicIpDetectFailed' => 'Failed to detect public IP',
+			'notConfiguredWillUseServerOrBase64' => 'Not configured · will use server or base64',
 			_ => null,
 		} ?? switch (path) {
-			'notConfiguredWillUseServerOrBase64' => 'Not configured · will use server or base64',
 			'imageTooLargeToSend' => 'Image too large to send',
 			'pleaseConfigureServerUploadOrClientOss' => 'Please configure server upload or client OSS.',
 			'stopTheServerToChangeUploadMode' => 'Stop the server to change upload mode',
@@ -11534,9 +11530,9 @@ extension on Translations {
 			'tapToShare' => 'Tap to share',
 			'noConfigurationsFound' => 'No configurations found',
 			'noData' => 'No data',
+			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
 			_ => null,
 		} ?? switch (path) {
-			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
 			'cannotBeEmpty' => 'Cannot be empty',
 			'invalidCookies' => 'Invalid cookies',
 			'webviewIsNotAvailable' => 'Webview is not available',
@@ -12048,9 +12044,9 @@ extension on Translations {
 			'noSkillsYet' => 'No skills yet',
 			'skillName' => 'Skill Name',
 			'skillKey' => 'Skill Key',
+			'builtin' => 'Built-in',
 			_ => null,
 		} ?? switch (path) {
-			'builtin' => 'Built-in',
 			'skillMarkdownHint' => 'Skills support Markdown',
 			'sendMessage' => 'Send message',
 			'contextAutoCompressed' => 'Context too long, auto-compressed',
@@ -12562,9 +12558,9 @@ extension on Translations {
 			'torrentSourceMagnetTemplate' => 'Magnet template ({hash})',
 			'torrentSourceDateRegex' => 'Date regex',
 			'torrentSourceJsonPath' => 'JSON path',
+			'torrentSourceTitleField' => 'Title field',
 			_ => null,
 		} ?? switch (path) {
-			'torrentSourceTitleField' => 'Title field',
 			'torrentSourceMagnetField' => 'Magnet field',
 			'torrentSourceHashField' => 'Hash field',
 			'torrentSourceSizeField' => 'Size field',

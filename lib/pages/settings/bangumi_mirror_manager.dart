@@ -1,5 +1,11 @@
 part of 'settings_page.dart';
 
+String bangumiMirrorTypeLabel(BangumiMirrorType type) => switch (type) {
+  BangumiMirrorType.v0 => t.bangumiMirrorV0,
+  BangumiMirrorType.p1 => t.bangumiMirrorP1,
+  BangumiMirrorType.img => t.bangumiMirrorImage,
+};
+
 /// Bangumi 镜像管理：一个滚动页面里分 v0 / p1 / 图片 三个栏目，
 /// 每个栏目单选一个镜像，未选的栏目默认官方。
 class BangumiMirrorManagerPage extends StatefulWidget {
@@ -15,12 +21,6 @@ class _BangumiMirrorManagerPageState extends State<BangumiMirrorManagerPage> {
     bangumiMirrorEntries(),
   );
 
-  static String _typeLabel(BangumiMirrorType type) => switch (type) {
-    BangumiMirrorType.v0 => t.bangumiMirrorV0,
-    BangumiMirrorType.p1 => t.bangumiMirrorP1,
-    BangumiMirrorType.img => t.bangumiMirrorImage,
-  };
-
   void _persist() {
     saveBangumiMirrorEntries(_entries);
     setState(() {});
@@ -32,48 +32,28 @@ class _BangumiMirrorManagerPageState extends State<BangumiMirrorManagerPage> {
   }) async {
     final nameCtrl = TextEditingController(text: initial?.name ?? '');
     final urlCtrl = TextEditingController(text: initial?.url ?? '');
-    var type = initial?.type ?? defaultType;
+    final type = initial?.type ?? defaultType;
     await ContentDialog.show(
       context: context,
       title: initial == null ? t.add : t.edit,
-      content: StatefulBuilder(
-        builder: (context, setLocal) => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: InputDecoration(labelText: t.name),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: nameCtrl,
+            decoration: InputDecoration(labelText: t.name),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: urlCtrl,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              labelText: t.mirrorAddress,
+              hintText: 'https://axlmly.com.cn',
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: urlCtrl,
-              keyboardType: TextInputType.url,
-              decoration: InputDecoration(
-                labelText: t.mirrorAddress,
-                hintText: 'https://axlmly.com.cn',
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              t.bangumiMirrorType,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            CapsuleOptions(
-              wrap: true,
-              alignment: WrapAlignment.start,
-              children: [
-                for (final s in BangumiMirrorType.values)
-                  CapsuleOption(
-                    text: _typeLabel(s),
-                    isSelected: type == s,
-                    onTap: () => setLocal(() => type = s),
-                  ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       actions: [
         FilledButton(
@@ -91,10 +71,9 @@ class _BangumiMirrorManagerPageState extends State<BangumiMirrorManagerPage> {
             } else {
               final i = _entries.indexOf(initial);
               if (i >= 0) _entries[i] = entry;
-              // 类型/地址变化时同步选中项
-              if (bangumiMirrorSelectedUrl(initial.type) == initial.url) {
-                selectBangumiMirror(initial.type, '');
-                selectBangumiMirror(entry.type, entry.url);
+              // 地址变化时同步选中项
+              if (bangumiMirrorSelectedUrl(entry.type) == initial.url) {
+                selectBangumiMirror(entry.type, url);
               }
             }
             _persist();
@@ -141,7 +120,7 @@ class _BangumiMirrorManagerPageState extends State<BangumiMirrorManagerPage> {
               child: Row(
                 children: [
                   Text(
-                    _typeLabel(type),
+                    bangumiMirrorTypeLabel(type),
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,

@@ -541,14 +541,14 @@ class BangumiMirrorInterceptor extends Interceptor {
     // 图片：只用图片镜像（通常只反代 lain.bgm.tv）
     final imageMirrored = applyBangumiImageMirror(original);
     if (imageMirrored != original) {
-      options.path = imageMirrored;
+      _applyMirroredUrl(options, imageMirrored);
       handler.next(options);
       return;
     }
     // p1 接口：用 p1 镜像
     final p1Mirrored = applyBangumiP1Mirror(original);
     if (p1Mirrored != original) {
-      options.path = p1Mirrored;
+      _applyMirroredUrl(options, p1Mirrored);
       _stripAuthFromMirror(options);
       handler.next(options);
       return;
@@ -556,10 +556,19 @@ class BangumiMirrorInterceptor extends Interceptor {
     // 主接口：用主接口镜像
     final mirrored = applyBangumiMirror(original);
     if (mirrored != original) {
-      options.path = mirrored;
+      _applyMirroredUrl(options, mirrored);
       _stripAuthFromMirror(options);
     }
     handler.next(options);
+  }
+
+  /// 镜像地址要拆回 path + query，否则 queryParameters 会被拼两次
+  void _applyMirroredUrl(RequestOptions options, String mirrored) {
+    final uri = Uri.parse(mirrored);
+    options.path = uri.origin.isEmpty
+        ? '${uri.scheme}://${uri.host}${uri.path}'
+        : uri.origin + uri.path;
+    options.queryParameters = Map.of(uri.queryParameters);
   }
 
   /// 默认不把登录鉴权/凭证交给镜像；仅当用户显式开启时才带上
@@ -587,7 +596,11 @@ class GithubMirrorInterceptor extends Interceptor {
       largeFile: options.extra['githubLargeFile'] == true,
     );
     if (mirrored != original) {
-      options.path = mirrored;
+      final uri = Uri.parse(mirrored);
+      options.path = uri.origin.isEmpty
+          ? '${uri.scheme}://${uri.host}${uri.path}'
+          : uri.origin + uri.path;
+      options.queryParameters = Map.of(uri.queryParameters);
     }
     handler.next(options);
   }

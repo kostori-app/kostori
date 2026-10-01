@@ -739,7 +739,6 @@ bangumiMirrorSendAuthDesc: 关闭时不向镜像发送登录令牌等凭证（�
 bangumiMirrorV0: v0 接口
 bangumiMirrorP1: p1 接口
 bangumiMirrorImage: 图片
-bangumiMirrorType: 类型
 networkMirror: 镜像设置
 githubMirror: GitHub 镜像
 githubMirrorDesc: 支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）

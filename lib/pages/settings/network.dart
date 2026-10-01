@@ -11,11 +11,7 @@ class _NetworkSettingsState extends State<NetworkSettings> {
   String _bangumiMirrorSummary() {
     final parts = <String>[];
     for (final type in BangumiMirrorType.values) {
-      final label = switch (type) {
-        BangumiMirrorType.v0 => t.bangumiMirrorV0,
-        BangumiMirrorType.p1 => t.bangumiMirrorP1,
-        BangumiMirrorType.img => t.bangumiMirrorImage,
-      };
+      final label = bangumiMirrorTypeLabel(type);
       final selected = selectedBangumiMirror(type);
       parts.add('$label: ${selected?.name ?? t.mirrorOfficial}');
     }
