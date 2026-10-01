@@ -78,24 +78,33 @@ Future<void> runHeadlessMode(List<String> args) async {
   final cert = _stringArg(args, '--cert');
   final key = _stringArg(args, '--key');
 
-  // 可选固定令牌：服务端可用 --api-key / --admin-key 指定稳定令牌
   final apiKey = _stringArg(args, '--api-key');
   final adminKey = _stringArg(args, '--admin-key');
-  if (apiKey != null && apiKey.isNotEmpty) {
-    await ApiKeyManager().setFixedKey(apiKey);
-    await ApiKeyManager().setUseFixed(true);
-  }
-  if (adminKey != null && adminKey.isNotEmpty) {
-    await ApiKeyManager().setAdminFixedKey(adminKey);
-    await ApiKeyManager().setUseAdminFixed(true);
-  }
 
   await init();
+
+  // 必须在 init() 之后：ApiKeyManager().init() 会从 appdata 重读并覆盖令牌
+  if (apiKey != null && apiKey.isNotEmpty) {
+    final err = await ApiKeyManager().setFixedKey(apiKey);
+    if (err != null) _startupLog('用户令牌被拒绝：$err（改用随机令牌）');
+    await ApiKeyManager().setUseFixed(err == null);
+  }
+  if (adminKey != null && adminKey.isNotEmpty) {
+    final err = await ApiKeyManager().setAdminFixedKey(adminKey);
+    if (err != null) _startupLog('管理令牌被拒绝：$err（改用随机令牌）');
+    await ApiKeyManager().setUseAdminFixed(err == null);
+  }
 
   final lang =
       _stringArg(args, '--lang') ?? Platform.environment['KOSTORI_LANG'];
   final normalizedLang = I18nUtils.normalizeLocale(lang);
   await I18nUtils.applyHeadlessLocale(lang);
+
+  final started = <String, dynamic>{
+    'lang': normalizedLang,
+    'fixedUserKey': ApiKeyManager().isUsingFixed,
+    'fixedAdminKey': ApiKeyManager().isUsingAdminFixed,
+  };
 
   // 挂离屏渲染树：部分接口（如番剧时间表截图）需要活的 widget 树与 Overlay，
   // 无头模式没有 runApp，只能靠 attachRootWidget 提供不可见的渲染环境
@@ -107,7 +116,6 @@ Future<void> runHeadlessMode(List<String> args) async {
     },
   );
 
-  final started = <String, dynamic>{'lang': normalizedLang};
   try {
     switch (serviceName) {
       case 'hub':
@@ -149,8 +157,14 @@ void _printStartupInfo(
     _startupLog('管理令牌: $adminKey');
     _startupLog('调用方式: 请求头  X-Api-Key: <令牌>');
     _startupLog('        或查询参数 ?api_key=<令牌>');
-    _startupLog('提示: 令牌为随机生成，重启会变化；如需稳定令牌，');
-    _startupLog('     启动时加 --api-key <值> / --admin-key <值> 指定。');
+    final fixed =
+        started['fixedUserKey'] == true && started['fixedAdminKey'] == true;
+    if (fixed) {
+      _startupLog('令牌来源: 固定（--api-key / --admin-key），重启不变');
+    } else {
+      _startupLog('提示: 令牌为随机生成，重启会变化；如需稳定令牌，');
+      _startupLog('     启动时加 --api-key <值> / --admin-key <值> 指定。');
+    }
   }
   _startupLog('══════════════════════════════════════════════');
 }
