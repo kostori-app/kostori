@@ -380,6 +380,60 @@ class BangumiDataEntry {
   const BangumiDataEntry({this.begin, this.end});
 }
 
+/// 播出时刻工具：把 `airTime` 归一到北京时间的挂钟时刻，日历页与截图共用
+abstract final class BangumiAirTime {
+  /// 无头容器时区通常是 UTC，而 bangumi 时间戳带 Z 或 +08:00 偏移，
+  /// 直接 `toLocal()` 会整体偏 8 小时，深夜档还会排到前一天。
+  static const _bjOffset = Duration(hours: 8);
+
+  /// 解析为北京挂钟时刻，支持深夜番 `25:00` 进位到次日
+  static DateTime? parse(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final t = DateTime.tryParse(raw);
+    if (t != null) return t.isUtc ? _wallClock(t) : t;
+    final m = RegExp(
+      r'^(\d{4})-(\d{2})-(\d{2})[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?',
+    ).firstMatch(raw);
+    if (m == null) return null;
+    return DateTime(
+      int.parse(m[1]!),
+      int.parse(m[2]!),
+      int.parse(m[3]!),
+      int.parse(m[4]!),
+      int.parse(m[5]!),
+      int.parse(m[6] ?? '0'),
+    );
+  }
+
+  /// 任意时刻 → 北京挂钟值
+  static DateTime toBeijing(DateTime dt) => _wallClock(dt.toUtc());
+
+  /// `HH:mm` 文本，取不到返回 null
+  static String? hhmm(String? raw) {
+    final dt = parse(raw);
+    return dt == null
+        ? null
+        : '${dt.hour.toString().padLeft(2, '0')}:'
+              '${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// 排序用分钟数，凌晨档（次日 00:30）视为 1470 而非 30
+  static int sortKey(String? raw) {
+    final dt = parse(raw);
+    if (dt == null) return 0;
+    final minutes = dt.hour * 60 + dt.minute;
+    return minutes < _lateNightCutoff ? minutes + 24 * 60 : minutes;
+  }
+
+  /// 早于此时刻视为次日（凌晨档）
+  static const _lateNightCutoff = 5 * 60;
+
+  static DateTime _wallClock(DateTime utc) {
+    final bj = utc.toUtc().add(_bjOffset);
+    return DateTime(bj.year, bj.month, bj.day, bj.hour, bj.minute);
+  }
+}
+
 extension NumDisplayExtension on num {
   String toCleanString() {
     return this % 1 == 0 ? toInt().toString() : toString();

@@ -307,23 +307,11 @@ bool _isLikelyFinished(BangumiItem item, DateTime now) {
 
 void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
   for (final dayList in calendar) {
-    dayList.sort((a, b) => _compareTimeStrings(a.airTime, b.airTime));
-  }
-}
-
-int _compareTimeStrings(String? a, String? b) {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-  return _parseTime(a).compareTo(_parseTime(b));
-}
-
-DateTime _parseTime(String timeStr) {
-  try {
-    final dt = DateTime.parse(timeStr).toLocal();
-    return DateTime(2000, 1, 1, dt.hour, dt.minute);
-  } catch (_) {
-    return DateTime(2000, 1, 1);
+    dayList.sort(
+      (a, b) =>
+          BangumiAirTime.sortKey(a.airTime)
+              .compareTo(BangumiAirTime.sortKey(b.airTime)),
+    );
   }
 }
 
@@ -411,30 +399,8 @@ Future<_EpisodeBatch> _fetchBatchEpisodes(
   return (episodes, totals);
 }
 
-/// 解析 bangumi 播出时间，返回北京时间的挂钟时刻。
-/// 支持深夜番 `25:00`，进位到次日，如 `2026-08-17 25:00` → 2026-08-18 01:00。
-DateTime? parseBangumiAirTime(String str) {
-  final t = DateTime.tryParse(str);
-  if (t != null) return t.isUtc ? _beijingWallClock(t) : t;
-  final m = RegExp(
-    r'^(\d{4})-(\d{2})-(\d{2})[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?',
-  ).firstMatch(str);
-  if (m == null) return null;
-  return DateTime(
-    int.parse(m[1]!),
-    int.parse(m[2]!),
-    int.parse(m[3]!),
-    int.parse(m[4]!),
-    int.parse(m[5]!),
-    int.parse(m[6] ?? '0'),
-  );
-}
-
-/// UTC → 北京挂钟值，用非 UTC 的 DateTime 承载以便读 hour / weekday
-DateTime _beijingWallClock(DateTime utc) {
-  final bj = utc.toUtc().add(const Duration(hours: 8));
-  return DateTime(bj.year, bj.month, bj.day, bj.hour, bj.minute);
-}
+/// 解析 bangumi 播出时间，返回北京时间的挂钟时刻
+DateTime? parseBangumiAirTime(String str) => BangumiAirTime.parse(str);
 
 class BangumiCalendarPage extends ConsumerStatefulWidget {
   const BangumiCalendarPage({super.key});
@@ -527,15 +493,6 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
     });
   }
 
-  String _extractTimeFromISO(String isoTime) {
-    try {
-      return DateFormat('HH:mm').format(DateTime.parse(isoTime).toLocal());
-    } catch (e, s) {
-      Log.warning('时间解析', '$e\n$s');
-      return '00:00';
-    }
-  }
-
   Widget _buildCurrentTimeDivider(DateTime currentTime) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -576,8 +533,8 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
     List<List<BangumiItem>> bangumiCalendar,
     Orientation orientation,
   ) {
-    final now = DateTime.now().toLocal();
-    final currentTimeStr = DateFormat('HH:mm').format(now);
+    final now = BangumiAirTime.toBeijing(DateTime.now());
+    final nowMinutes = now.hour * 60 + now.minute;
     final currentWeekday = now.weekday;
 
     return List.generate(7, (weekdayIndex) {
@@ -609,16 +566,11 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
 
       int lastPastIndex = -1;
       if (shouldInsertDivider) {
+        // 当日列表是从傍晚延续到次日凌晨的连续时间轴，
+        // 按 HH:mm 字符串比会把次日凌晨的档误判成已播
         for (int i = 0; i < bangumiList.length; i++) {
-          final item = bangumiList[i];
-          if (item.airTime == null) continue;
-          try {
-            if (_extractTimeFromISO(item.airTime!).compareTo(currentTimeStr) <
-                0) {
-              lastPastIndex = i;
-            }
-          } catch (e, s) {
-            Log.error('时间解析', '$e\n$s');
+          if (BangumiAirTime.sortKey(bangumiList[i].airTime) <= nowMinutes) {
+            lastPastIndex = i;
           }
         }
       }

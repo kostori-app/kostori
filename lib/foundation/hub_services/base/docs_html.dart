@@ -605,8 +605,9 @@ $('#nav-toggle').addEventListener('click', () =>
   }
   $('#nav').innerHTML = navHtml;
 
-  // ── Cards ───────────────────────────────────────────────────────────────
-  $('#content').innerHTML = routes.map(renderCard).join('')
+  // 默认展开：卡片收起时首屏看不到任何接口内容
+  $('#content').innerHTML =
+    routes.map((r) => renderCard(r, true)).join('')
     || '<div class="empty">没有接口</div>';
 
   $$('.ep').forEach((el) => {
@@ -691,7 +692,7 @@ $('#nav-toggle').addEventListener('click', () =>
   function cssId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 })();
 
-function renderCard(r) {
+function renderCard(r, open = false) {
   const op = r.op;
   const id = r.method + ' ' + r.path;
   const domId = id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -707,7 +708,7 @@ function renderCard(r) {
       ${p.description ? `<div class="note">${esc(p.description)}</div>` : ''}
     </div>`).join('');
 
-  return `<article class="ep" id="${domId}">
+  return `<article class="ep${open ? ' open' : ''}" id="${domId}">
     <div class="ep-head">
       <span class="badge ${METHOD_CLASS[r.method] ?? 'b-get'}">${r.method === 'WS' ? 'WS' : r.method}</span>
       <span class="ep-path">${esc(r.path)}</span>

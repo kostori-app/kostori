@@ -24,10 +24,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
   static final DateFormat _dateTimeFormat = DateFormat('yyyy-MM-dd HH:mm');
   static DateFormat get _monthDayFormat => DateFormat(t.monthDayFormat);
 
-  /// 时刻表按北京时间渲染，与宿主机时区无关（无头容器通常是 UTC）
-  static const _bjOffset = Duration(hours: 8);
-
-  static DateTime _toBeijing(DateTime dt) => dt.toUtc().add(_bjOffset);
+  static DateTime _toBeijing(DateTime dt) => BangumiAirTime.toBeijing(dt);
 
   String _weekdayName(int weekdayIndex) => switch (weekdayIndex) {
     0 => t.monday,
@@ -40,18 +37,13 @@ class CalendarScreenshotWidget extends StatelessWidget {
     _ => '',
   };
 
-  /// 安全解析播放时间（ISO 或 HH:mm），失败返回 null
-  static String? _safeTimeOf(String? raw) {
+  /// 播出时刻的 `HH:mm`，取不到返回 null（有些源给的是纯 "HH:mm" 文本）
+  static String? _safeTimeOf(String? raw) =>
+      BangumiAirTime.hhmm(raw) ?? _rawHhmm(raw);
+
+  static String? _rawHhmm(String? raw) {
     if (raw == null || raw.isEmpty) return null;
-    try {
-      final dt = DateTime.parse(raw);
-      // 带偏移的解析成 UTC 需换算；无偏移量的是字面量，原样格式化
-      return _timeFormat.format(dt.isUtc ? _toBeijing(dt) : dt);
-    } catch (_) {
-      // 有些源给的是纯 "HH:mm" 文本
-      if (raw.contains(':')) return raw.substring(0, 5);
-      return null;
-    }
+    return raw.contains(':') ? raw.substring(0, 5) : null;
   }
 
   @override
@@ -69,6 +61,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
     final activeDays = bangumiCalendar.where((d) => d.isNotEmpty).length;
     final todayIdx = beijingCapture.weekday - 1;
     final todayTime = _timeFormat.format(beijingNow);
+    final nowMinutes = beijingNow.hour * 60 + beijingNow.minute;
 
     return Container(
       color: colorScheme.surface,
@@ -156,12 +149,13 @@ class CalendarScreenshotWidget extends StatelessWidget {
               if (dayList.isEmpty) return const SizedBox();
 
               final isToday = weekdayIndex == todayIdx;
-              // 计算今日已播过的条目索引（用于插入"当前时间"分割线）
+              // 当日列表是从傍晚延续到次日凌晨的连续时间轴，
+              // 按 HH:mm 字符串比会把次日凌晨的档误判成已播
               int lastPastIndex = -1;
               if (isToday) {
                 for (int i = 0; i < dayList.length; i++) {
-                  final time = _safeTimeOf(dayList[i].airTime);
-                  if (time != null && time.compareTo(todayTime) < 0) {
+                  if (BangumiAirTime.sortKey(dayList[i].airTime) <=
+                      nowMinutes) {
                     lastPastIndex = i;
                   }
                 }
