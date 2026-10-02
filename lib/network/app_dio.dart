@@ -11,6 +11,9 @@ import 'package:kostori/network/mirror_store.dart';
 import 'package:kostori/network/cache.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/network/dns_resolver.dart';
+import 'package:kostori/network/domain_rules.dart';
+import 'package:kostori/network/hosts_probe.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:rhttp/rhttp.dart' as rhttp;
 
@@ -311,30 +314,20 @@ class AppDio with DioMixin {
 }
 
 class RHttpAdapter implements HttpClientAdapter {
+  /// 构造出来的解析器缓存：配置内容没变就复用同一个。
+  static String? _dnsSettingsSignature;
+  static rhttp.DnsSettings? _dnsSettingsCache;
+
+  /// 已记录过的 hosts 覆写（每个「域名 -> IP」每进程只记一次，避免高频请求刷日志）
+  static final Set<String> _loggedHostsOverrides = {};
+
   Future<rhttp.ClientSettings> settings(RequestOptions options) async {
     final proxy = await getProxy();
 
-    final noProxyOverrides =
-        appdata.settings['noProxyOverrides'] as List? ?? [];
+    final rules = loadDomainRules();
 
-    final enableNoProxyOverrides =
-        appdata.settings['enableNoProxyOverrides'] as bool? ?? true;
-
-    final isNoProxy = enableNoProxyOverrides
-        ? noProxyOverrides.any((entry) {
-            final String domain;
-            final bool enabled;
-            if (entry is Map) {
-              domain = entry['domain']?.toString() ?? '';
-              enabled = entry['enabled'] as bool? ?? true;
-            } else {
-              // 兼容旧版仅存域名字符串的格式
-              domain = entry.toString();
-              enabled = true;
-            }
-            return enabled && _hostMatchesDomain(options.uri.host, domain);
-          })
-        : false;
+    final isNoProxy =
+        noProxyOverridesEnabled && shouldBypassProxy(rules, options.uri.host);
 
     // 尊重 dio 的重定向设置：maxRedirects:0 / followRedirects:false 时不跟随，
     // 便于登录/授权等流程拦截 302（chii_auth、location 等关键信息在 302 响应里）
@@ -369,7 +362,7 @@ class RHttpAdapter implements HttpClientAdapter {
         keepAlivePing: Duration(seconds: 30),
       ),
       throwOnStatusCode: false,
-      dnsSettings: rhttp.DnsSettings.static(overrides: _getOverrides()),
+      dnsSettings: _buildDnsSettings(rules),
       tlsSettings: rhttp.TlsSettings(
         sni: appdata.settings['sni'] != false,
         verifyCertificates: appdata.settings['ignoreBadCertificate'] != true,
@@ -377,45 +370,137 @@ class RHttpAdapter implements HttpClientAdapter {
     );
   }
 
-  /// 点分隔后缀匹配，让 bgm.tv 规则能命中 api.bgm.tv。
-  static bool _hostMatchesDomain(String host, String domain) {
-    if (domain.isEmpty) return false;
-    if (host == domain) return true;
-    if (host.endsWith('.$domain')) return true;
-    // 兼容只填主机名前缀的旧条目
-    if (!domain.contains('.') && host.startsWith('$domain.')) return true;
-    return false;
+  /// 有「指定 DNS」规则时切到动态解析器（由 [DnsResolver] 并发查询多个
+  /// 上游、取最快返回的地址，并处理 hosts 规则）；否则用静态 hosts 表。
+  static rhttp.DnsSettings _buildDnsSettings(List<DomainRule> rules) {
+    final signature =
+        '${dnsOverridesEnabled && hasDnsServerRules(rules) ? 'dynamic' : 'static'}'
+        '|${dnsOverridesEnabled ? _hostsSignature(rules) : ''}';
+    final cached = _dnsSettingsCache;
+    if (_dnsSettingsSignature == signature && cached != null) return cached;
+
+    final rhttp.DnsSettings settings;
+    if (signature.startsWith('dynamic')) {
+      settings = rhttp.DnsSettings.dynamic(resolver: _resolveHost);
+    } else {
+      settings = rhttp.DnsSettings.static(overrides: _hostsOverrides(rules));
+    }
+    // 规则变了，之前探测出的「最快 IP」也跟着失效
+    _fastestIpCache.clear();
+    _dnsSettingsSignature = signature;
+    _dnsSettingsCache = settings;
+    return settings;
   }
 
-  static Map<String, List<String>> _getOverrides() {
-    if (appdata.settings['enableDnsOverrides'] != true) {
-      return {};
-    }
-
-    final config = appdata.settings["dnsOverrides"];
-    final result = <String, List<String>>{};
-
-    if (config is Map) {
-      for (var entry in config.entries) {
-        if (entry.key is String && entry.value is Map) {
-          final valueMap = entry.value as Map;
-          final ip = valueMap['ip']?.toString();
-          final enabled = valueMap['enabled'] as bool? ?? true;
-
-          if (enabled && ip != null && ip.isNotEmpty) {
-            result[entry.key] = [ip];
-          }
-        } else if (entry.key is String && entry.value is String) {
-          // 兼容旧版仅存 ip 字符串的格式
-          final ip = entry.value as String;
-          if (ip.isNotEmpty) {
-            result[entry.key as String] = [ip];
-          }
+  /// 动态解析入口：先看命中规则的 hosts IP / 指定 DNS，都没有就用系统解析。
+  static Future<List<String>> _resolveHost(String host) async {
+    if (dnsOverridesEnabled) {
+      final rule = matchDnsRule(loadDomainRules(), host);
+      if (rule != null) {
+        if (rule.dnsMode == DnsRuleMode.hosts) {
+          final ips = hostsIpsOf(rule);
+          if (ips.isNotEmpty) return ips;
+        } else if (rule.dnsMode == DnsRuleMode.servers) {
+          return DnsResolver.resolve(host, buildDnsPlan(rule));
         }
       }
     }
+    return DnsResolver.resolve(host, buildDnsPlan(null));
+  }
 
-    return result;
+  static Map<String, List<String>> _hostsOverrides(List<DomainRule> rules) =>
+      dnsOverridesEnabled
+      ? buildHostsOverrides(rules)
+      : const <String, List<String>>{};
+
+  static String _hostsSignature(List<DomainRule> rules) =>
+      _hostsOverrides(rules).entries
+          .map((e) => '${e.key}:${e.value.join(',')}')
+          .join('|');
+
+  /// 命中 [host]（含子域名）的 hosts 规则里可直接使用的 IP。
+  ///
+  /// 全局 hosts 表按规则域名精确匹配，所以先取精确命中的条目；
+  /// 没有精确条目时按「第一条带地址来源的规则」匹配，匹配到 hosts 规则
+  /// 后由调用方补一条本次请求的覆写。
+  static List<String>? _matchedHostsIps(
+    String host,
+    List<DomainRule> rules,
+    Map<String, List<String>> overrides,
+  ) {
+    if (!dnsOverridesEnabled || host.isEmpty) return null;
+    final exact = overrides[host];
+    if (exact != null && exact.isNotEmpty) return exact;
+    final rule = matchDnsRule(rules, host);
+    if (rule == null || rule.dnsMode != DnsRuleMode.hosts) return null;
+    final ips = hostsIpsOf(rule);
+    return ips.isEmpty ? null : ips;
+  }
+
+  /// hosts 覆写能否在代理链路上生效。
+  ///
+  /// HTTP 代理由代理自己解析目标域名，钉的 IP 会被忽略；只有直连
+  /// 或本地解析的 SOCKS5（socks5://，不是 socks5h://）才用得上覆写。
+  static bool _proxyKeepsHostsOverride(rhttp.ProxySettings? settings) {
+    if (settings == null || settings is! rhttp.CustomProxy) return true;
+    return settings is rhttp.StaticProxy &&
+        settings.url.toLowerCase().startsWith('socks5://');
+  }
+
+  static rhttp.HttpHeaders _rhttpHeaders(RequestOptions options) =>
+      rhttp.HttpHeaders.rawMap(
+        Map.fromEntries(
+          options.headers.entries.map(
+            (e) => MapEntry(e.key, e.value.toString().trim()),
+          ),
+        ),
+      );
+
+  ResponseBody _responseBody(
+    RequestOptions options,
+    rhttp.HttpStreamResponse res,
+  ) {
+    final headers = <String, List<String>>{};
+    for (final entry in res.headers) {
+      final key = entry.$1.toLowerCase();
+      headers[key] ??= [];
+      headers[key]!.add(entry.$2);
+    }
+    return ResponseBody(
+      _guardBody(options, res.body),
+      res.statusCode,
+      statusMessage: _getStatusMessage(res.statusCode),
+      isRedirect: false,
+      headers: headers,
+    );
+  }
+
+  /// 多 IP 时先并发 TCP 探测，挑最先连上的 IP 作为本次请求的目标；
+  /// 结果按「域名|端口|IP 列表」缓存 2 分钟，失败时清掉重探。
+  static final Map<String, (String ip, DateTime expire)> _fastestIpCache = {};
+
+  /// 返回 `(选中的 IP, 缓存 key)`；全部连不上时返回 null。
+  static Future<(String, String)?> _pickFastestIp(
+    String host,
+    List<String> ips,
+    int port,
+  ) async {
+    final key = '$host|$port|${ips.join(',')}';
+    final cached = _fastestIpCache[key];
+    if (cached != null && cached.$2.isAfter(DateTime.now())) {
+      return (cached.$1, key);
+    }
+    final winner = await HostsProbe.firstReachable(
+      ips,
+      port: port,
+      timeout: const Duration(seconds: 3),
+    );
+    if (winner == null) return null;
+    _fastestIpCache[key] = (
+      winner,
+      DateTime.now().add(const Duration(minutes: 2)),
+    );
+    return (winner, key);
   }
 
   @override
@@ -433,43 +518,85 @@ class RHttpAdapter implements HttpClientAdapter {
           "kostori/v${App.version} (Android) (https://github.com/kostori-app/kostori)";
     }
 
+    final rules = loadDomainRules();
+    var clientSettings = await settings(options);
+    final overrides = _hostsOverrides(rules);
+
+    // hosts 规则命中的域名按请求把地址钉死（子域名规则也能生效）：
+    // 单个 IP 直接用，多个 IP 先并发探测出最快的。
+    final hostsIps = _matchedHostsIps(options.uri.host, rules, overrides);
+    String? fastestIpKey;
+    if (hostsIps != null) {
+      if (NetLog.enabled &&
+          _loggedHostsOverrides.add(
+            '${options.uri.host}|${hostsIps.join(',')}',
+          )) {
+        NetLog.info(
+          'DNS',
+          'hosts 覆写生效：${options.uri.host} → ${hostsIps.join(', ')}',
+        );
+      }
+      var requestIps = hostsIps;
+      if (hostsIps.length > 1 &&
+          _proxyKeepsHostsOverride(clientSettings.proxySettings)) {
+        final port = options.uri.hasPort
+            ? options.uri.port
+            : (options.uri.scheme == 'https' ? 443 : 80);
+        final picked = await _pickFastestIp(options.uri.host, hostsIps, port);
+        if (picked != null) {
+          requestIps = [picked.$1];
+          fastestIpKey = picked.$2;
+        }
+      }
+      // 子域名命中或选出了最快 IP 时补一条本次请求的覆写
+      if (!overrides.containsKey(options.uri.host) ||
+          requestIps.length != hostsIps.length) {
+        clientSettings = clientSettings.copyWith(
+          dnsSettings: rhttp.DnsSettings.static(
+            overrides: {...overrides, options.uri.host: requestIps},
+          ),
+        );
+      }
+    }
+
     // 将 dio 的取消信号转发给 rhttp，真正中断正在进行的（流式）请求
     final rhttpCancelToken = cancelFuture == null ? null : rhttp.CancelToken();
     if (rhttpCancelToken != null) {
       unawaited(cancelFuture!.then((_) => rhttpCancelToken.cancel()));
     }
 
-    var res = await rhttp.Rhttp.request(
-      method: rhttp.HttpMethod(options.method),
-      url: options.uri.toString(),
-      settings: await settings(options),
-      expectBody: rhttp.HttpExpectBody.stream,
-      body: requestStream == null ? null : rhttp.HttpBody.stream(requestStream),
-      headers: rhttp.HttpHeaders.rawMap(
-        Map.fromEntries(
-          options.headers.entries.map(
-            (e) => MapEntry(e.key, e.value.toString().trim()),
-          ),
+    Future<ResponseBody> doRequest() async {
+      final res = await rhttp.Rhttp.request(
+        method: rhttp.HttpMethod(options.method),
+        url: options.uri.toString(),
+        settings: clientSettings,
+        expectBody: rhttp.HttpExpectBody.stream,
+        body: requestStream == null
+            ? null
+            : rhttp.HttpBody.stream(requestStream),
+        headers: _rhttpHeaders(options),
+        cancelToken: rhttpCancelToken,
+      );
+      if (res is! rhttp.HttpStreamResponse) {
+        throw Exception("Invalid response type: ${res.runtimeType}");
+      }
+      return _responseBody(options, res);
+    }
+
+    try {
+      return await doRequest();
+    } catch (e) {
+      // 选出的最快 IP 失效：清缓存并回退到完整列表（底层依次尝试）
+      final key = fastestIpKey;
+      if (key == null || e is rhttp.RhttpCancelException) rethrow;
+      _fastestIpCache.remove(key);
+      clientSettings = clientSettings.copyWith(
+        dnsSettings: rhttp.DnsSettings.static(
+          overrides: {...overrides, options.uri.host: hostsIps!},
         ),
-      ),
-      cancelToken: rhttpCancelToken,
-    );
-    if (res is! rhttp.HttpStreamResponse) {
-      throw Exception("Invalid response type: ${res.runtimeType}");
+      );
+      return await doRequest();
     }
-    var headers = <String, List<String>>{};
-    for (var entry in res.headers) {
-      var key = entry.$1.toLowerCase();
-      headers[key] ??= [];
-      headers[key]!.add(entry.$2);
-    }
-    return ResponseBody(
-      _guardBody(options, res.body),
-      res.statusCode,
-      statusMessage: _getStatusMessage(res.statusCode),
-      isRedirect: false,
-      headers: headers,
-    );
   }
 
   /// 把响应体流的错误统一转成 [DioException]。

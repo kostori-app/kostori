@@ -1467,7 +1467,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get youAreNowARoomAdmin => '你現在是房間管理員';
 	@override String get yourRoomAdminHasBeenRevoked => '你的房間管理員權限已被撤銷';
 	@override String get youAreMutedFor => '你被禁言了';
-	@override String get secondsUnit => '秒';
 	@override String get youHaveBeenUnmuted => '你已解除禁言';
 	@override String get youAreBannedFromRoom => '你已被房間封鎖';
 	@override String get youCanNowRejoinRoom => '你現在可以重新加入房間';
@@ -3000,7 +2999,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String toolRoundsExceeded({required Object source}) => '${source} 工具呼叫輪次過多';
 	@override String get requestHeaders => '請求頭';
 	@override String get direct => '直連';
-	@override String get manual => '手動';
+	@override String get manual => 'HTTP 代理';
+	@override String get proxySocks5 => 'SOCKS5 代理';
+	@override String get proxySocks5Hint => 'SOCKS5 會在本機解析網域，hosts 設定裡釘的 IP 在走代理時也能生效（可搭配 Clash 的混合連接埠）。';
 	@override String votes({required Object n}) => '${n} 票';
 	@override String pagesCount({required Object n}) => '${n} 頁';
 	@override String get emptyPage => '空頁面';
@@ -3120,6 +3121,51 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentStopNone => '不停止';
 	@override String get torrentStopAfterMetadata => '取得中介資料後停止';
 	@override String get torrentStopAfterDownload => '下載完成後停止';
+	@override String get domainRules => '網域規則';
+	@override String get domainRulesDesc => '依網域統一管理：該網域可以完全不查 DNS 直接連指定 IP，也可以只用指定的 DNS 解析，還可以讓它忽略代理直連。';
+	@override String get enableDnsOverridesDesc => '關閉後忽略全部 DNS 設定';
+	@override String get enableNoProxyOverridesDesc => '關閉後忽略全部直連規則';
+	@override String get domainRuleBadgeNoProxy => '無代理直連';
+	@override String get editRule => '編輯規則';
+	@override String get newRule => '新增規則';
+	@override String get domainRuleEnabled => '啟用該規則';
+	@override String get domainRuleNoProxy => '忽略代理（直連）';
+	@override String get domainRuleNoProxyDesc => '命中該網域時不走代理，即使全域設定了代理。';
+	@override String get domain => '網域';
+	@override String get domainRuleDomainHint => '支援子網域：填 bgm.tv 同樣命中 api.bgm.tv。';
+	@override String get domainRequired => '請填寫網域';
+	@override String get dnsServerRequired => '請至少填寫一個 DNS 伺服器';
+	@override String get ruleDeleted => '規則已刪除';
+	@override String get confirmDeleteRule => '確定刪除該規則？';
+	@override String get tlsSettings => 'TLS';
+	@override String get ignoreCertificateErrorsDesc => '關閉憑證驗證，僅在自簽憑證或失效憑證時使用，存在安全風險。';
+	@override String get domainRulesEmpty => '還沒有規則，點右上角加號新增';
+	@override String dnsRulesCount({required Object count}) => '${count} 條規則';
+	@override String get ipRequired => '請至少填寫一個 IP';
+	@override String get ipInvalid => 'IP 格式不正確';
+	@override String get dnsResolveNow => '自動解析';
+	@override String get dnsResolveEmpty => '沒有解析到位址';
+	@override String get dnsServerAddressHint => '填伺服器 IP，可帶連接埠，如 223.5.5.5 或 [2400:3200::1]:53；不支援網域。';
+	@override String get dnsServerInvalid => '請填寫 DNS 伺服器 IP，如 223.5.5.5';
+	@override String get dnsModeNoneDesc => '不做覆寫：該網域照常解析、照常存取（下面的「忽略代理」是獨立開關，與這裡無關）。';
+	@override String get dnsModeHosts => 'hosts 設定';
+	@override String get dnsModeServers => '指定 DNS';
+	@override String hostsRulesCount({required Object count}) => '${count} 條 hosts';
+	@override String dnsServersRulesCount({required Object count}) => '${count} 條指定 DNS';
+	@override String noProxyRulesCount({required Object count}) => '${count} 條直連';
+	@override String get dnsModeHostsDesc => '不查 DNS：像 hosts 檔案一樣把該網域直接指向下面填好的 IP；可填多個，請求會並發送往各 IP，取最先回應的。';
+	@override String get dnsModeServersDesc => '只用這裡填的 DNS 解析該網域：同時發問、取最先回傳的結果，避開被污染或慢的 DNS。';
+	@override String get secondsUnit => '秒';
+	@override String get dnsResolving => '解析中…';
+	@override String get dnsMode => '位址來源';
+	@override String get dnsModeNone => '不覆寫';
+	@override String get hostsSortBySpeed => '測速擇優';
+	@override String get hostsProbing => '測速中…';
+	@override String get hostsSortBySpeedHint => '並發測所有 hosts 規則裡各 IP 的 TCP 連線耗時，並依快慢重排每個網域下的 IP；最慢或連不上的會排到最後。';
+	@override String get hostsNeedMultipleIps => '至少要有兩個 IP 才能比較快慢';
+	@override String hostsSortedFastest({required Object latency}) => '已依速度排序，最快 ${latency} ms';
+	@override String hostsSortedWithUnreachable({required Object count}) => '已依速度排序（${count} 個連不上，排到最後）';
+	@override String get hostsAllUnreachable => '這些 IP 現在都連不上，建議重新自動解析';
 }
 
 // Path: colors
@@ -4677,7 +4723,6 @@ extension on TranslationsZhTw {
 			'youAreNowARoomAdmin' => '你現在是房間管理員',
 			'yourRoomAdminHasBeenRevoked' => '你的房間管理員權限已被撤銷',
 			'youAreMutedFor' => '你被禁言了',
-			'secondsUnit' => '秒',
 			'youHaveBeenUnmuted' => '你已解除禁言',
 			'youAreBannedFromRoom' => '你已被房間封鎖',
 			'youCanNowRejoinRoom' => '你現在可以重新加入房間',
@@ -4743,9 +4788,9 @@ extension on TranslationsZhTw {
 			'publicIpDetected' => '已偵測到公網 IP',
 			'publicIpDetectFailed' => '公網 IP 偵測失敗',
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
+			'imageTooLargeToSend' => '圖片太大，無法發送',
 			_ => null,
 		} ?? switch (path) {
-			'imageTooLargeToSend' => '圖片太大，無法發送',
 			'pleaseConfigureServerUploadOrClientOss' => '請設定伺服器上傳或用戶端 OSS。',
 			'stopTheServerToChangeUploadMode' => '停止伺服器以更改上傳模式',
 			'enableClientOss' => '啟用用戶端 OSS',
@@ -5257,9 +5302,9 @@ extension on TranslationsZhTw {
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '沒有資料',
 			'loginWithPasswordIsDisabled' => '密碼登入已停用',
+			'cannotBeEmpty' => '不能為空',
 			_ => null,
 		} ?? switch (path) {
-			'cannotBeEmpty' => '不能為空',
 			'invalidCookies' => '無效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '資料源',
@@ -5771,9 +5816,9 @@ extension on TranslationsZhTw {
 			'skillKey' => '技能 Key',
 			'builtin' => '內建',
 			'skillMarkdownHint' => '技能支援 Markdown 格式',
+			'sendMessage' => '發送訊息',
 			_ => null,
 		} ?? switch (path) {
-			'sendMessage' => '發送訊息',
 			'contextAutoCompressed' => '上下文過長，已自動壓縮',
 			'chatGreeting' => '今天有什麼可以幫你？',
 			'chatStart1' => '總結這段文字',
@@ -6216,7 +6261,9 @@ extension on TranslationsZhTw {
 			'toolRoundsExceeded' => ({required Object source}) => '${source} 工具呼叫輪次過多',
 			'requestHeaders' => '請求頭',
 			'direct' => '直連',
-			'manual' => '手動',
+			'manual' => 'HTTP 代理',
+			'proxySocks5' => 'SOCKS5 代理',
+			'proxySocks5Hint' => 'SOCKS5 會在本機解析網域，hosts 設定裡釘的 IP 在走代理時也能生效（可搭配 Clash 的混合連接埠）。',
 			'votes' => ({required Object n}) => '${n} 票',
 			'pagesCount' => ({required Object n}) => '${n} 頁',
 			'emptyPage' => '空頁面',
@@ -6284,9 +6331,9 @@ extension on TranslationsZhTw {
 			'torrentSourceDateRegex' => '時間正則',
 			'torrentSourceJsonPath' => 'JSON 路徑',
 			'torrentSourceTitleField' => '標題欄位',
-			'torrentSourceMagnetField' => '磁力欄位',
 			_ => null,
 		} ?? switch (path) {
+			'torrentSourceMagnetField' => '磁力欄位',
 			'torrentSourceHashField' => '雜湊欄位',
 			'torrentSourceSizeField' => '體積欄位',
 			'torrentSourceGroupField' => '分組欄位',
@@ -6349,6 +6396,51 @@ extension on TranslationsZhTw {
 			'torrentStopNone' => '不停止',
 			'torrentStopAfterMetadata' => '取得中介資料後停止',
 			'torrentStopAfterDownload' => '下載完成後停止',
+			'domainRules' => '網域規則',
+			'domainRulesDesc' => '依網域統一管理：該網域可以完全不查 DNS 直接連指定 IP，也可以只用指定的 DNS 解析，還可以讓它忽略代理直連。',
+			'enableDnsOverridesDesc' => '關閉後忽略全部 DNS 設定',
+			'enableNoProxyOverridesDesc' => '關閉後忽略全部直連規則',
+			'domainRuleBadgeNoProxy' => '無代理直連',
+			'editRule' => '編輯規則',
+			'newRule' => '新增規則',
+			'domainRuleEnabled' => '啟用該規則',
+			'domainRuleNoProxy' => '忽略代理（直連）',
+			'domainRuleNoProxyDesc' => '命中該網域時不走代理，即使全域設定了代理。',
+			'domain' => '網域',
+			'domainRuleDomainHint' => '支援子網域：填 bgm.tv 同樣命中 api.bgm.tv。',
+			'domainRequired' => '請填寫網域',
+			'dnsServerRequired' => '請至少填寫一個 DNS 伺服器',
+			'ruleDeleted' => '規則已刪除',
+			'confirmDeleteRule' => '確定刪除該規則？',
+			'tlsSettings' => 'TLS',
+			'ignoreCertificateErrorsDesc' => '關閉憑證驗證，僅在自簽憑證或失效憑證時使用，存在安全風險。',
+			'domainRulesEmpty' => '還沒有規則，點右上角加號新增',
+			'dnsRulesCount' => ({required Object count}) => '${count} 條規則',
+			'ipRequired' => '請至少填寫一個 IP',
+			'ipInvalid' => 'IP 格式不正確',
+			'dnsResolveNow' => '自動解析',
+			'dnsResolveEmpty' => '沒有解析到位址',
+			'dnsServerAddressHint' => '填伺服器 IP，可帶連接埠，如 223.5.5.5 或 [2400:3200::1]:53；不支援網域。',
+			'dnsServerInvalid' => '請填寫 DNS 伺服器 IP，如 223.5.5.5',
+			'dnsModeNoneDesc' => '不做覆寫：該網域照常解析、照常存取（下面的「忽略代理」是獨立開關，與這裡無關）。',
+			'dnsModeHosts' => 'hosts 設定',
+			'dnsModeServers' => '指定 DNS',
+			'hostsRulesCount' => ({required Object count}) => '${count} 條 hosts',
+			'dnsServersRulesCount' => ({required Object count}) => '${count} 條指定 DNS',
+			'noProxyRulesCount' => ({required Object count}) => '${count} 條直連',
+			'dnsModeHostsDesc' => '不查 DNS：像 hosts 檔案一樣把該網域直接指向下面填好的 IP；可填多個，請求會並發送往各 IP，取最先回應的。',
+			'dnsModeServersDesc' => '只用這裡填的 DNS 解析該網域：同時發問、取最先回傳的結果，避開被污染或慢的 DNS。',
+			'secondsUnit' => '秒',
+			'dnsResolving' => '解析中…',
+			'dnsMode' => '位址來源',
+			'dnsModeNone' => '不覆寫',
+			'hostsSortBySpeed' => '測速擇優',
+			'hostsProbing' => '測速中…',
+			'hostsSortBySpeedHint' => '並發測所有 hosts 規則裡各 IP 的 TCP 連線耗時，並依快慢重排每個網域下的 IP；最慢或連不上的會排到最後。',
+			'hostsNeedMultipleIps' => '至少要有兩個 IP 才能比較快慢',
+			'hostsSortedFastest' => ({required Object latency}) => '已依速度排序，最快 ${latency} ms',
+			'hostsSortedWithUnreachable' => ({required Object count}) => '已依速度排序（${count} 個連不上，排到最後）',
+			'hostsAllUnreachable' => '這些 IP 現在都連不上，建議重新自動解析',
 			_ => null,
 		};
 	}

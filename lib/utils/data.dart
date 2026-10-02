@@ -24,6 +24,7 @@ import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/text_rule.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/network/mirror_store.dart';
 import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
@@ -421,6 +422,11 @@ Future<void> _writeMergeFilesFor(String key) async {
       FilePath.join(App.cachePath, 'source_config_merge.json'),
       AnimeSourceManager().exportSourceConfig(),
     );
+    // GitHub / Bangumi 镜像配置同样存在 implicitData，单独导出（新者胜）
+    await write(
+      FilePath.join(App.cachePath, 'mirror_config_merge.json'),
+      exportMirrorConfig(),
+    );
   }
 }
 
@@ -503,6 +509,10 @@ List<(String, String)> _partEntries(String key) {
     add(
       'source_config_merge.json',
       FilePath.join(App.cachePath, 'source_config_merge.json'),
+    );
+    add(
+      'mirror_config_merge.json',
+      FilePath.join(App.cachePath, 'mirror_config_merge.json'),
     );
     addDir('anime_source', FilePath.join(dp, 'anime_source'));
     addDir('bt_source', FilePath.join(dp, 'bt_source'));
@@ -850,6 +860,20 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       }
     } catch (e) {
       DebugLog.error('importAppData', 'source_config 字段级合并失败：$e');
+    }
+  }
+  // GitHub / Bangumi 镜像配置：新者胜（旧包无此文件时跳过，本地不动）
+  final mirrorConfigMergeFile = cacheDir.joinFile("mirror_config_merge.json");
+  if (await mirrorConfigMergeFile.exists()) {
+    try {
+      final data = jsonDecode(await mirrorConfigMergeFile.readAsString());
+      if (data is Map) {
+        if (importMirrorConfig(Map<String, dynamic>.from(data))) {
+          DebugLog.info('importAppData', '已同步镜像配置');
+        }
+      }
+    } catch (e) {
+      DebugLog.error('importAppData', 'mirror_config 合并失败：$e');
     }
   }
   // Cookie 字段级合并优先：补齐本机没有的、以及过期时间更晚的 Cookie，

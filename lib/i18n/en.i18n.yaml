@@ -1477,7 +1477,6 @@ yourGlobalAdminHasBeenRevoked: Your global admin has been revoked
 youAreNowARoomAdmin: You are now a room admin
 yourRoomAdminHasBeenRevoked: Your room admin has been revoked
 youAreMutedFor: You are muted for
-secondsUnit: seconds
 youHaveBeenUnmuted: You have been unmuted
 youAreBannedFromRoom: You are banned from room
 youCanNowRejoinRoom: You can now rejoin room
@@ -3026,7 +3025,9 @@ webSocketOnly: "Only WebSocket connections are supported"
 toolRoundsExceeded: "${source} has too many tool call rounds"
 requestHeaders: Headers
 direct: Direct
-manual: Manual
+manual: HTTP proxy
+proxySocks5: SOCKS5 proxy
+proxySocks5Hint: SOCKS5 resolves hostnames locally, so IPs pinned in hosts entries also take effect through the proxy (works with Clash's mixed port).
 votes: "${n} votes"
 pagesCount: "${n} pages"
 emptyPage: Empty Page
@@ -3160,3 +3161,50 @@ torrentStopAfter: Stop condition
 torrentStopNone: Do not stop
 torrentStopAfterMetadata: Stop after metadata
 torrentStopAfterDownload: Stop when download completes
+
+# ── Domain rules (DNS overrides + no-proxy overrides) ──────────
+domainRules: Domain Rules
+domainRulesDesc: "One place for per-domain settings: connect it to a specific IP without any lookup, resolve it with your own DNS servers, and/or let it bypass the proxy."
+enableDnsOverridesDesc: When off, every DNS setting is ignored
+enableNoProxyOverridesDesc: When off, every direct-connection rule is ignored
+domainRuleBadgeNoProxy: No proxy
+editRule: Edit Rule
+newRule: New Rule
+domainRuleEnabled: Enable this rule
+domainRuleNoProxy: Ignore proxy (direct)
+domainRuleNoProxyDesc: Requests to this domain skip the proxy, even when one is configured globally.
+domain: Domain
+domainRuleDomainHint: "Subdomains are included: bgm.tv also matches api.bgm.tv."
+domainRequired: Enter a domain
+dnsServerRequired: Add at least one DNS server
+ruleDeleted: Rule deleted
+confirmDeleteRule: Delete this rule?
+tlsSettings: TLS
+ignoreCertificateErrorsDesc: Disables certificate verification. Only for self-signed or expired certificates; this is a security risk.
+domainRulesEmpty: No rules yet. Tap the + in the top right to add one.
+dnsRulesCount: ${count} rules
+ipRequired: Add at least one IP
+ipInvalid: Invalid IP address
+dnsResolveNow: Resolve now
+dnsResolveEmpty: No address resolved
+dnsServerAddressHint: Enter a server IP, optionally with a port, e.g. 223.5.5.5 or [2400:3200::1]:53. Hostnames are not supported.
+dnsServerInvalid: Enter a DNS server IP, e.g. 223.5.5.5
+dnsModeNoneDesc: "No override: the domain is resolved and reached the usual way (the Ignore proxy switch below is independent)."
+dnsModeHosts: Hosts
+dnsModeServers: Custom DNS
+hostsRulesCount: "${count} hosts"
+dnsServersRulesCount: "${count} custom DNS"
+noProxyRulesCount: "${count} direct"
+dnsModeHostsDesc: "No lookup at all: point the domain straight at the IPs below, just like a hosts file. Several are allowed; requests race all of them and use the first response."
+dnsModeServersDesc: "Resolve this domain with the DNS servers below only: all of them are queried at once and the first answer wins, avoiding polluted or slow servers."
+secondsUnit: seconds
+dnsResolving: Resolving…
+dnsMode: Address source
+dnsModeNone: No override
+hostsSortBySpeed: Sort by speed
+hostsProbing: Testing…
+hostsSortBySpeedHint: Measures every IP in your hosts rules at once and reorders each domain's IPs fastest-first; unreachable ones end up last.
+hostsNeedMultipleIps: Need at least two IPs to compare
+hostsSortedFastest: "Sorted by speed, fastest ${latency} ms"
+hostsSortedWithUnreachable: "Sorted by speed (${count} unreachable, moved to the end)"
+hostsAllUnreachable: None of these IPs respond right now, try Resolve now again

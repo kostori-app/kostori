@@ -36,6 +36,7 @@ abstract class SettingsData with _$SettingsData {
     @Default(true) bool enableClockAndBatteryInfoInReader,
     @Default(false) bool authorizationRequired,
     @Default(false) bool enableDnsOverrides,
+    // 旧版 DNS 覆写（域名 -> IP），仅用于迁移到 [domainRules]，新逻辑不再读取
     @Default(<String, dynamic>{}) Map<String, dynamic> dnsOverrides,
     @Default(true) bool sni,
     @Default('none') String autoAddLanguageFilter,
@@ -49,11 +50,14 @@ abstract class SettingsData with _$SettingsData {
     @Default(false) bool amoled,
     @Default(false) bool dynamicColor,
     @Default(true) bool enableNoProxyOverrides,
+    // 旧版无代理覆写列表，仅用于迁移到 [domainRules]，新逻辑不再读取
     @Default([
       {'domain': 'bgm', 'enabled': true},
       {'domain': 'bangumi', 'enabled': true},
     ])
     List<dynamic> noProxyOverrides,
+    // 统一域名规则（hosts 设置 + 无代理），null 表示尚未迁移
+    List<dynamic>? domainRules,
     @Default(false) bool ignoreBadCertificate,
     @Default([]) List<dynamic> statsSelectors,
     @Default('none') String favoriteTypeWish,

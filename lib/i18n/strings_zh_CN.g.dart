@@ -1466,7 +1466,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get youAreNowARoomAdmin => '您现在是房间管理员';
 	@override String get yourRoomAdminHasBeenRevoked => '您的房间管理员权限已被撤销';
 	@override String get youAreMutedFor => '您被禁言了';
-	@override String get secondsUnit => '秒';
 	@override String get youHaveBeenUnmuted => '您已被解除禁言';
 	@override String get youAreBannedFromRoom => '您被该房间封锁了';
 	@override String get youCanNowRejoinRoom => '您现在可以重新加入房间了';
@@ -3001,7 +3000,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String toolRoundsExceeded({required Object source}) => '${source} 工具调用轮次过多';
 	@override String get requestHeaders => '请求头';
 	@override String get direct => '直连';
-	@override String get manual => '手动';
+	@override String get manual => 'HTTP 代理';
+	@override String get proxySocks5 => 'SOCKS5 代理';
+	@override String get proxySocks5Hint => 'SOCKS5 会在本地解析域名，hosts 设置里钉的 IP 在走代理时也能生效（可配合 Clash 的混合端口）。';
 	@override String votes({required Object n}) => '${n} 票';
 	@override String pagesCount({required Object n}) => '${n} 页';
 	@override String get emptyPage => '空页面';
@@ -3121,6 +3122,51 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentStopNone => '不停止';
 	@override String get torrentStopAfterMetadata => '获取元数据后停止';
 	@override String get torrentStopAfterDownload => '下载完成后停止';
+	@override String get domainRules => '域名规则';
+	@override String get domainRulesDesc => '按域名统一管理：该域名可以不查 DNS 直接连指定 IP，也可以只用指定的 DNS 去解析，还可以让它忽略代理直连。';
+	@override String get enableDnsOverridesDesc => '关闭后忽略全部 DNS 配置';
+	@override String get enableNoProxyOverridesDesc => '关闭后忽略全部直连规则';
+	@override String get domainRuleBadgeNoProxy => '无代理直连';
+	@override String get editRule => '编辑规则';
+	@override String get newRule => '新建规则';
+	@override String get domainRuleEnabled => '启用该规则';
+	@override String get domainRuleNoProxy => '忽略代理（直连）';
+	@override String get domainRuleNoProxyDesc => '命中该域名时不走代理，即使全局配置了代理。';
+	@override String get domain => '域名';
+	@override String get domainRuleDomainHint => '支持子域名：填 bgm.tv 同样命中 api.bgm.tv。';
+	@override String get domainRequired => '请填写域名';
+	@override String get dnsServerRequired => '请至少填写一个 DNS 服务器';
+	@override String get ruleDeleted => '规则已删除';
+	@override String get confirmDeleteRule => '确定删除该规则？';
+	@override String get tlsSettings => 'TLS';
+	@override String get ignoreCertificateErrorsDesc => '关闭证书校验，仅在自签名或失效证书时使用，存在安全风险。';
+	@override String get domainRulesEmpty => '还没有规则，点右上角加号新建';
+	@override String dnsRulesCount({required Object count}) => '${count} 条规则';
+	@override String get ipRequired => '请至少填写一个 IP';
+	@override String get ipInvalid => 'IP 格式不正确';
+	@override String get dnsResolveNow => '自动解析';
+	@override String get dnsResolveEmpty => '没有解析到地址';
+	@override String get dnsServerAddressHint => '填服务器 IP，可带端口，如 223.5.5.5 或 [2400:3200::1]:53；不支持域名。';
+	@override String get dnsServerInvalid => '请填写 DNS 服务器 IP，如 223.5.5.5';
+	@override String get dnsModeNoneDesc => '不做覆写：该域名照常解析、照常访问（下面的「忽略代理」是独立开关，与这里无关）。';
+	@override String get dnsModeHosts => 'hosts 设置';
+	@override String get dnsModeServers => '指定 DNS';
+	@override String hostsRulesCount({required Object count}) => '${count} 条 hosts';
+	@override String dnsServersRulesCount({required Object count}) => '${count} 条指定 DNS';
+	@override String noProxyRulesCount({required Object count}) => '${count} 条直连';
+	@override String get dnsModeHostsDesc => '不查 DNS：像 hosts 文件一样把该域名直接指向下面填好的 IP；可填多个，请求会并发发往各 IP，取最先响应的。';
+	@override String get dnsModeServersDesc => '只用这里填的 DNS 解析该域名：同时发问、取最先返回的结果，避开被污染或慢的 DNS。';
+	@override String get secondsUnit => '秒';
+	@override String get dnsResolving => '解析中…';
+	@override String get dnsMode => '地址来源';
+	@override String get dnsModeNone => '不覆写';
+	@override String get hostsSortBySpeed => '测速择优';
+	@override String get hostsProbing => '测速中…';
+	@override String get hostsSortBySpeedHint => '并发测所有 hosts 规则里各 IP 的 TCP 连接耗时，并按快慢重排每个域名下的 IP；最慢或连不上的会排到最后。';
+	@override String get hostsNeedMultipleIps => '至少要有两个 IP 才能比较快慢';
+	@override String hostsSortedFastest({required Object latency}) => '已按速度排序，最快 ${latency} ms';
+	@override String hostsSortedWithUnreachable({required Object count}) => '已按速度排序（${count} 个连不上，排到最后）';
+	@override String get hostsAllUnreachable => '这些 IP 现在都连不上，建议重新自动解析';
 }
 
 // Path: colors
@@ -4677,7 +4723,6 @@ extension on TranslationsZhCn {
 			'youAreNowARoomAdmin' => '您现在是房间管理员',
 			'yourRoomAdminHasBeenRevoked' => '您的房间管理员权限已被撤销',
 			'youAreMutedFor' => '您被禁言了',
-			'secondsUnit' => '秒',
 			'youHaveBeenUnmuted' => '您已被解除禁言',
 			'youAreBannedFromRoom' => '您被该房间封锁了',
 			'youCanNowRejoinRoom' => '您现在可以重新加入房间了',
@@ -4744,9 +4789,9 @@ extension on TranslationsZhCn {
 			'publicIpDetectFailed' => '公网 IP 探测失败',
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 将使用服务器或 Base64',
 			'imageTooLargeToSend' => '图片太大，无法发送',
+			'pleaseConfigureServerUploadOrClientOss' => '请配置服务器上传或客户端 OSS。',
 			_ => null,
 		} ?? switch (path) {
-			'pleaseConfigureServerUploadOrClientOss' => '请配置服务器上传或客户端 OSS。',
 			'stopTheServerToChangeUploadMode' => '停止服务器以修改上传模式',
 			'enableClientOss' => '启用客户端 OSS',
 			'uploadImagesDirectlyFromClientToOss' => '从客户端直接上传图片到 OSS',
@@ -5258,9 +5303,9 @@ extension on TranslationsZhCn {
 			'noData' => '没有数据',
 			'loginWithPasswordIsDisabled' => '密码登录已禁用',
 			'cannotBeEmpty' => '不能为空',
+			'invalidCookies' => '无效的 Cookies',
 			_ => null,
 		} ?? switch (path) {
-			'invalidCookies' => '无效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '数据源',
 			'translationFailedPleaseTryAgainLater' => '翻译失败，请稍后重试',
@@ -5772,9 +5817,9 @@ extension on TranslationsZhCn {
 			'skillName' => '技能名称',
 			'skillKey' => '技能 Key',
 			'builtin' => '内置',
+			'skillMarkdownHint' => '技能支持 Markdown 格式',
 			_ => null,
 		} ?? switch (path) {
-			'skillMarkdownHint' => '技能支持 Markdown 格式',
 			'sendMessage' => '发送消息',
 			'contextAutoCompressed' => '上下文过长，已自动压缩',
 			'chatGreeting' => '今天有什么可以帮你？',
@@ -6218,7 +6263,9 @@ extension on TranslationsZhCn {
 			'toolRoundsExceeded' => ({required Object source}) => '${source} 工具调用轮次过多',
 			'requestHeaders' => '请求头',
 			'direct' => '直连',
-			'manual' => '手动',
+			'manual' => 'HTTP 代理',
+			'proxySocks5' => 'SOCKS5 代理',
+			'proxySocks5Hint' => 'SOCKS5 会在本地解析域名，hosts 设置里钉的 IP 在走代理时也能生效（可配合 Clash 的混合端口）。',
 			'votes' => ({required Object n}) => '${n} 票',
 			'pagesCount' => ({required Object n}) => '${n} 页',
 			'emptyPage' => '空页面',
@@ -6285,9 +6332,9 @@ extension on TranslationsZhCn {
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '时间正则',
 			'torrentSourceJsonPath' => 'JSON 路径',
-			'torrentSourceTitleField' => '标题字段',
 			_ => null,
 		} ?? switch (path) {
+			'torrentSourceTitleField' => '标题字段',
 			'torrentSourceMagnetField' => '磁力字段',
 			'torrentSourceHashField' => '哈希字段',
 			'torrentSourceSizeField' => '体积字段',
@@ -6351,6 +6398,51 @@ extension on TranslationsZhCn {
 			'torrentStopNone' => '不停止',
 			'torrentStopAfterMetadata' => '获取元数据后停止',
 			'torrentStopAfterDownload' => '下载完成后停止',
+			'domainRules' => '域名规则',
+			'domainRulesDesc' => '按域名统一管理：该域名可以不查 DNS 直接连指定 IP，也可以只用指定的 DNS 去解析，还可以让它忽略代理直连。',
+			'enableDnsOverridesDesc' => '关闭后忽略全部 DNS 配置',
+			'enableNoProxyOverridesDesc' => '关闭后忽略全部直连规则',
+			'domainRuleBadgeNoProxy' => '无代理直连',
+			'editRule' => '编辑规则',
+			'newRule' => '新建规则',
+			'domainRuleEnabled' => '启用该规则',
+			'domainRuleNoProxy' => '忽略代理（直连）',
+			'domainRuleNoProxyDesc' => '命中该域名时不走代理，即使全局配置了代理。',
+			'domain' => '域名',
+			'domainRuleDomainHint' => '支持子域名：填 bgm.tv 同样命中 api.bgm.tv。',
+			'domainRequired' => '请填写域名',
+			'dnsServerRequired' => '请至少填写一个 DNS 服务器',
+			'ruleDeleted' => '规则已删除',
+			'confirmDeleteRule' => '确定删除该规则？',
+			'tlsSettings' => 'TLS',
+			'ignoreCertificateErrorsDesc' => '关闭证书校验，仅在自签名或失效证书时使用，存在安全风险。',
+			'domainRulesEmpty' => '还没有规则，点右上角加号新建',
+			'dnsRulesCount' => ({required Object count}) => '${count} 条规则',
+			'ipRequired' => '请至少填写一个 IP',
+			'ipInvalid' => 'IP 格式不正确',
+			'dnsResolveNow' => '自动解析',
+			'dnsResolveEmpty' => '没有解析到地址',
+			'dnsServerAddressHint' => '填服务器 IP，可带端口，如 223.5.5.5 或 [2400:3200::1]:53；不支持域名。',
+			'dnsServerInvalid' => '请填写 DNS 服务器 IP，如 223.5.5.5',
+			'dnsModeNoneDesc' => '不做覆写：该域名照常解析、照常访问（下面的「忽略代理」是独立开关，与这里无关）。',
+			'dnsModeHosts' => 'hosts 设置',
+			'dnsModeServers' => '指定 DNS',
+			'hostsRulesCount' => ({required Object count}) => '${count} 条 hosts',
+			'dnsServersRulesCount' => ({required Object count}) => '${count} 条指定 DNS',
+			'noProxyRulesCount' => ({required Object count}) => '${count} 条直连',
+			'dnsModeHostsDesc' => '不查 DNS：像 hosts 文件一样把该域名直接指向下面填好的 IP；可填多个，请求会并发发往各 IP，取最先响应的。',
+			'dnsModeServersDesc' => '只用这里填的 DNS 解析该域名：同时发问、取最先返回的结果，避开被污染或慢的 DNS。',
+			'secondsUnit' => '秒',
+			'dnsResolving' => '解析中…',
+			'dnsMode' => '地址来源',
+			'dnsModeNone' => '不覆写',
+			'hostsSortBySpeed' => '测速择优',
+			'hostsProbing' => '测速中…',
+			'hostsSortBySpeedHint' => '并发测所有 hosts 规则里各 IP 的 TCP 连接耗时，并按快慢重排每个域名下的 IP；最慢或连不上的会排到最后。',
+			'hostsNeedMultipleIps' => '至少要有两个 IP 才能比较快慢',
+			'hostsSortedFastest' => ({required Object latency}) => '已按速度排序，最快 ${latency} ms',
+			'hostsSortedWithUnreachable' => ({required Object count}) => '已按速度排序（${count} 个连不上，排到最后）',
+			'hostsAllUnreachable' => '这些 IP 现在都连不上，建议重新自动解析',
 			_ => null,
 		};
 	}

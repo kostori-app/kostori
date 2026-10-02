@@ -4324,9 +4324,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'You are muted for'
 	String get youAreMutedFor => 'You are muted for';
 
-	/// en: 'seconds'
-	String get secondsUnit => 'seconds';
-
 	/// en: 'You have been unmuted'
 	String get youHaveBeenUnmuted => 'You have been unmuted';
 
@@ -8926,8 +8923,14 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Direct'
 	String get direct => 'Direct';
 
-	/// en: 'Manual'
-	String get manual => 'Manual';
+	/// en: 'HTTP proxy'
+	String get manual => 'HTTP proxy';
+
+	/// en: 'SOCKS5 proxy'
+	String get proxySocks5 => 'SOCKS5 proxy';
+
+	/// en: 'SOCKS5 resolves hostnames locally, so IPs pinned in hosts entries also take effect through the proxy (works with Clash's mixed port).'
+	String get proxySocks5Hint => 'SOCKS5 resolves hostnames locally, so IPs pinned in hosts entries also take effect through the proxy (works with Clash\'s mixed port).';
 
 	/// en: '${n} votes'
 	String votes({required Object n}) => '${n} votes';
@@ -9284,6 +9287,141 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Stop when download completes'
 	String get torrentStopAfterDownload => 'Stop when download completes';
+
+	/// en: 'Domain Rules'
+	String get domainRules => 'Domain Rules';
+
+	/// en: 'One place for per-domain settings: connect it to a specific IP without any lookup, resolve it with your own DNS servers, and/or let it bypass the proxy.'
+	String get domainRulesDesc => 'One place for per-domain settings: connect it to a specific IP without any lookup, resolve it with your own DNS servers, and/or let it bypass the proxy.';
+
+	/// en: 'When off, every DNS setting is ignored'
+	String get enableDnsOverridesDesc => 'When off, every DNS setting is ignored';
+
+	/// en: 'When off, every direct-connection rule is ignored'
+	String get enableNoProxyOverridesDesc => 'When off, every direct-connection rule is ignored';
+
+	/// en: 'No proxy'
+	String get domainRuleBadgeNoProxy => 'No proxy';
+
+	/// en: 'Edit Rule'
+	String get editRule => 'Edit Rule';
+
+	/// en: 'New Rule'
+	String get newRule => 'New Rule';
+
+	/// en: 'Enable this rule'
+	String get domainRuleEnabled => 'Enable this rule';
+
+	/// en: 'Ignore proxy (direct)'
+	String get domainRuleNoProxy => 'Ignore proxy (direct)';
+
+	/// en: 'Requests to this domain skip the proxy, even when one is configured globally.'
+	String get domainRuleNoProxyDesc => 'Requests to this domain skip the proxy, even when one is configured globally.';
+
+	/// en: 'Domain'
+	String get domain => 'Domain';
+
+	/// en: 'Subdomains are included: bgm.tv also matches api.bgm.tv.'
+	String get domainRuleDomainHint => 'Subdomains are included: bgm.tv also matches api.bgm.tv.';
+
+	/// en: 'Enter a domain'
+	String get domainRequired => 'Enter a domain';
+
+	/// en: 'Add at least one DNS server'
+	String get dnsServerRequired => 'Add at least one DNS server';
+
+	/// en: 'Rule deleted'
+	String get ruleDeleted => 'Rule deleted';
+
+	/// en: 'Delete this rule?'
+	String get confirmDeleteRule => 'Delete this rule?';
+
+	/// en: 'TLS'
+	String get tlsSettings => 'TLS';
+
+	/// en: 'Disables certificate verification. Only for self-signed or expired certificates; this is a security risk.'
+	String get ignoreCertificateErrorsDesc => 'Disables certificate verification. Only for self-signed or expired certificates; this is a security risk.';
+
+	/// en: 'No rules yet. Tap the + in the top right to add one.'
+	String get domainRulesEmpty => 'No rules yet. Tap the + in the top right to add one.';
+
+	/// en: '${count} rules'
+	String dnsRulesCount({required Object count}) => '${count} rules';
+
+	/// en: 'Add at least one IP'
+	String get ipRequired => 'Add at least one IP';
+
+	/// en: 'Invalid IP address'
+	String get ipInvalid => 'Invalid IP address';
+
+	/// en: 'Resolve now'
+	String get dnsResolveNow => 'Resolve now';
+
+	/// en: 'No address resolved'
+	String get dnsResolveEmpty => 'No address resolved';
+
+	/// en: 'Enter a server IP, optionally with a port, e.g. 223.5.5.5 or [2400:3200::1]:53. Hostnames are not supported.'
+	String get dnsServerAddressHint => 'Enter a server IP, optionally with a port, e.g. 223.5.5.5 or [2400:3200::1]:53. Hostnames are not supported.';
+
+	/// en: 'Enter a DNS server IP, e.g. 223.5.5.5'
+	String get dnsServerInvalid => 'Enter a DNS server IP, e.g. 223.5.5.5';
+
+	/// en: 'No override: the domain is resolved and reached the usual way (the Ignore proxy switch below is independent).'
+	String get dnsModeNoneDesc => 'No override: the domain is resolved and reached the usual way (the Ignore proxy switch below is independent).';
+
+	/// en: 'Hosts'
+	String get dnsModeHosts => 'Hosts';
+
+	/// en: 'Custom DNS'
+	String get dnsModeServers => 'Custom DNS';
+
+	/// en: '${count} hosts'
+	String hostsRulesCount({required Object count}) => '${count} hosts';
+
+	/// en: '${count} custom DNS'
+	String dnsServersRulesCount({required Object count}) => '${count} custom DNS';
+
+	/// en: '${count} direct'
+	String noProxyRulesCount({required Object count}) => '${count} direct';
+
+	/// en: 'No lookup at all: point the domain straight at the IPs below, just like a hosts file. Several are allowed; requests race all of them and use the first response.'
+	String get dnsModeHostsDesc => 'No lookup at all: point the domain straight at the IPs below, just like a hosts file. Several are allowed; requests race all of them and use the first response.';
+
+	/// en: 'Resolve this domain with the DNS servers below only: all of them are queried at once and the first answer wins, avoiding polluted or slow servers.'
+	String get dnsModeServersDesc => 'Resolve this domain with the DNS servers below only: all of them are queried at once and the first answer wins, avoiding polluted or slow servers.';
+
+	/// en: 'seconds'
+	String get secondsUnit => 'seconds';
+
+	/// en: 'Resolving…'
+	String get dnsResolving => 'Resolving…';
+
+	/// en: 'Address source'
+	String get dnsMode => 'Address source';
+
+	/// en: 'No override'
+	String get dnsModeNone => 'No override';
+
+	/// en: 'Sort by speed'
+	String get hostsSortBySpeed => 'Sort by speed';
+
+	/// en: 'Testing…'
+	String get hostsProbing => 'Testing…';
+
+	/// en: 'Measures every IP in your hosts rules at once and reorders each domain's IPs fastest-first; unreachable ones end up last.'
+	String get hostsSortBySpeedHint => 'Measures every IP in your hosts rules at once and reorders each domain\'s IPs fastest-first; unreachable ones end up last.';
+
+	/// en: 'Need at least two IPs to compare'
+	String get hostsNeedMultipleIps => 'Need at least two IPs to compare';
+
+	/// en: 'Sorted by speed, fastest ${latency} ms'
+	String hostsSortedFastest({required Object latency}) => 'Sorted by speed, fastest ${latency} ms';
+
+	/// en: 'Sorted by speed (${count} unreachable, moved to the end)'
+	String hostsSortedWithUnreachable({required Object count}) => 'Sorted by speed (${count} unreachable, moved to the end)';
+
+	/// en: 'None of these IPs respond right now, try Resolve now again'
+	String get hostsAllUnreachable => 'None of these IPs respond right now, try Resolve now again';
 }
 
 // Path: colors
@@ -10951,7 +11089,6 @@ extension on Translations {
 			'youAreNowARoomAdmin' => 'You are now a room admin',
 			'yourRoomAdminHasBeenRevoked' => 'Your room admin has been revoked',
 			'youAreMutedFor' => 'You are muted for',
-			'secondsUnit' => 'seconds',
 			'youHaveBeenUnmuted' => 'You have been unmuted',
 			'youAreBannedFromRoom' => 'You are banned from room',
 			'youCanNowRejoinRoom' => 'You can now rejoin room',
@@ -11017,9 +11154,9 @@ extension on Translations {
 			'publicIpDetected' => 'Public IP detected',
 			'publicIpDetectFailed' => 'Failed to detect public IP',
 			'notConfiguredWillUseServerOrBase64' => 'Not configured · will use server or base64',
+			'imageTooLargeToSend' => 'Image too large to send',
 			_ => null,
 		} ?? switch (path) {
-			'imageTooLargeToSend' => 'Image too large to send',
 			'pleaseConfigureServerUploadOrClientOss' => 'Please configure server upload or client OSS.',
 			'stopTheServerToChangeUploadMode' => 'Stop the server to change upload mode',
 			'enableClientOss' => 'Enable Client OSS',
@@ -11531,9 +11668,9 @@ extension on Translations {
 			'noConfigurationsFound' => 'No configurations found',
 			'noData' => 'No data',
 			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
+			'cannotBeEmpty' => 'Cannot be empty',
 			_ => null,
 		} ?? switch (path) {
-			'cannotBeEmpty' => 'Cannot be empty',
 			'invalidCookies' => 'Invalid cookies',
 			'webviewIsNotAvailable' => 'Webview is not available',
 			'sources' => 'Sources',
@@ -12045,9 +12182,9 @@ extension on Translations {
 			'skillName' => 'Skill Name',
 			'skillKey' => 'Skill Key',
 			'builtin' => 'Built-in',
+			'skillMarkdownHint' => 'Skills support Markdown',
 			_ => null,
 		} ?? switch (path) {
-			'skillMarkdownHint' => 'Skills support Markdown',
 			'sendMessage' => 'Send message',
 			'contextAutoCompressed' => 'Context too long, auto-compressed',
 			'chatGreeting' => 'How can I help you today?',
@@ -12491,7 +12628,9 @@ extension on Translations {
 			'toolRoundsExceeded' => ({required Object source}) => '${source} has too many tool call rounds',
 			'requestHeaders' => 'Headers',
 			'direct' => 'Direct',
-			'manual' => 'Manual',
+			'manual' => 'HTTP proxy',
+			'proxySocks5' => 'SOCKS5 proxy',
+			'proxySocks5Hint' => 'SOCKS5 resolves hostnames locally, so IPs pinned in hosts entries also take effect through the proxy (works with Clash\'s mixed port).',
 			'votes' => ({required Object n}) => '${n} votes',
 			'pagesCount' => ({required Object n}) => '${n} pages',
 			'emptyPage' => 'Empty Page',
@@ -12558,9 +12697,9 @@ extension on Translations {
 			'torrentSourceMagnetTemplate' => 'Magnet template ({hash})',
 			'torrentSourceDateRegex' => 'Date regex',
 			'torrentSourceJsonPath' => 'JSON path',
-			'torrentSourceTitleField' => 'Title field',
 			_ => null,
 		} ?? switch (path) {
+			'torrentSourceTitleField' => 'Title field',
 			'torrentSourceMagnetField' => 'Magnet field',
 			'torrentSourceHashField' => 'Hash field',
 			'torrentSourceSizeField' => 'Size field',
@@ -12624,6 +12763,51 @@ extension on Translations {
 			'torrentStopNone' => 'Do not stop',
 			'torrentStopAfterMetadata' => 'Stop after metadata',
 			'torrentStopAfterDownload' => 'Stop when download completes',
+			'domainRules' => 'Domain Rules',
+			'domainRulesDesc' => 'One place for per-domain settings: connect it to a specific IP without any lookup, resolve it with your own DNS servers, and/or let it bypass the proxy.',
+			'enableDnsOverridesDesc' => 'When off, every DNS setting is ignored',
+			'enableNoProxyOverridesDesc' => 'When off, every direct-connection rule is ignored',
+			'domainRuleBadgeNoProxy' => 'No proxy',
+			'editRule' => 'Edit Rule',
+			'newRule' => 'New Rule',
+			'domainRuleEnabled' => 'Enable this rule',
+			'domainRuleNoProxy' => 'Ignore proxy (direct)',
+			'domainRuleNoProxyDesc' => 'Requests to this domain skip the proxy, even when one is configured globally.',
+			'domain' => 'Domain',
+			'domainRuleDomainHint' => 'Subdomains are included: bgm.tv also matches api.bgm.tv.',
+			'domainRequired' => 'Enter a domain',
+			'dnsServerRequired' => 'Add at least one DNS server',
+			'ruleDeleted' => 'Rule deleted',
+			'confirmDeleteRule' => 'Delete this rule?',
+			'tlsSettings' => 'TLS',
+			'ignoreCertificateErrorsDesc' => 'Disables certificate verification. Only for self-signed or expired certificates; this is a security risk.',
+			'domainRulesEmpty' => 'No rules yet. Tap the + in the top right to add one.',
+			'dnsRulesCount' => ({required Object count}) => '${count} rules',
+			'ipRequired' => 'Add at least one IP',
+			'ipInvalid' => 'Invalid IP address',
+			'dnsResolveNow' => 'Resolve now',
+			'dnsResolveEmpty' => 'No address resolved',
+			'dnsServerAddressHint' => 'Enter a server IP, optionally with a port, e.g. 223.5.5.5 or [2400:3200::1]:53. Hostnames are not supported.',
+			'dnsServerInvalid' => 'Enter a DNS server IP, e.g. 223.5.5.5',
+			'dnsModeNoneDesc' => 'No override: the domain is resolved and reached the usual way (the Ignore proxy switch below is independent).',
+			'dnsModeHosts' => 'Hosts',
+			'dnsModeServers' => 'Custom DNS',
+			'hostsRulesCount' => ({required Object count}) => '${count} hosts',
+			'dnsServersRulesCount' => ({required Object count}) => '${count} custom DNS',
+			'noProxyRulesCount' => ({required Object count}) => '${count} direct',
+			'dnsModeHostsDesc' => 'No lookup at all: point the domain straight at the IPs below, just like a hosts file. Several are allowed; requests race all of them and use the first response.',
+			'dnsModeServersDesc' => 'Resolve this domain with the DNS servers below only: all of them are queried at once and the first answer wins, avoiding polluted or slow servers.',
+			'secondsUnit' => 'seconds',
+			'dnsResolving' => 'Resolving…',
+			'dnsMode' => 'Address source',
+			'dnsModeNone' => 'No override',
+			'hostsSortBySpeed' => 'Sort by speed',
+			'hostsProbing' => 'Testing…',
+			'hostsSortBySpeedHint' => 'Measures every IP in your hosts rules at once and reorders each domain\'s IPs fastest-first; unreachable ones end up last.',
+			'hostsNeedMultipleIps' => 'Need at least two IPs to compare',
+			'hostsSortedFastest' => ({required Object latency}) => 'Sorted by speed, fastest ${latency} ms',
+			'hostsSortedWithUnreachable' => ({required Object count}) => 'Sorted by speed (${count} unreachable, moved to the end)',
+			'hostsAllUnreachable' => 'None of these IPs respond right now, try Resolve now again',
 			_ => null,
 		};
 	}

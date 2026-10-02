@@ -86,6 +86,7 @@ class MirrorStore {
 
   void save(List<MirrorEntry> list) {
     appdata.implicitData[listKey] = list.map((e) => e.toJson()).toList();
+    markMirrorConfigChanged();
     appdata.writeImplicitData();
   }
 
@@ -95,6 +96,7 @@ class MirrorStore {
 
   void select(String url) {
     appdata.implicitData[selectedKey] = normalizeMirrorUrl(url);
+    markMirrorConfigChanged();
     appdata.writeImplicitData();
   }
 
@@ -218,6 +220,7 @@ void saveBangumiMirrorEntries(List<BangumiMirrorEntry> list) {
   appdata.implicitData[_bangumiMirrorListKey] = list
       .map((e) => e.toJson())
       .toList();
+  markMirrorConfigChanged();
   appdata.writeImplicitData();
 }
 
@@ -228,6 +231,7 @@ String bangumiMirrorSelectedUrl(BangumiMirrorType type) => normalizeMirrorUrl(
 
 void selectBangumiMirror(BangumiMirrorType type, String url) {
   appdata.implicitData[type.selectedKey] = normalizeMirrorUrl(url);
+  markMirrorConfigChanged();
   appdata.writeImplicitData();
 }
 
@@ -381,3 +385,51 @@ const _kSendAuth = 'bangumiMirrorSendAuth';
 /// 是否把登录鉴权（Authorization 等凭证）发给镜像。
 /// 默认关闭，避免把账号令牌交给第三方镜像。
 bool get bangumiMirrorSendAuth => appdata.implicitData[_kSendAuth] == true;
+
+// ── WebDAV 同步 ─────────────────────────────────────────────────────────
+// 镜像列表/选择都存在 implicitData（按设计不参与整包同步），
+// 这里单独导出成 mirror_config_merge.json，随「数据」部分同步（新者胜）。
+
+/// 镜像配置的更新时间戳（每次改动镜像后刷新）
+const mirrorConfigUpdatedAtKey = 'mirrorConfigUpdatedAt';
+
+/// 标记镜像配置已修改；调用方随后调用 writeImplicitData 落盘
+void markMirrorConfigChanged() {
+  appdata.implicitData[mirrorConfigUpdatedAtKey] =
+      DateTime.now().millisecondsSinceEpoch;
+}
+
+const _mirrorSyncKeys = [
+  'githubMirrors',
+  'githubMirror',
+  'bangumiMirrors',
+  'bangumiMirror',
+  'bangumiP1Mirror',
+  'bangumiImageMirror',
+  _kSendAuth,
+];
+
+/// 导出镜像配置，供 WebDAV 的 mirror_config_merge.json 使用
+Map<String, dynamic> exportMirrorConfig() => {
+  for (final key in _mirrorSyncKeys) key: appdata.implicitData[key],
+  'updatedAt': appdata.implicitData[mirrorConfigUpdatedAtKey] as int? ?? 0,
+};
+
+/// 导入镜像配置：远端更新时间更新才覆盖本地，返回是否发生变化
+bool importMirrorConfig(Map<String, dynamic> map) {
+  final remoteAt = (map['updatedAt'] as num?)?.toInt() ?? 0;
+  final localAt = appdata.implicitData[mirrorConfigUpdatedAtKey] as int? ?? 0;
+  if (remoteAt <= localAt) return false;
+  for (final key in _mirrorSyncKeys) {
+    if (!map.containsKey(key)) continue;
+    final value = map[key];
+    if (value == null) {
+      appdata.implicitData.remove(key);
+    } else {
+      appdata.implicitData[key] = value;
+    }
+  }
+  appdata.implicitData[mirrorConfigUpdatedAtKey] = remoteAt;
+  appdata.writeImplicitData();
+  return true;
+}

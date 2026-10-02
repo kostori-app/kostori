@@ -113,6 +113,10 @@ class _BangumiMirrorManagerPageState extends State<BangumiMirrorManagerPage> {
             subtitle: t.bangumiMirrorSendAuthDesc,
             settingKey: 'bangumiMirrorSendAuth',
             dataSource: SwitchDataSource.implicit,
+            onChanged: () {
+              markMirrorConfigChanged();
+              appdata.writeImplicitData();
+            },
           ),
           for (final type in BangumiMirrorType.values) ...[
             Padding(

@@ -1477,7 +1477,6 @@ yourGlobalAdminHasBeenRevoked: 你的全域管理員權限已被撤銷
 youAreNowARoomAdmin: 你現在是房間管理員
 yourRoomAdminHasBeenRevoked: 你的房間管理員權限已被撤銷
 youAreMutedFor: 你被禁言了
-secondsUnit: 秒
 youHaveBeenUnmuted: 你已解除禁言
 youAreBannedFromRoom: 你已被房間封鎖
 youCanNowRejoinRoom: 你現在可以重新加入房間
@@ -3027,7 +3026,9 @@ webSocketOnly: "僅支援 WebSocket 連線"
 toolRoundsExceeded: "${source} 工具呼叫輪次過多"
 requestHeaders: 請求頭
 direct: 直連
-manual: 手動
+manual: HTTP 代理
+proxySocks5: SOCKS5 代理
+proxySocks5Hint: SOCKS5 會在本機解析網域，hosts 設定裡釘的 IP 在走代理時也能生效（可搭配 Clash 的混合連接埠）。
 votes: "${n} 票"
 pagesCount: "${n} 頁"
 emptyPage: 空頁面
@@ -3161,3 +3162,50 @@ torrentStopAfter: 停止條件
 torrentStopNone: 不停止
 torrentStopAfterMetadata: 取得中介資料後停止
 torrentStopAfterDownload: 下載完成後停止
+
+# ── 網域規則（DNS 覆寫 + 無代理覆寫） ──────────────────────────
+domainRules: 網域規則
+domainRulesDesc: 依網域統一管理：該網域可以完全不查 DNS 直接連指定 IP，也可以只用指定的 DNS 解析，還可以讓它忽略代理直連。
+enableDnsOverridesDesc: 關閉後忽略全部 DNS 設定
+enableNoProxyOverridesDesc: 關閉後忽略全部直連規則
+domainRuleBadgeNoProxy: 無代理直連
+editRule: 編輯規則
+newRule: 新增規則
+domainRuleEnabled: 啟用該規則
+domainRuleNoProxy: 忽略代理（直連）
+domainRuleNoProxyDesc: 命中該網域時不走代理，即使全域設定了代理。
+domain: 網域
+domainRuleDomainHint: 支援子網域：填 bgm.tv 同樣命中 api.bgm.tv。
+domainRequired: 請填寫網域
+dnsServerRequired: 請至少填寫一個 DNS 伺服器
+ruleDeleted: 規則已刪除
+confirmDeleteRule: 確定刪除該規則？
+tlsSettings: TLS
+ignoreCertificateErrorsDesc: 關閉憑證驗證，僅在自簽憑證或失效憑證時使用，存在安全風險。
+domainRulesEmpty: 還沒有規則，點右上角加號新增
+dnsRulesCount: ${count} 條規則
+ipRequired: 請至少填寫一個 IP
+ipInvalid: IP 格式不正確
+dnsResolveNow: 自動解析
+dnsResolveEmpty: 沒有解析到位址
+dnsServerAddressHint: 填伺服器 IP，可帶連接埠，如 223.5.5.5 或 [2400:3200::1]:53；不支援網域。
+dnsServerInvalid: 請填寫 DNS 伺服器 IP，如 223.5.5.5
+dnsModeNoneDesc: 不做覆寫：該網域照常解析、照常存取（下面的「忽略代理」是獨立開關，與這裡無關）。
+dnsModeHosts: hosts 設定
+dnsModeServers: 指定 DNS
+hostsRulesCount: "${count} 條 hosts"
+dnsServersRulesCount: "${count} 條指定 DNS"
+noProxyRulesCount: "${count} 條直連"
+dnsModeHostsDesc: 不查 DNS：像 hosts 檔案一樣把該網域直接指向下面填好的 IP；可填多個，請求會並發送往各 IP，取最先回應的。
+dnsModeServersDesc: 只用這裡填的 DNS 解析該網域：同時發問、取最先回傳的結果，避開被污染或慢的 DNS。
+secondsUnit: 秒
+dnsResolving: 解析中…
+dnsMode: 位址來源
+dnsModeNone: 不覆寫
+hostsSortBySpeed: 測速擇優
+hostsProbing: 測速中…
+hostsSortBySpeedHint: 並發測所有 hosts 規則裡各 IP 的 TCP 連線耗時，並依快慢重排每個網域下的 IP；最慢或連不上的會排到最後。
+hostsNeedMultipleIps: 至少要有兩個 IP 才能比較快慢
+hostsSortedFastest: "已依速度排序，最快 ${latency} ms"
+hostsSortedWithUnreachable: "已依速度排序（${count} 個連不上，排到最後）"
+hostsAllUnreachable: 這些 IP 現在都連不上，建議重新自動解析

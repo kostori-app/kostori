@@ -18,6 +18,25 @@ class _NetworkSettingsState extends State<NetworkSettings> {
     return parts.join('  ·  ');
   }
 
+  /// 域名规则的摘要，hosts / 指定 DNS 与无代理直连都在这里，一眼能看到当前配置。
+  String _domainRuleSummary() {
+    final rules = loadDomainRules();
+    final hosts = rules.where((r) => r.dnsMode == DnsRuleMode.hosts).length;
+    final servers = rules.where((r) => r.dnsMode == DnsRuleMode.servers).length;
+    final direct = rules.where((r) => r.noProxy).length;
+    final parts = <String>[t.dnsRulesCount(count: rules.length)];
+    if (dnsOverridesEnabled && hosts > 0) {
+      parts.add(t.hostsRulesCount(count: hosts));
+    }
+    if (dnsOverridesEnabled && servers > 0) {
+      parts.add(t.dnsServersRulesCount(count: servers));
+    }
+    if (noProxyOverridesEnabled && direct > 0) {
+      parts.add(t.noProxyRulesCount(count: direct));
+    }
+    return parts.join('  ·  ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -33,17 +52,43 @@ class _NetworkSettingsState extends State<NetworkSettings> {
                   title: t.proxy,
                   builder: () => const _ProxySettingView(),
                 ),
-                _PopupWindowSetting(
-                  title: t.dnsOverrides,
-                  builder: () => const _DNSOverrides(),
+                _CallbackSetting(
+                  title: t.domainRules,
+                  subtitle: _domainRuleSummary(),
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(
+                      App.rootContext,
+                      const DomainRuleManagerPage(),
+                    ).then((_) {
+                      if (mounted) setState(() {});
+                    });
+                  },
                 ),
-                _PopupWindowSetting(
-                  title: t.noProxyOverrides,
-                  builder: () => const _NoProxyOverrides(),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.tlsSettings,
+                  icon: Icons.lock_outline,
+                ),
+                _SwitchSetting(
+                  title: t.serverNameIndication,
+                  settingKey: "sni",
+                  defaultValue: true,
+                  onChanged: () => JsEngine().resetDio(),
                 ),
                 _SwitchSetting(
                   title: t.ignoreCertificateErrors,
+                  subtitle: t.ignoreCertificateErrorsDesc,
                   settingKey: "ignoreBadCertificate",
+                  onChanged: () => JsEngine().resetDio(),
                 ),
               ],
             ),
@@ -108,13 +153,38 @@ class _ProxySettingView extends StatefulWidget {
 }
 
 class _ProxySettingViewState extends State<_ProxySettingView> {
+  /// 手动(HTTP)与 SOCKS5 各自记住上次填写的主机/端口，互不覆盖
+  static const _httpImplicitKey = 'proxyHttp';
+  static const _socks5ImplicitKey = 'proxySocks5';
+
+  /// 旧版两种手动代理共用的记录键，仅用于一次性迁移
+  static const _legacyImplicitKey = 'proxy';
+
   String type = '';
   String host = '';
   String port = '';
   String username = '';
   String password = '';
 
-  // USERNAME:PASSWORD@HOST:PORT
+  static Map<dynamic, dynamic>? _savedProxyFor(String key) {
+    final data = appdata.implicitData[key];
+    return data is Map ? data : null;
+  }
+
+  void _loadSavedProxy(String key) {
+    final data = _savedProxyFor(key);
+    host = data?['host']?.toString() ?? '';
+    port = data?['port']?.toString() ?? '';
+    username = data?['username']?.toString() ?? '';
+    password = data?['password']?.toString() ?? '';
+    _hostCtrl.text = host;
+    _portCtrl.text = port;
+    _usernameCtrl.text = username;
+    _passwordCtrl.text = password;
+  }
+
+  // USERNAME:PASSWORD@HOST:PORT，SOCKS5 时前面加 socks5://
+  // （socks5:// 表示本地解析，hosts 设置里钉的 IP 会生效）
   String toProxyStr() {
     if (type == 'direct') {
       return 'direct';
@@ -133,6 +203,9 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
     if (port.isNotEmpty) {
       res += ':$port';
     }
+    if (type == 'socks5') {
+      return 'socks5://$res';
+    }
     return res;
   }
 
@@ -144,8 +217,13 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
       type = 'system';
       return;
     }
+    var value = proxy;
     type = 'manual';
-    var parts = proxy.split('@');
+    if (value.toLowerCase().startsWith('socks5://')) {
+      type = 'socks5';
+      value = value.substring('socks5://'.length);
+    }
+    var parts = value.split('@');
     if (parts.length == 2) {
       var auth = parts[0].split(':');
       if (auth.length == 2) {
@@ -158,7 +236,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
         port = parts[1];
       }
     } else {
-      parts = proxy.split(':');
+      parts = value.split(':');
       if (parts.length == 2) {
         host = parts[0];
         port = parts[1];
@@ -179,6 +257,15 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
     _portCtrl = TextEditingController(text: port);
     _usernameCtrl = TextEditingController(text: username);
     _passwordCtrl = TextEditingController(text: password);
+    // 旧版手动/SOCKS5 共用一个记录，按当前类型搬进各自的键
+    if (type == 'manual' || type == 'socks5') {
+      final key = type == 'socks5' ? _socks5ImplicitKey : _httpImplicitKey;
+      final legacy = _savedProxyFor(_legacyImplicitKey);
+      if (_savedProxyFor(key) == null && legacy != null) {
+        appdata.implicitData[key] = legacy;
+        appdata.writeImplicitData();
+      }
+    }
     super.initState();
   }
 
@@ -203,20 +290,11 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               onChanged: (v) {
                 setState(() {
                   type = v!;
-                  if (v == 'manual') {
-                    if (host.isEmpty && port.isEmpty) {
-                      if (appdata.implicitData['proxy'] != null) {
-                        var data = appdata.implicitData['proxy'];
-                        host = data['host'];
-                        port = data['port'];
-                        username = data['username'];
-                        password = data['password'];
-                      }
-                    }
-                    _hostCtrl.text = host;
-                    _portCtrl.text = port;
-                    _usernameCtrl.text = username;
-                    _passwordCtrl.text = password;
+                  if (v == 'manual' || v == 'socks5') {
+                    // 各类型读各自的记录，切换时不互相带值
+                    _loadSavedProxy(
+                      v == 'socks5' ? _socks5ImplicitKey : _httpImplicitKey,
+                    );
                   }
                 });
                 appdata.settings['proxy'] = toProxyStr();
@@ -227,11 +305,16 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                   RadioListTile<String>(title: Text(t.direct), value: 'direct'),
                   RadioListTile<String>(title: Text(t.system), value: 'system'),
                   RadioListTile<String>(title: Text(t.manual), value: 'manual'),
+                  RadioListTile<String>(
+                    title: Text(t.proxySocks5),
+                    value: 'socks5',
+                  ),
                 ],
               ),
             ),
 
             if (type == 'manual') buildManualProxy(),
+            if (type == 'socks5') buildManualProxy(socks5: true),
           ],
         ),
       ),
@@ -240,11 +323,24 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
 
   var formKey = GlobalKey<FormState>();
 
-  Widget buildManualProxy() {
+  Widget buildManualProxy({bool socks5 = false}) {
     return Form(
       key: formKey,
       child: Column(
         children: [
+          if (socks5) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                t.proxySocks5Hint,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           TextFormField(
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
@@ -321,7 +417,10 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                   "username": username,
                   "password": password,
                 };
-                appdata.implicitData['proxy'] = data;
+                appdata.implicitData[type == 'socks5'
+                        ? _socks5ImplicitKey
+                        : _httpImplicitKey] =
+                    data;
                 appdata.writeImplicitData();
                 App.rootContext.pop();
               }
@@ -331,321 +430,5 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
         ],
       ),
     ).paddingHorizontal(16).paddingTop(16);
-  }
-}
-
-class _DNSOverrides extends StatefulWidget {
-  const _DNSOverrides();
-
-  @override
-  State<_DNSOverrides> createState() => __DNSOverridesState();
-}
-
-class __DNSOverridesState extends State<_DNSOverrides> {
-  var overrides = <(bool, TextEditingController, TextEditingController)>[];
-
-  @override
-  void initState() {
-    super.initState();
-
-    final stored = appdata.settings['dnsOverrides'] as Map? ?? {};
-
-    for (var entry in stored.entries) {
-      if (entry.key is String && entry.value is Map) {
-        final ip = (entry.value['ip'] ?? '') as String;
-        final enabled = (entry.value['enabled'] ?? true) as bool;
-        overrides.add((
-          enabled,
-          TextEditingController(text: entry.key),
-          TextEditingController(text: ip),
-        ));
-      } else if (entry.key is String && entry.value is String) {
-        overrides.add((
-          true,
-          TextEditingController(text: entry.key),
-          TextEditingController(text: entry.value),
-        ));
-      }
-    }
-  }
-
-  void _saveData() {
-    final map = <String, Map<String, dynamic>>{};
-
-    for (var entry in overrides) {
-      map[entry.$2.text] = {'ip': entry.$3.text, 'enabled': entry.$1};
-    }
-
-    appdata.settings['dnsOverrides'] = map;
-    appdata.saveData();
-    JsEngine().resetDio();
-  }
-
-  @override
-  void dispose() {
-    // 返回时保存所有编辑（新建条目/输入域名 IP 后直接返回也能存住）
-    _saveData();
-    for (var entry in overrides) {
-      entry.$2.dispose();
-      entry.$3.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return PopUpWidgetScaffold(
-      title: t.dnsOverrides,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _SwitchSetting(
-              title: t.enableDnsOverrides,
-              settingKey: "enableDnsOverrides",
-            ),
-            _SwitchSetting(title: t.serverNameIndication, settingKey: "sni"),
-            const SizedBox(height: 8),
-            Divider(color: context.colorScheme.outlineVariant, height: 1),
-            for (var i = 0; i < overrides.length; i++) buildOverride(i),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  overrides.add((
-                    true,
-                    TextEditingController(),
-                    TextEditingController(),
-                  ));
-                });
-              },
-              icon: const Icon(Icons.add),
-              label: Text(t.add),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildOverride(int index) {
-    var entry = overrides[index];
-
-    return Card(
-      key: ValueKey(index),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: context.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: entry.$2,
-              decoration: InputDecoration(
-                labelText: 'Domain',
-                border: const OutlineInputBorder(),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 12,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                // IP
-                Expanded(
-                  child: TextField(
-                    controller: entry.$3,
-                    decoration: InputDecoration(
-                      labelText: 'IP',
-                      border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // 开关
-                _InlineSwitch(
-                  value: entry.$1,
-                  onChanged: (v) {
-                    setState(() {
-                      overrides[index] = (v, entry.$2, entry.$3);
-                      _saveData();
-                    });
-                  },
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () {
-                    setState(() {
-                      entry.$2.dispose();
-                      entry.$3.dispose();
-                      overrides.removeAt(index);
-                      _saveData();
-                    });
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NoProxyOverrides extends StatefulWidget {
-  const _NoProxyOverrides();
-
-  @override
-  State<_NoProxyOverrides> createState() => __NoProxyOverridesState();
-}
-
-class __NoProxyOverridesState extends State<_NoProxyOverrides> {
-  var overrides = <(bool, TextEditingController)>[];
-
-  @override
-  void initState() {
-    super.initState();
-    final stored = appdata.settings['noProxyOverrides'] as List? ?? [];
-    overrides = [];
-
-    for (var i = 0; i < stored.length; i++) {
-      final e = stored[i];
-      if (e is Map) {
-        final domain = e['domain']?.toString() ?? '';
-        final enabled = e['enabled'] as bool? ?? true;
-        overrides.add((enabled, TextEditingController(text: domain)));
-      } else {
-        overrides.add((true, TextEditingController(text: e.toString())));
-      }
-    }
-  }
-
-  void _saveData() {
-    final list = <Map<String, dynamic>>[];
-    for (var entry in overrides) {
-      list.add({'domain': entry.$2.text, 'enabled': entry.$1});
-    }
-    appdata.settings['noProxyOverrides'] = list;
-    appdata.saveData();
-    JsEngine().resetDio();
-  }
-
-  @override
-  void dispose() {
-    // 返回时保存所有编辑（新建条目/输入域名后直接返回也能存住）
-    _saveData();
-    for (var entry in overrides) {
-      entry.$2.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return PopUpWidgetScaffold(
-      title: t.noProxyOverrides,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _SwitchSetting(
-              title: t.enableNoProxyOverrides,
-              settingKey: "enableNoProxyOverrides",
-            ),
-            const SizedBox(height: 8),
-            Divider(color: context.colorScheme.outlineVariant, height: 1),
-            const SizedBox(height: 8),
-            for (var i = 0; i < overrides.length; i++) buildOverride(i),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              icon: const Icon(Icons.add),
-              label: Text(t.add),
-              onPressed: () {
-                setState(() {
-                  overrides.add((true, TextEditingController()));
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildOverride(int index) {
-    final entry = overrides[index];
-
-    return Card(
-      key: ValueKey(index),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: context.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: entry.$2,
-                decoration: InputDecoration(
-                  labelText: 'Domain',
-                  border: const OutlineInputBorder(),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            _InlineSwitch(
-              value: entry.$1,
-              onChanged: (v) {
-                setState(() {
-                  overrides[index] = (v, entry.$2);
-                  _saveData();
-                });
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () {
-                setState(() {
-                  entry.$2.dispose();
-                  overrides.removeAt(index);
-                  _saveData();
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InlineSwitch extends StatelessWidget {
-  const _InlineSwitch({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: CustomSwitch(value: value, onChanged: onChanged),
-    );
   }
 }
