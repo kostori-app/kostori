@@ -450,7 +450,7 @@ class DownloadManager extends ChangeNotifier {
       // 遍历整个下载目录（含分组）可能很多，放后台 isolate，避免启动瞬间卡 UI
       final rootPath = root.path;
       await Isolate.run(
-        () => _cleanupOrphanSegmentsSync(rootPath, keepDirs, keepIds),
+        _cleanupOrphanSegmentsRunner(rootPath, keepDirs, keepIds),
       );
     } catch (e) {
       Log.error('DownloadManager.cleanupOrphanSegments', '$e');
@@ -1242,7 +1242,7 @@ class DownloadManager extends ChangeNotifier {
 
     // 断点续传：已有分片字节计入已下载（避免重复统计）。
     // 上千分片逐个 await File.length() 会霸占 UI isolate，改到后台 isolate 统计
-    final existingBytes = await Isolate.run(() => _segDirBytesSync(segDir));
+    final existingBytes = await Isolate.run(_segDirBytesRunner(segDir));
     task.downloadedBytes = existingBytes;
 
     // 1. 解析 m3u8（含变体选择）
@@ -1430,7 +1430,7 @@ class DownloadManager extends ChangeNotifier {
     FfmpegCancelToken? cancelToken,
   }) async {
     // 分片可能上千：逐个 await length() 会卡 UI，改到后台 isolate 统计
-    final expected = await Isolate.run(() => _filesTotalBytesSync(tsPaths));
+    final expected = await Isolate.run(_filesTotalBytesRunner(tsPaths));
     Timer? timer;
     double last = 0;
     if (expected > 0) {
@@ -2417,6 +2417,24 @@ final downloadsChangedProvider = StreamProvider<void>((ref) {
 });
 
 // ── 后台 isolate 使用的顶层工具（只接收可发送的基本类型）────────────────────
+// 注意：Isolate.run 的入口闭包必须在这里生成。写在实例方法里会连带捕获 `this`
+// （DownloadManager 持有 isolate 端口等不可发送对象），spawn 时抛 unsendable。
+
+/// 生成 [_segDirBytesSync] 的 isolate 入口。
+int Function() _segDirBytesRunner(String dir) =>
+    () => _segDirBytesSync(dir);
+
+/// 生成 [_filesTotalBytesSync] 的 isolate 入口。
+int Function() _filesTotalBytesRunner(List<String> paths) =>
+    () => _filesTotalBytesSync(paths);
+
+/// 生成 [_cleanupOrphanSegmentsSync] 的 isolate 入口。
+void Function() _cleanupOrphanSegmentsRunner(
+  String rootPath,
+  Set<String> keepDirs,
+  Set<String> keepIds,
+) =>
+    () => _cleanupOrphanSegmentsSync(rootPath, keepDirs, keepIds);
 
 /// 统计分片目录内所有文件的字节数（后台 isolate 执行）。
 int _segDirBytesSync(String dir) {
