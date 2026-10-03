@@ -25,6 +25,12 @@ MapEntry<String, String>? parseOptionEntry(dynamic option) {
   return null;
 }
 
+/// Dio 失败已由 [MyLogInterceptor] 记入网络日志，这里不再抄一遍。
+void _logNetworkError(Object e, StackTrace s) {
+  if (isNetworkErrorLogged(e)) return;
+  SourceLog.error("Network", "$e\n$s");
+}
+
 /// return true if ver1 > ver2
 bool compareSemVer(String ver1, String ver2) {
   ver1 = ver1.replaceFirst("-", ".");
@@ -260,7 +266,7 @@ class AnimeSourceParser {
           source.saveData();
           return const Res(true);
         } catch (e, s) {
-          SourceLog.error("Network", "$e\n$s");
+          _logNetworkError(e, s);
           return Res.error(networkErrorMessage(e));
         }
       };
@@ -301,7 +307,7 @@ class AnimeSourceParser {
           """);
           return res;
         } catch (e, s) {
-          SourceLog.error("Network", "$e\n$s");
+          _logNetworkError(e, s);
           return false;
         }
       };
@@ -395,7 +401,7 @@ class AnimeSourceParser {
                 subData: res["maxPage"],
               );
             } catch (e, s) {
-              SourceLog.error("Network", "$e\n$s");
+              _logNetworkError(e, s);
               return Res.error(networkErrorMessage(e));
             }
           };
@@ -413,7 +419,7 @@ class AnimeSourceParser {
                 subData: res["next"],
               );
             } catch (e, s) {
-              SourceLog.error("Network", "$e\n$s");
+              _logNetworkError(e, s);
               return Res.error(networkErrorMessage(e));
             }
           };
@@ -470,7 +476,7 @@ class AnimeSourceParser {
             }
             return Res(list, subData: res['maxPage']);
           } catch (e, s) {
-            SourceLog.error("Network", "$e\n$s");
+            _logNetworkError(e, s);
             return Res.error(networkErrorMessage(e));
           }
         };
@@ -694,7 +700,7 @@ class AnimeSourceParser {
               subData: res["maxPage"],
             );
           } catch (e, s) {
-            SourceLog.error("Network", "$e\n$s");
+            _logNetworkError(e, s);
             return Res.error(networkErrorMessage(e));
           }
         };
@@ -713,7 +719,7 @@ class AnimeSourceParser {
               subData: res["next"],
             );
           } catch (e, s) {
-            SourceLog.error("Network", "$e\n$s");
+            _logNetworkError(e, s);
             return Res.error(networkErrorMessage(e));
           }
         };
@@ -745,7 +751,7 @@ class AnimeSourceParser {
             subData: res["maxPage"],
           );
         } catch (e, s) {
-          SourceLog.error("Network", "$e\n$s");
+          _logNetworkError(e, s);
           return Res.error(networkErrorMessage(e));
         }
       },
@@ -792,7 +798,7 @@ class AnimeSourceParser {
             subData: res["maxPage"],
           );
         } catch (e, s) {
-          SourceLog.error("Network", "$e\n$s");
+          _logNetworkError(e, s);
           return Res.error(networkErrorMessage(e));
         }
       };
@@ -811,7 +817,7 @@ class AnimeSourceParser {
             subData: res["next"],
           );
         } catch (e, s) {
-          SourceLog.error("Network", "$e\n$s");
+          _logNetworkError(e, s);
           return Res.error(networkErrorMessage(e));
         }
       };
@@ -831,7 +837,7 @@ class AnimeSourceParser {
         res['sourceKey'] = _key;
         return Res(AnimeDetails.fromJson(res));
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -852,7 +858,7 @@ class AnimeSourceParser {
           List<Anime>.from((raw as List).map((e) => Anime.fromJson(e, _key!))),
         );
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -866,7 +872,7 @@ class AnimeSourceParser {
         """);
         return res;
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -885,7 +891,7 @@ class AnimeSourceParser {
           subData: res["maxPage"],
         );
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -902,7 +908,7 @@ class AnimeSourceParser {
           """);
           return const Res(true);
         } catch (e, s) {
-          SourceLog.error("Network", "$e\n$s");
+          _logNetworkError(e, s);
           return Res.error(networkErrorMessage(e));
         }
       }
@@ -1008,7 +1014,7 @@ class AnimeSourceParser {
         }
         return jsBytesOf(res);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return null;
       }
     };
@@ -1025,7 +1031,7 @@ class AnimeSourceParser {
         """);
         return Res(List<String>.from(res['thumbnails']), subData: res['next']);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -1042,7 +1048,7 @@ class AnimeSourceParser {
         """);
         return const Res(true);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -1059,7 +1065,7 @@ class AnimeSourceParser {
         """);
         return Res(res is num ? res.toInt() : 0);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -1076,7 +1082,7 @@ class AnimeSourceParser {
         """);
         return Res(res is num ? res.toInt() : 0);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -1210,7 +1216,7 @@ class AnimeSourceParser {
         """);
         return const Res(true);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return Res.error(networkErrorMessage(e));
       }
     };
@@ -1228,7 +1234,7 @@ class AnimeSourceParser {
             ${jsonEncode(playing)}, ${jsonEncode(playSessionId)})
         """);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return null;
       }
     };
@@ -1245,7 +1251,7 @@ class AnimeSourceParser {
             ${jsonEncode(url)}, ${jsonEncode(positionMs)}, ${jsonEncode(playSessionId)})
         """);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return null;
       }
     };
@@ -1262,7 +1268,7 @@ class AnimeSourceParser {
             ${jsonEncode(action)}, ${jsonEncode(params)})
         """);
       } catch (e, s) {
-        SourceLog.error("Network", "$e\n$s");
+        _logNetworkError(e, s);
         return null;
       }
     };

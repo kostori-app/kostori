@@ -19,6 +19,14 @@ import 'package:rhttp/rhttp.dart' as rhttp;
 
 export 'package:dio/dio.dart';
 
+/// 标记该失败已由 [MyLogInterceptor] 记入网络日志（挂在 `RequestOptions.extra`）。
+/// 上层（如番剧源 parser）据此跳过重复记录，避免日志里出现两条同名「Network」错误。
+const loggedKey = '__netLogged';
+
+/// 该异常是否已被 [MyLogInterceptor] 记录过。
+bool isNetworkErrorLogged(Object? error) =>
+    error is DioException && error.requestOptions.extra[loggedKey] == true;
+
 class MyLogInterceptor extends Interceptor {
   /// 隐私脱敏：敏感请求/响应头的值打码；cookie 只保留名字（便于排查又不泄露）。
   static String _redactHeaders(Map<dynamic, dynamic> headers) {
@@ -69,6 +77,7 @@ class MyLogInterceptor extends Interceptor {
                 "request headers:\n${_redactHeaders(err.requestOptions.headers)}\n"
                 "$err\n${err.response?.data.toString()}",
     );
+    err.requestOptions.extra[loggedKey] = true;
     switch (err.type) {
       case DioExceptionType.badResponse:
         var statusCode = err.response?.statusCode;
