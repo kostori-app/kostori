@@ -21,6 +21,25 @@ import 'package:screen_brightness_platform_interface/screen_brightness_platform_
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
+const String kLocalPlayerPosKeyPrefix = 'localPlayerPos:';
+
+/// 生成稳定的播放进度存储 key。
+///
+/// 种子串流走本地回环端口，而端口每次会话都是随机的（`TorrentStreamServer`
+/// 用端口 0 绑定），直接用完整 URL 当 key 会导致两件事：
+/// 1. 进度永远存不上 —— 「自动跳转上次位置」对 BT 播放完全失效；
+/// 2. 每 10 秒往 implicitData 多写一条随机端口记录，配置文件无限膨胀。
+///
+/// 因此把回环地址的端口抹掉，让同一个文件始终命中同一条记录。
+/// 非回环地址（含普通本地路径）原样保留。
+String localPlayerPosKey(String path) {
+  final normalized = path.replaceFirstMapped(
+    RegExp(r'^(https?)://(?:127\.0\.0\.1|localhost)(?::\d+)?(/.*)?$'),
+    (m) => '${m.group(1)}://kostori-loopback${m.group(2) ?? ''}',
+  );
+  return '$kLocalPlayerPosKeyPrefix$normalized';
+}
+
 /// 本地播放器状态
 class LocalPlayerState {
   final bool loading;
@@ -125,6 +144,72 @@ class LocalPlayerState {
       superResolutionType: superResolutionType ?? this.superResolutionType,
     );
   }
+
+  /// 值相等。
+  ///
+  /// 没有它时 `state == next` 走的是引用比较、永远为 false，
+  /// 播放器每个 position / buffer 事件都会触发一次 Riverpod 状态写入，
+  /// 造成整页重建。
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is LocalPlayerState &&
+        loading == other.loading &&
+        playing == other.playing &&
+        buffering == other.buffering &&
+        position == other.position &&
+        duration == other.duration &&
+        buffer == other.buffer &&
+        showControls == other.showControls &&
+        speed == other.speed &&
+        fullscreen == other.fullscreen &&
+        error == other.error &&
+        seekPreview == other.seekPreview &&
+        showSeekTime == other.showSeekTime &&
+        showVolume == other.showVolume &&
+        showBrightness == other.showBrightness &&
+        volume == other.volume &&
+        brightness == other.brightness &&
+        subtitleTrackId == other.subtitleTrackId &&
+        audioTrackId == other.audioTrackId &&
+        superResolutionType == other.superResolutionType &&
+        _sameTracks(subtitleTracks, other.subtitleTracks) &&
+        _sameTracks(audioTracks, other.audioTracks);
+  }
+
+  static bool _sameTracks<T>(List<T> a, List<T> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!identical(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    loading,
+    playing,
+    buffering,
+    position,
+    duration,
+    buffer,
+    showControls,
+    speed,
+    fullscreen,
+    error,
+    seekPreview,
+    showSeekTime,
+    showVolume,
+    showBrightness,
+    volume,
+    brightness,
+    subtitleTrackId,
+    audioTrackId,
+    superResolutionType,
+    subtitleTracks.length,
+    audioTracks.length,
+  ]);
 }
 
 /// 本地播放器控制器：Riverpod Notifier 响应式同步 media_kit 播放状态，
@@ -159,6 +244,9 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   StreamSubscription<Duration>? _posSub;
   StreamSubscription<Duration>? _durSub;
   StreamSubscription<Duration>? _bufSub;
+
+  /// 可被 [startPositionSync] 重建的那三个订阅；重建时先从 [_subs] 里摘掉旧的
+  List<StreamSubscription<dynamic>> _restartable = const [];
 
   Player get player => _player!;
   VideoController get controller => _controller!;
@@ -210,6 +298,10 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       _subs.add(_posSub!);
       _subs.add(_durSub!);
       _subs.add(_bufSub!);
+      // 这三个订阅在 [startPositionSync] 里会被重建并塞进 _subs，
+      // 旧的必须一并移除，否则每次滑动 seek 都往 _subs 里追加 3 条
+      // 已取消的订阅。
+      _restartable = [_posSub!, _durSub!, _bufSub!];
       _subs.add(
         p.stream.playing.listen((v) {
           if (_disposed) return;
@@ -275,7 +367,9 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     }
   }
 
-  String get _posKey => 'localPlayerPos:$filePath';
+  static const String _posKeyPrefix = kLocalPlayerPosKeyPrefix;
+
+  String get _posKey => localPlayerPosKey(filePath);
 
   /// 「自动跳转到上次播放位置」开启时，恢复本地文件的上次播放进度
   Future<void> _restorePosition() async {
@@ -304,7 +398,15 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     if (_disposed || p == null) return;
     final pos = p.state.position.inMilliseconds;
     if (pos <= 0) return;
-    appdata.implicitData[_posKey] = pos;
+    final key = _posKey;
+    // 清掉历史遗留的随机端口记录（旧版本直接用完整 URL 当 key），避免配置无限膨胀
+    for (final old in appdata.implicitData.keys.toList()) {
+      if (!old.startsWith(_posKeyPrefix) || old == key) continue;
+      if (localPlayerPosKey(old.substring(_posKeyPrefix.length)) == key) {
+        appdata.implicitData.remove(old);
+      }
+    }
+    appdata.implicitData[key] = pos;
     appdata.writeImplicitData();
   }
 
@@ -596,6 +698,14 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     _posSub?.cancel();
     _durSub?.cancel();
     _bufSub?.cancel();
+    _posSub = null;
+    _durSub = null;
+    _bufSub = null;
+    // 从 _subs 里摘掉，避免重建时越攒越多（每次滑动 seek 攒 3 条）
+    if (_restartable.isNotEmpty) {
+      _subs.removeWhere(_restartable.contains);
+      _restartable = const [];
+    }
   }
 
   /// 恢复进度同步
@@ -615,6 +725,8 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       if (_disposed) return;
       _update(state.copyWith(buffer: v));
     });
+    _restartable = [_posSub!, _durSub!, _bufSub!];
+    _subs.addAll(_restartable);
   }
 
   /// 截图保存

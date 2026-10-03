@@ -390,13 +390,16 @@ class _WatcherState extends State<Watcher>
 
   /// 按选定的 BT 线路解析某一集的 loopback 播放 URL，否则 null。
   /// ① 精确绑定 ② 已有种子（整季合集）按文件名匹配本集 ③ 在该线路（站+组）内自动检索
+  ///
+  /// [cancel] 返回 true 时中止等待（调用方切集/退出时传入）。
   Future<String?> _btUrlFor(
     String contentKey,
     BtLine line,
     int road,
     int episodeIndex,
-    String title,
-  ) async {
+    String title, {
+    bool Function()? cancel,
+  }) async {
     if (_isSeries) return null;
     final manager = ProviderScope.containerOf(
       context,
@@ -496,19 +499,42 @@ class _WatcherState extends State<Watcher>
       return b.size.compareTo(a.size);
     });
     final job = await manager.add(matches.first.magnet);
-    List<TorrentFileEntry> files = const [];
+    // 注意：streamUrl 的下标是「未过滤的文件列表」下标，这里筛选出可播放文件后
+    // 必须换算回原始下标，否则种子里存在 .nfo / 字幕 / 样片等不可播放文件时
+    // 会串到别的文件上（绑定记的是 A，实际播的是 B）。
+    var picked = -1;
     for (var i = 0; i < 120; i++) {
       if (!mounted) return null;
-      files = manager.filesOf(job).where((f) => f.isStreamable).toList();
-      if (files.isNotEmpty || (job.error ?? '').isNotEmpty) break;
+      // 元数据最长要等 45 秒（引擎找不到 peer 时不会自己失败），
+      // 必须允许调用方切走：加载代次变化就放弃等待，
+      // 否则切集后旧任务还在原地空转。
+      if (cancel?.call() ?? false) return null;
+      picked = _pickStreamableFile(manager.filesOf(job), episodeIndex);
+      if (picked >= 0 || (job.error ?? '').isNotEmpty) break;
       await Future.delayed(const Duration(seconds: 1));
     }
-    if (files.isEmpty) return null;
-    var idx = files.indexWhere((f) => btEpisodeOf(f.name) == episodeIndex);
-    if (idx < 0) idx = files.length == 1 ? 0 : -1;
-    if (idx < 0) return null;
-    bind(job, idx, files);
-    return tryStream(job, idx);
+    if (picked < 0) return null;
+    final files = manager.filesOf(job);
+    bind(job, picked, files);
+    return tryStream(job, picked);
+  }
+
+  /// 在种子文件列表里挑出本集对应的可播放文件，返回其**原始下标**。
+  ///
+  /// 单文件种子直接取 0；多文件时按集号匹配，匹配不到返回 -1。
+  static int _pickStreamableFile(
+    List<TorrentFileEntry> files,
+    int episodeIndex,
+  ) {
+    final playable = <TorrentFileEntry>[
+      for (final f in files)
+        if (f.isStreamable) f,
+    ];
+    if (playable.isEmpty) return -1;
+    var idx = playable.indexWhere((f) => btEpisodeOf(f.name) == episodeIndex);
+    if (idx < 0) idx = playable.length == 1 ? 0 : -1;
+    if (idx < 0) return -1;
+    return playable[idx].index;
   }
 
   /// 核心加载流程：解析播放地址 → 初始化播放器 → 加载媒体 → 缓冲
@@ -604,6 +630,7 @@ class _WatcherState extends State<Watcher>
             road,
             epIndex,
             anime.title,
+            cancel: () => gen != _loadGen,
           );
           if (gen != _loadGen || !mounted) return;
           if (btUrl == null) {

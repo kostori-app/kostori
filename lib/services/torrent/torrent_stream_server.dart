@@ -17,31 +17,61 @@ class TorrentStreamServer {
 
   HttpServer? _server;
 
+  /// start() 的在途 Future：并发调用共享同一次绑定。
+  ///
+  /// 之前 `_server` 只在 await 之后才赋值，两个并发 `streamUrl` 会各自
+  /// bind 一个端口，后一次赋值把前一个 server 直接丢掉 —— 端口一直被占用
+  /// 且再也无法关闭。
+  Future<void>? _starting;
+
   int get port => _server?.port ?? 0;
 
   bool get running => _server != null;
 
-  Future<void> start() async {
-    if (_server != null) return;
-    _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    _server!.listen(_handle, onError: (_) {});
+  Future<void> start() {
+    if (_server != null) return Future.value();
+    return _starting ??= _bind().whenComplete(() => _starting = null);
+  }
+
+  Future<void> _bind() async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    _server = server;
+    server.listen(_handle, onError: (_) {});
   }
 
   Future<void> stop() async {
     final server = _server;
     _server = null;
+    // 等在途的 bind 结束再关，否则可能在 bind 完成后立刻又冒出一个端口
+    await _starting;
     try {
       await server?.close(force: true);
     } catch (_) {}
   }
 
-  Uri urlFor(TorrentFileEntry file) =>
-      Uri.parse('http://127.0.0.1:$port/${Uri.encodeComponent(file.path)}');
+  Uri urlFor(TorrentFileEntry file) => Uri.parse(
+    // 分段编码，保留种子内路径的 '/' 分隔语义
+    'http://127.0.0.1:$port/${file.path.split('/').map(Uri.encodeComponent).join('/')}',
+  );
+
+  /// 取引用文件名的最后一段。
+  ///
+  /// 引擎的 `DownloadFile.originalFileName` 用 `Platform.pathSeparator` 切分，
+  /// 在 Windows 上是 `\` 而种子路径是 `/`，结果是返回**整条路径**，
+  /// `lookupMimeType` 匹配不到、Content-Type 退化成 octet-stream。
+  static String _lastSegment(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final i = normalized.lastIndexOf('/');
+    return i < 0 ? normalized : normalized.substring(i + 1);
+  }
 
   Future<void> _handle(HttpRequest req) async {
     final res = req.response;
     try {
-      final raw = Uri.decodeComponent(req.uri.path);
+      // req.uri.path 已经过 Uri 解析解码，不能再解一次：
+      // 路径含 '%'（如 100%.mkv）时二次解码会抛 FormatException，
+      // 结果是连接被直接关闭、连 404 都没有。
+      final raw = req.uri.path;
       final rel = raw.startsWith('/') ? raw.substring(1) : raw;
       final model = task.metaInfo;
       var index = model.files.indexWhere((f) => f.path == rel);
@@ -92,7 +122,8 @@ class TorrentStreamServer {
       res.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
       res.headers.set(
         HttpHeaders.contentTypeHeader,
-        lookupMimeType(file.originalFileName) ?? 'application/octet-stream',
+        lookupMimeType(_lastSegment(file.originalFileName)) ??
+            'application/octet-stream',
       );
       if (partial) {
         res.statusCode = HttpStatus.partialContent;
@@ -101,25 +132,33 @@ class TorrentStreamServer {
           'bytes $start-$end/$total',
         );
       }
-      res.headers.set(HttpHeaders.contentLengthHeader, '$length');
-      if (req.method == 'HEAD') {
-        await res.close();
-        return;
-      }
 
       // 提升请求范围对应分片的下载优先级（边下边播）
       final pieceLength = model.pieceLength;
-      if (pieceLength > 0) {
+      final pieceCount = model.pieces?.length;
+      if (pieceLength > 0 && pieceCount != null && pieceCount > 0) {
         final sp = (file.offset + start) ~/ pieceLength;
         final ep = (file.offset + end) ~/ pieceLength;
         task.pieceManager?.pieceSelector.setPriorityPieces({
-          for (var i = sp; i <= ep; i++) i,
+          // 末尾字节可能落在不存在的下一片上，钳制到有效范围
+          for (var i = sp; i <= ep && i < pieceCount; i++) i,
         });
       }
 
-      final stream = file.createStream(start, end + 1);
-      if (stream == null) {
+      // 必须先拿到 stream 再写响应头：Content-Length 一旦提交就不能再改成
+      // 503/500，之前「设了长度再降级状态码」会让 mpv/libcurl
+      // 干等一个不会到来的响应体或直接报协议错误。
+      final stream = (req.method == 'HEAD')
+          ? null
+          : file.createStream(start, end + 1);
+      if (req.method != 'HEAD' && stream == null) {
         res.statusCode = HttpStatus.serviceUnavailable;
+        res.headers.contentLength = 0;
+        await res.close();
+        return;
+      }
+      res.headers.set(HttpHeaders.contentLengthHeader, '$length');
+      if (stream == null) {
         await res.close();
         return;
       }
@@ -127,6 +166,7 @@ class TorrentStreamServer {
       await res.close();
     } catch (_) {
       try {
+        // 响应头可能已提交，这里只能尽力收尾
         await res.close();
       } catch (_) {}
     }

@@ -51,30 +51,48 @@ class DhtClient {
 
   static const int _maxQueries = 2000;
 
+  /// 未收到响应的查询上限；超过后丢弃最早的条目，避免无响应节点堆积。
+  static const int _maxPending = 512;
+
   String _key(InternetAddress ip, int port) => '${ip.address}:$port';
 
   void _log(String message) => onLog?.call(message);
 
   Future<void> start() async {
     if (_infoHash.length != 20) return;
+    if (_stopped) return;
     try {
-      _socketV4 = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      _listen(_socketV4!);
+      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      // bind 期间可能已被 stop()（例如元数据超时先到）：立刻关掉，别泄漏
+      if (_stopped) {
+        socket.close();
+        return;
+      }
+      _socketV4 = socket;
+      _listen(socket);
     } catch (e) {
       _log('IPv4 bind failed: $e');
     }
     try {
-      _socketV6 = await RawDatagramSocket.bind(InternetAddress.anyIPv6, 0);
-      _listen(_socketV6!);
+      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv6, 0);
+      if (_stopped) {
+        socket.close();
+        return;
+      }
+      _socketV6 = socket;
+      _listen(socket);
     } catch (e) {
       _log('IPv6 bind failed: $e');
     }
+    if (_stopped) return;
     if (_socketV4 == null && _socketV6 == null) return;
 
     for (final uri in _bootstrap) {
+      if (_stopped) return;
       try {
         final port = uri.hasPort ? uri.port : 6881;
         final ips = await InternetAddress.lookup(uri.host);
+        if (_stopped) return;
         for (final ip in ips) {
           _known[_key(ip, port)] ??= _DhtNode(ip, port);
         }
@@ -82,6 +100,7 @@ class DhtClient {
         _log('bootstrap ${uri.host} failed: $e');
       }
     }
+    if (_stopped) return;
     _pump();
     _ticker = Timer.periodic(const Duration(seconds: 3), (_) => _pump());
   }
@@ -107,6 +126,10 @@ class DhtClient {
     _socketV6?.close();
     _socketV4 = null;
     _socketV6 = null;
+    _pending.clear();
+    _known.clear();
+    _queried.clear();
+    _seenPeers.clear();
   }
 
   /// 选择距离目标最近、尚未查询的节点发起 get_peers
@@ -204,9 +227,20 @@ class DhtClient {
   }
 
   void _query(_DhtNode node) {
+    if (_stopped) return;
     if (_queried.length >= _maxQueries) return;
     final nodeKey = _key(node.ip, node.port);
     if (!_queried.add(nodeKey)) return;
+    final socket = node.ip.type == InternetAddressType.IPv6
+        ? _socketV6
+        : _socketV4;
+    // 目标地址族没有可用 socket 就直接放弃：先登记 _pending 再 return
+    // 会让无响应的查询永远留在表里（最多堆到 _maxQueries 条）
+    if (socket == null) return;
+    // 有响应才会移除 _pending，这里主动封顶，防止无响应的节点堆积
+    if (_pending.length >= _maxPending) {
+      _pending.remove(_pending.keys.first);
+    }
     final tid = _nextTid();
     _pending[_str(tid)!] = node;
     final packet = {
@@ -215,10 +249,6 @@ class DhtClient {
       'q': 'get_peers',
       'a': {'id': _nodeId, 'info_hash': _infoHash},
     };
-    final socket = node.ip.type == InternetAddressType.IPv6
-        ? _socketV6
-        : _socketV4;
-    if (socket == null) return;
     try {
       socket.send(_encode(packet), node.ip, node.port);
     } catch (e) {

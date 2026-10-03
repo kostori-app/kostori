@@ -9,8 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/download_database.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/services/download/download_keep_alive.dart';
+import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/services/torrent/dht_client.dart';
+import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:kostori/services/torrent/torrent_job.dart';
 import 'package:kostori/services/torrent/torrent_stream_server.dart';
 import 'package:path/path.dart' as p;
@@ -26,6 +30,19 @@ const String kTorrentCustomNodes = 'torrentCustomNodes';
 
 /// `selectedFiles` 哨兵：表示「一个文件都不选」。空列表仍表示「全部」（兼容旧数据）。
 const int kTorrentNoFile = -1;
+
+/// 元数据抓取超时（[TorrentManager._metadataTimeout]）。
+///
+/// 引擎在找不到 peer 时不会自己失败，只能由上层超时兜底，
+/// 单独定义异常类型是为了把它和真正的解析/网络错误区分开，
+/// 避免把 `TimeoutException after 0:03:00.000000: Future not completed`
+/// 这种原始文本暴露到界面。
+class TorrentMetadataTimeout implements Exception {
+  const TorrentMetadataTimeout();
+
+  @override
+  String toString() => 'torrent metadata timeout';
+}
 
 /// 内置公共 tracker；与磁力自带、用户在「种子设置」里配置的列表合并去重后使用。
 const List<String> kDefaultTrackers = [
@@ -189,9 +206,29 @@ class TorrentManager extends Notifier<TorrentState> {
   final Set<String> _refetching = {};
   final Set<String> _wantStart = {};
 
+  /// 每个任务已自动重试抓取元数据的次数，防止「抓到但解析不出来」时无限循环。
+  final Map<String, int> _refetchAttempts = {};
+
+  /// 元数据抓取超时。
+  ///
+  /// 引擎在「一个 peer 都找不到」时既不成功也不失败（只在 hash 不匹配时抛
+  /// `MetaDataDownloadFailed`），只能靠这里兜底。原来的 180 秒太长，
+  /// 用户体感就是「卡住半天」；有 peer 时通常 1~10 秒就能拿到。
+  static const Duration _metadataTimeout = Duration(seconds: 45);
+
+  /// 自动重试抓取元数据的次数上限，超过即判定为不可用。
+  static const int _maxMetadataAttempts = 3;
+
+  /// 对外暴露的元数据抓取超时（秒），便于测试与设置项读取。
+  static int get metadataTimeoutSeconds => _metadataTimeout.inSeconds;
+
+  /// 对外暴露的自动重试次数上限。
+  static int get maxMetadataAttempts => _maxMetadataAttempts;
+
   Directory? _torrentDir;
   int _persistTick = 0;
   String _lastSyncSig = '';
+  DateTime? _lastKeepAlive;
   static int _jobIdSeq = 0;
 
   static String _newJobId() =>
@@ -596,9 +633,8 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 必须保留原始字节：重新编码会改变字节（如 pieces），导致 info hash
   /// 与 magnet 不一致，tracker 拿不到 peer。
   Future<Uint8List> _fetchMetadata(String magnet) async {
-    final link = MagnetParser.parse(magnet);
+    final link = _tryParseMagnet(magnet);
     final downloader = MetadataDownloader.fromMagnet(magnet);
-
     final completer = Completer<Uint8List>();
     downloader.createListener()
       ..on<MetaDataDownloadComplete>((event) {
@@ -613,9 +649,13 @@ class TorrentManager extends Notifier<TorrentState> {
 
     // 内置 DHT 有解码缺陷、永远处理不了响应（trackerless 磁力因此找不到
     // peer）。这里用自己的 DHT 迭代查询，把找到的 peer 注入 downloader。
-    final infoHash = link?.infoHash;
+    //
+    // infohash 优先用解析结果；解析失败（MagnetParser 不支持 base32、
+    // v2 磁力等）时退回自己从磁力串里提取，否则这里会静默跳过 DHT，
+    // trackerless 磁力就只能干等超时。
+    final infoHash = _infoHashBytes(link?.infoHash, magnet);
     DhtClient? dht;
-    if (infoHash != null && infoHash.length == 20) {
+    if (infoHash != null) {
       dht = DhtClient(
         infoHash: infoHash,
         bootstrapNodes: [
@@ -630,12 +670,19 @@ class TorrentManager extends Notifier<TorrentState> {
             );
           } catch (_) {}
         },
+        onLog: (m) => Log.info('DHT', m),
       );
       unawaited(dht.start());
+    } else {
+      Log.info('元数据', '无法解析 infohash，跳过 DHT：${_infoHashOf(magnet)}');
     }
 
     try {
-      return await completer.future.timeout(const Duration(seconds: 180));
+      return await completer.future.timeout(_metadataTimeout);
+    } on TimeoutException {
+      // 引擎在「找不到 peer」时不会发 MetaDataDownloadFailed，
+      // 只能靠这里的超时兜底。给出可读原因，别把原始异常文本抛给 UI。
+      throw const TorrentMetadataTimeout();
     } finally {
       await dht?.stop();
       try {
@@ -644,24 +691,73 @@ class TorrentManager extends Notifier<TorrentState> {
     }
   }
 
+  /// `MagnetParser.parse` 可能抛异常（畸形磁力、不支持的编码）。
+  MagnetLink? _tryParseMagnet(String magnet) {
+    try {
+      return MagnetParser.parse(magnet);
+    } catch (e) {
+      Log.info('磁力解析失败', '$e');
+      return null;
+    }
+  }
+
+  /// 取出 20 字节 infohash：优先用解析结果，否则从磁力串自行提取。
+  ///
+  /// 支持 40 位 hex 与 32 位 base32；v2（`urn:btmh:`）返回 null，
+  /// 因为自定义 DHT 是 BEP 5（v1）实现。
+  static Uint8List? _infoHashBytes(Uint8List? parsed, String magnet) {
+    if (parsed != null && parsed.length == 20) return parsed;
+    return infoHashBytesOf(magnet);
+  }
+
+  /// 仅从磁力串里提取 20 字节 infohash（不依赖 [MagnetParser]）。
+  ///
+  /// `MagnetParser.parse` 对 base32、畸形磁力会抛异常或返回空 infoHash，
+  /// 此时若直接跳过 DHT，trackerless 磁力就只能干等到超时。
+  static Uint8List? infoHashBytesOf(String magnet) {
+    final hex = _infoHashOf(normalizeMagnet(magnet));
+    if (hex == null || hex.length != 40) return null;
+    final out = Uint8List(20);
+    for (var i = 0; i < 20; i++) {
+      final byte = int.tryParse(hex.substring(i * 2, i * 2 + 2), radix: 16);
+      if (byte == null) return null;
+      out[i] = byte;
+    }
+    return out;
+  }
+
   // ── 引擎准备 ──────────────────────────────────────────────────────────────
   Future<void> _prepareEngine(TorrentJob job, {required bool start}) async {
     if (_engines.containsKey(job.id)) return;
     try {
-      final magnet = MagnetParser.parse(job.magnet);
-      final model = await _loadModel(job, magnet);
+      final magnet = _tryParseMagnet(job.magnet);
+      final loaded = await _loadModel(job, magnet);
+      final model = loaded == null ? null : _sanitizeModelPaths(loaded);
       if (model == null) {
         // 元数据缺失或为旧的完整 .torrent 格式（hash 不对）：后台重新抓取。
         job.hasMetadata = false;
         job.error = null;
         job.status = TorrentJobStatus.metadata;
         if (start) _wantStart.add(job.id);
-        if (_refetching.add(job.id)) {
+        // 必须有重试预算：抓到了但仍然解析不出来时，
+        // 「抓取 → 解析失败 → 再抓取」会形成 180 秒一轮的死循环，
+        // 用户看到的就是「获取元数据半天了没获取成功」。
+        final attempts = _refetchAttempts[job.id] ?? 0;
+        if (attempts >= _maxMetadataAttempts) {
+          job.status = TorrentJobStatus.failed;
+          job.error = t.torrentMetadataParseFailed;
+          _refetchAttempts.remove(job.id);
+          _wantStart.remove(job.id);
+          Log.error('元数据', '连续 $attempts 次抓取后仍无法解析，放弃');
+        } else if (_refetching.add(job.id)) {
+          _refetchAttempts[job.id] = attempts + 1;
           unawaited(_refetchMetadata(job));
         }
         _emit();
         return;
       }
+      // 解析成功：清空重试预算
+      _refetchAttempts.remove(job.id);
       _models[job.id] = model;
       job.hasMetadata = true;
       job.name = job.name.isEmpty ? model.name : _fixEncoding(job.name);
@@ -684,6 +780,10 @@ class TorrentManager extends Notifier<TorrentState> {
             ? magnet.acceptableSources
             : null,
         SequentialConfig.forVideoStreaming(),
+        null, // proxyConfig
+        // partialSeedingEnabled：只勾选部分文件时 isAllComplete 永远为 false，
+        // tracker 收不到 completed 通告、做种比例恶化。开启后改发 event=paused。
+        true,
       );
       _engines[job.id] = task;
       if (start) {
@@ -716,8 +816,68 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   String _sanitizeName(String name) {
-    final s = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
-    return s.isEmpty ? 'torrent' : s;
+    // 复用下载模块的净化规则（控制字符、Windows 保留名、尾点、长度上限），
+    // 避免在 Windows 上因为种子名是 CON / 带控制字符而创建失败。
+    final cleaned = DownloadManager.sanitizeFileName(name, fallback: 'torrent');
+    // 种子名会作为目录的一层，必须保证不含路径分隔符与 `.`/`..`
+    return cleaned.replaceAll(RegExp(r'[\\/]'), '_');
+  }
+
+  /// 净化种子内每个文件的相对路径，防目录穿越。
+  ///
+  /// 引擎用字符串拼接构造落盘路径（`directory + torrentPath`），
+  /// 完全不校验 `..`。恶意种子可以用 `files: [{path: ["..","..","x.sh"]}]`
+  /// 把文件写到下载目录之外。这里在交给引擎之前就把危险段消掉。
+  static String _sanitizeTorrentFilePath(String path) {
+    final cleaned = DownloadManager.sanitizeGroupName(
+      path.replaceAll('\\', '/'),
+    );
+    return cleaned.isEmpty ? 'file' : cleaned;
+  }
+
+  /// 逐个净化种子内的文件路径，返回新模型（不修改原模型）。
+  TorrentModel _sanitizeModelPaths(TorrentModel model) {
+    var changed = false;
+    final files = <TorrentFileModel>[];
+    for (final f in model.files) {
+      final safe = _sanitizeTorrentFilePath(f.path);
+      if (safe == f.path) {
+        files.add(f);
+      } else {
+        changed = true;
+        files.add(
+          TorrentFileModel(
+            path: safe,
+            length: f.length,
+            offset: f.offset,
+            attributes: f.attributes,
+            symlinkPath: f.symlinkPath,
+            isPaddingFile: f.isPaddingFile,
+          ),
+        );
+      }
+    }
+    if (!changed) return model;
+
+    final safeName = _sanitizeName(model.name);
+    Log.info('种子路径净化', '${model.name} → $safeName（${files.length} 个文件）');
+    return TorrentModel(
+      name: safeName,
+      files: files,
+      infoHashBuffer: model.infoHashBuffer,
+      pieceLength: model.pieceLength,
+      pieces: model.pieces,
+      announces: model.announces,
+      nodes: model.nodes,
+      length: model.length,
+      version: model.version,
+      metaVersion: model.metaVersion,
+      fileTree: model.fileTree,
+      pieceLayers: model.pieceLayers,
+      rootHash: model.rootHash,
+      infoDictBytes: model.infoDictBytes,
+      rawData: model.rawData,
+    );
   }
 
   /// 兼容旧布局：单文件曾直接放在下载根目录，现在放进同名文件夹。
@@ -859,9 +1019,16 @@ class TorrentManager extends Notifier<TorrentState> {
       await File(job.torrentPath).writeAsBytes(bytes, flush: true);
       final start = _wantStart.remove(job.id);
       await _prepareEngine(job, start: start);
-    } catch (e) {
+    } on TorrentMetadataTimeout {
+      job.status = TorrentJobStatus.failed;
+      job.error = t.torrentMetadataTimeout;
+      _wantStart.remove(job.id);
+      Log.info('元数据', '抓取超时：${job.magnet}');
+    } catch (e, s) {
       job.status = TorrentJobStatus.failed;
       job.error = e.toString();
+      _wantStart.remove(job.id);
+      Log.error('元数据抓取失败', '$e\n$s');
     } finally {
       _refetching.remove(job.id);
     }
@@ -914,6 +1081,56 @@ class TorrentManager extends Notifier<TorrentState> {
     return sum;
   }
 
+  /// 汇总「已选文件」中已下载的字节数。
+  ///
+  /// 引擎的 `downloaded` / `progress` 都是整包口径（`downloaded / totalSize`），
+  /// 但未选中的文件会被 `setSkippedPieces` 跳过、永远下不满。拿整包口径判断完成，
+  /// 会让「只勾了部分文件」的任务卡在 downloading 永不完成，做种与
+  /// 「下载完停止」策略都不触发；tracker 也收不到 completed 通告
+  /// （引擎内部同样以 isAllComplete 为准），做种比例直接归零。
+  ///
+  /// 纯函数，便于单测覆盖关键场景。
+  /// [selectedFiles] 为空表示全部选中；含 [kTorrentNoFile] 表示全不选。
+  static int selectedDoneBytes(
+    List<TorrentFileEntry> files,
+    List<int> selectedFiles,
+  ) {
+    if (_isNoneSelected(selectedFiles)) return 0;
+    if (selectedFiles.isEmpty) {
+      var sum = 0;
+      for (final f in files) {
+        sum += f.downloaded;
+      }
+      return sum;
+    }
+    final selected = selectedFiles.toSet();
+    var sum = 0;
+    for (final f in files) {
+      if (selected.contains(f.index)) sum += f.downloaded;
+    }
+    return sum;
+  }
+
+  /// 按「已选文件」重算 [TorrentJob.totalDone] / [totalWanted] / [progress]。
+  ///
+  /// 三者口径保持一致（都是已选文件），UI 上的 `progress * totalWanted`
+  /// 才等于真实已下载字节数（原因见 [selectedDoneBytes]）。
+  void _refreshProgress(TorrentJob job, TorrentModel model) {
+    final wanted = _wantedBytes(job, model);
+    job.totalWanted = wanted;
+
+    if (wanted <= 0) {
+      // 「全不选」：没有要下的内容，进度恒为 0，不要退回整包大小
+      job.totalDone = 0;
+      job.progress = 0;
+      return;
+    }
+
+    final done = selectedDoneBytes(filesOf(job), job.selectedFiles);
+    job.totalDone = done;
+    job.progress = (done / wanted).clamp(0.0, 1.0).toDouble();
+  }
+
   /// 默认选择：最大的可播放视频；没有视频则最大文件；再不行「全不选」。
   List<int> _defaultSelection(TorrentModel model) {
     var videoIndex = -1;
@@ -949,12 +1166,20 @@ class TorrentManager extends Notifier<TorrentState> {
     _emit();
   }
 
-  Future<void> resume(TorrentJob job) async {
+  /// 恢复任务；[isRetry] 为 true 时（用户手动点重试）重置元数据重试预算。
+  Future<void> resume(TorrentJob job, {bool isRetry = false}) async {
     if (job.status == TorrentJobStatus.completed) return;
     // 库的 start() 非幂等（server socket 已被监听会抛 "Stream was already
     // listened to"），并发 resume 也会重复 start，这里串行化并容错。
     if (!_starting.add(job.id)) return;
     try {
+      if (isRetry) {
+        _refetchAttempts.remove(job.id);
+        job.error = null;
+        if (job.status == TorrentJobStatus.failed) {
+          job.status = TorrentJobStatus.metadata;
+        }
+      }
       final engine = _engines[job.id];
       if (engine == null) {
         await _prepareEngine(job, start: true);
@@ -990,18 +1215,26 @@ class TorrentManager extends Notifier<TorrentState> {
     _starting.remove(job.id);
     _wantStart.remove(job.id);
     _refetching.remove(job.id);
+    _refetchAttempts.remove(job.id);
     if (engine != null) {
-      try {
-        await engine.stop();
-      } catch (_) {}
+      // 顺序很关键：引擎的 stop() 内部会 dispose()，把 _fileManager 置为 null，
+      // 之后再调 fileManager?.delete() 就是空操作，文件永远删不掉。
       if (deleteFiles) {
         try {
           await engine.fileManager?.delete();
-        } catch (_) {}
+        } catch (e) {
+          Log.error('删除种子文件失败', '$e');
+        }
       }
       try {
-        await engine.dispose();
-      } catch (_) {}
+        // stop() 已包含 dispose()，成功时不能再调一次
+        await engine.stop();
+      } catch (e) {
+        Log.error('停止种子任务失败', '$e');
+        try {
+          await engine.dispose();
+        } catch (_) {}
+      }
     }
     try {
       final f = File(job.torrentPath);
@@ -1140,6 +1373,11 @@ class TorrentManager extends Notifier<TorrentState> {
       final engine = _engines[job.id];
       if (engine == null) continue;
       final noneSelected = _isNoneSelected(job.selectedFiles);
+      final model = _models[job.id];
+      void refreshProgress() {
+        if (model != null) _refreshProgress(job, model);
+      }
+
       // 以引擎实际状态为准：_started 是内存态，可能与引擎不同步，
       // 之前用它判定会把已恢复的任务每秒强制打回「已暂停」
       if (engine.state == TaskState.stopped) {
@@ -1147,14 +1385,10 @@ class TorrentManager extends Notifier<TorrentState> {
         job.uploadRate = 0;
         job.numPeers = 0;
         job.numSeeds = 0;
+        job.numDownloaders = 0;
         // prepare() 后 fileManager 可用：读回状态，保证外层与内容进度一致
         if (engine.fileManager != null) {
-          final d = engine.downloaded;
-          if (d != null) job.totalDone = d;
-          if (job.totalWanted <= 0) {
-            job.totalWanted = engine.metaInfo.totalSize;
-          }
-          job.progress = noneSelected ? 0.0 : engine.progress.clamp(0.0, 1.0);
+          refreshProgress();
         }
         if (!noneSelected && job.progress >= 0.999) {
           job.status = TorrentJobStatus.completed;
@@ -1168,12 +1402,8 @@ class TorrentManager extends Notifier<TorrentState> {
       job.uploadRate = engine.uploadSpeed.round();
       job.numPeers = engine.connectedPeersNumber;
       job.numSeeds = engine.seederNumber;
-      final done = engine.downloaded;
-      if (done != null) job.totalDone = done;
-      if (job.totalWanted <= 0) {
-        job.totalWanted = engine.metaInfo.totalSize;
-      }
-      job.progress = noneSelected ? 0.0 : engine.progress.clamp(0.0, 1.0);
+      job.numDownloaders = engine.trackerDownloaders ?? 0;
+      refreshProgress();
       if (engine.state == TaskState.paused) {
         job.status = TorrentJobStatus.paused;
       } else if (!noneSelected && job.progress >= 0.999) {
@@ -1190,6 +1420,7 @@ class TorrentManager extends Notifier<TorrentState> {
         job.status = TorrentJobStatus.downloading;
       }
     }
+    _syncKeepAlive();
     final sig = _syncSignature();
     if (sig != _lastSyncSig) {
       _lastSyncSig = sig;
@@ -1199,6 +1430,48 @@ class TorrentManager extends Notifier<TorrentState> {
       _persistTick = 0;
       _persist();
     }
+  }
+
+  /// 把正在传输 / 做种的种子登记到 Android 前台服务。
+  ///
+  /// 之前只有普通下载会登记，种子在后台做种时没有任何保活，
+  /// Android 会直接杀掉进程，做种完全无效。
+  /// 完成 / 暂停 / 失败的任务不计入（不再传输就不需要保活）。
+  void _syncKeepAlive({bool force = false}) {
+    if (!Platform.isAndroid) return;
+    final active = _jobs
+        .where(
+          (j) =>
+              j.status == TorrentJobStatus.downloading ||
+              j.status == TorrentJobStatus.completed,
+        )
+        .toList();
+    if (active.isEmpty) {
+      unawaited(DownloadKeepAlive.detach(DownloadKeepAlive.ownerTorrent));
+      return;
+    }
+    final now = DateTime.now();
+    if (!force &&
+        _lastKeepAlive != null &&
+        now.difference(_lastKeepAlive!).inSeconds < 1) {
+      return;
+    }
+    _lastKeepAlive = now;
+    unawaited(
+      DownloadKeepAlive.attach(
+        DownloadKeepAlive.ownerTorrent,
+        [
+          for (final j in active)
+            (
+              title: j.name.isEmpty ? j.id : j.name,
+              progress: j.progress.clamp(0.0, 1.0).toDouble(),
+            ),
+        ],
+        remaining: _jobs
+            .where((j) => j.status != TorrentJobStatus.completed)
+            .length,
+      ),
+    );
   }
 }
 

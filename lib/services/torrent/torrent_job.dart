@@ -19,6 +19,9 @@ class TorrentJob {
   int numPeers;
   int numSeeds;
 
+  /// 全站做种数（Tracker scrape 结果，运行期统计，不持久化）
+  int numDownloaders;
+
   /// 已下载字节
   int totalDone;
 
@@ -58,6 +61,7 @@ class TorrentJob {
     this.uploadRate = 0,
     this.numPeers = 0,
     this.numSeeds = 0,
+    this.numDownloaders = 0,
     this.totalDone = 0,
     this.totalWanted = 0,
     this.hasMetadata = false,

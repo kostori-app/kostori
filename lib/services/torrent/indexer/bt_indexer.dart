@@ -35,15 +35,37 @@ abstract class BtIndexer {
   Future<List<BtSearchResult>> search(String keyword, {int page = 1});
 }
 
-final Dio _dio = Dio();
+/// BT 站点检索用的 Dio。
+///
+/// 必须设超时：BT 站点常年挂着/半开，不设超时时一个站点就能把
+/// `Future.wait` 永远拖住，表现为检索转圈且无法取消。
+final Dio _dio = Dio(
+  BaseOptions(
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 15),
+    sendTimeout: const Duration(seconds: 10),
+  ),
+);
 
 /// 复用项目的 UA（含用户在设置里的覆盖）。
 String get _ua => appdata.implicitData['ua']?.toString() ?? webUA;
 
 /// 把 `xt=urn:btih:` 的 base32 infohash 规范成 hex（引擎只认 hex）。
+///
+/// 必须先排除 40 位 hex 形式：`[A-Za-z2-7]` 与 hex 的 `[0-9a-fA-F]` 有重叠，
+/// 直接按 32 位 base32 匹配会把一部分合法 hex 磁力链接误判成 base32 并改写成
+/// 错误的 infohash（约 1/7500），导致去重失效、「已添加」标记错乱。
 String normalizeMagnet(String magnet) {
-  final m = RegExp(r'xt=urn:btih:([A-Za-z2-7]{32})(?![A-Za-z2-7])')
-      .firstMatch(magnet);
+  // 已经是 40 位 hex，原样返回
+  if (RegExp(r'xt=urn:btih:[0-9a-fA-F]{40}(?![0-9a-fA-F])')
+          .firstMatch(magnet) !=
+      null) {
+    return magnet;
+  }
+  final m = RegExp(
+    r'xt=urn:btih:([A-Z2-7]{32})(?![A-Z2-7])',
+    caseSensitive: false,
+  ).firstMatch(magnet);
   if (m == null) return magnet;
   final hex = _base32ToHex(m.group(1)!);
   if (hex == null) return magnet;
@@ -272,8 +294,21 @@ class BtSources {
     _loaded = true;
   }
 
-  static String _safeFileName(String key) =>
-      key.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+  /// 站点 key → 配置文件名。
+  ///
+  /// 直接把非法字符换成 `_` 会撞名：`a/b` 与 `a_b` 都变成 `a_b.json`，
+  /// 后写入的会静默覆盖前者。需要净化的 key 追加一段稳定的 FNV-1a 短哈希；
+  /// 本身合法的 key 保持原文件名，避免旧配置全部变成孤儿文件。
+  static String _safeFileName(String key) {
+    final base = key.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    if (base == key) return base;
+    var hash = 0x811c9dc5;
+    for (final unit in utf8.encode(key)) {
+      hash = (hash ^ unit) & 0xFFFFFFFF;
+      hash = (hash * 0x01000193) & 0xFFFFFFFF;
+    }
+    return '${base}_${hash.toRadixString(16).padLeft(8, '0')}';
+  }
 
   static Future<void> _writeFile(BtSourceConfig c) async {
     if (!await dir.exists()) await dir.create(recursive: true);

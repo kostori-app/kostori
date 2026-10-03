@@ -273,21 +273,41 @@ class DownloadDatabase extends _$DownloadDatabase {
 
   Future<void> saveJobJson(List<String> jsons) async {
     await transaction(() async {
-      await delete(torrentJobTable).go();
+      final ids = <String>[];
       for (final j in jsons) {
-        final id = (jsonDecode(j) as Map)['id']?.toString() ?? '';
+        Object? decoded;
+        try {
+          decoded = jsonDecode(j);
+        } catch (_) {
+          // 单行坏 JSON 不该让整张表回滚
+          continue;
+        }
+        if (decoded is! Map) continue;
+        final id = decoded['id']?.toString() ?? '';
         if (id.isEmpty) continue;
+        ids.add(id);
         await into(torrentJobTable).insertOnConflictUpdate(
           TorrentJobTableCompanion.insert(id: id, data: j),
         );
       }
+      // 只删真正消失的任务，不做「先全删再全插」：
+      // TorrentManager 每 5 秒就会调一次 saveJobJson，全表重写是无谓的写放大。
+      await (delete(torrentJobTable)..where((t) => t.id.isNotIn(ids))).go();
     });
   }
 
   // ── BT 线路 / 绑定 ──────────────────────────────────────────────────────
   Future<Map<String, dynamic>> loadLines() async {
     final rows = await select(btLineTable).get();
-    return {for (final r in rows) r.contentKey: jsonDecode(r.data) as dynamic};
+    // 单行 data 坏掉就跳过那一行：之前一个坏 blob 会让整个推导式抛异常，
+    // 上层 catch 之后 BT 线路/绑定整体丢失且没有任何日志。
+    final out = <String, dynamic>{};
+    for (final r in rows) {
+      try {
+        out[r.contentKey] = jsonDecode(r.data) as dynamic;
+      } catch (_) {}
+    }
+    return out;
   }
 
   Future<Map<String, dynamic>> loadActive() async {

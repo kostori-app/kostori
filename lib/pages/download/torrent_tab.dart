@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
 import 'package:kostori/services/torrent/torrent_job.dart';
@@ -209,7 +210,12 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
 
   Future<void> _startAll() async {
     for (final j in _m.jobs) {
-      if (j.status == TorrentJobStatus.paused) await _m.resume(j);
+      // _pauseAll 会连 metadata 状态一起暂停，「全部开始」必须也能把它恢复，
+      // 否则被「全部暂停」停掉元数据任务后永远回不来。
+      if (j.status == TorrentJobStatus.paused ||
+          j.status == TorrentJobStatus.metadata) {
+        await _m.resume(j, isRetry: j.status == TorrentJobStatus.failed);
+      }
     }
   }
 
@@ -599,6 +605,7 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
       _infoRow(t.torrentDownloadLimit, '↓ ${formatSpeed(job.downloadRate)}'),
       _infoRow(t.torrentUploadLimit, '↑ ${formatSpeed(job.uploadRate)}'),
       _infoRow(t.torrentPeers, '${job.numPeers}/${job.numSeeds}'),
+      _infoRow(t.torrentLeechers, '${job.numDownloaders}'),
       _infoRow(t.torrentSavePathLabel, TorrentManager.downloadDir),
       if (job.infoHash.isNotEmpty)
         _infoRow(t.torrentInfoHashLabel, job.infoHash),
@@ -816,7 +823,18 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
   }
 
   Future<void> _play(int fileIndex) async {
-    final url = await _m.streamUrl(widget.job, fileIndex);
+    // streamUrl 在引擎未就绪时会抛 StateError（resume 被并发守卫丢弃等），
+    // 这里不接住就会变成未处理异步错误，用户点了没反应也没有任何提示
+    String url;
+    try {
+      url = await _m.streamUrl(widget.job, fileIndex);
+    } catch (e) {
+      Log.error('种子播放失败', '$e');
+      if (mounted) {
+        context.showMessage(message: t.torrentPlaybackFailed);
+      }
+      return;
+    }
     if (!mounted) return;
     context.to(
       () => LocalPlayerPage(

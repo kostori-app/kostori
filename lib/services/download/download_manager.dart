@@ -158,7 +158,6 @@ class DownloadManager extends ChangeNotifier {
   Future<void> _persistChain = Future.value();
 
   DateTime? _lastKeepAlive;
-  bool _keepAliveStarted = false;
 
   // 总任务进度（按任务完成数计数，失败也计入；单条双色）。
   // - 初始为 0 时不显示；完成后继续显示，直到用户手动关闭或应用退出。
@@ -349,15 +348,9 @@ class DownloadManager extends ChangeNotifier {
         .where((t) => t.status == DownloadStatus.downloading)
         .toList();
     if (active.isEmpty) {
-      if (_keepAliveStarted) {
-        _keepAliveStarted = false;
-        DownloadKeepAlive.stop();
-      }
+      // 只注销自己这一个来源：BT 种子可能仍在做种，不能把整个前台服务停掉
+      DownloadKeepAlive.detach(DownloadKeepAlive.ownerHttp);
       return;
-    }
-    if (!_keepAliveStarted) {
-      _keepAliveStarted = true;
-      DownloadKeepAlive.start();
     }
     final now = DateTime.now();
     if (!force &&
@@ -370,9 +363,12 @@ class DownloadManager extends ChangeNotifier {
     final remaining = _tasks
         .where((t) => t.status != DownloadStatus.completed)
         .length;
-    DownloadKeepAlive.update(
-      tasks: active.map((t) => (title: t.title, progress: t.progress)).toList(),
-      remaining: remaining,
+    unawaited(
+      DownloadKeepAlive.attach(
+        DownloadKeepAlive.ownerHttp,
+        active.map((t) => (title: t.title, progress: t.progress)).toList(),
+        remaining: remaining,
+      ),
     );
   }
 
@@ -1848,17 +1844,18 @@ class DownloadManager extends ChangeNotifier {
     await _deleteQuiet(File(p.join(taskDir, 'video.mp4')));
   }
 
-  static String _sanitize(String name) {
+  static String _sanitize(String name) => sanitizeFileName(name);
+
+  /// 净化单个文件名（不含扩展名时也可）。
+  ///
+  /// Windows 保留名检查要连扩展名一起看：`CON`/`CON.mp4` 都无法创建，
+  /// 而调用方普遍是「先净化基名、再拼 `.mp4`」，只在净化基名时检查会漏掉。
+  static String sanitizeFileName(String name, {String fallback = 'video'}) {
     var cleaned = name.replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_').trim();
     // Windows：尾点尾空格非法，直接砍掉
-    while (cleaned.endsWith('.')) {
-      cleaned = cleaned.substring(0, cleaned.length - 1);
-    }
-    if (cleaned.isEmpty) return 'video';
-    // Windows 保留名（CON/PRN/AUX/NUL/COM1-9/LPT1-9）无法创建，加前缀
-    if (_windowsReservedNames.contains(cleaned.toUpperCase())) {
-      cleaned = '_$cleaned';
-    }
+    cleaned = _trimTrailingDotsAndSpaces(cleaned);
+    if (cleaned.isEmpty) return fallback;
+    cleaned = _escapeReservedName(cleaned);
     // 按 UTF-8 字节截断到 200（ext4 上限 255 字节，留分组/_id 后缀余量），
     // 且不在代理对/字符中间切断（此前 substring 按 UTF-16 码元）
     final bytes = utf8.encode(cleaned);
@@ -1872,12 +1869,29 @@ class DownloadManager extends ChangeNotifier {
         len += rl;
       }
       cleaned = buf.toString();
-      if (cleaned.isEmpty) return 'video';
+      if (cleaned.isEmpty) return fallback;
     } else if (cleaned.length > 100) {
       // 纯 ASCII 长名同样收敛到 100 字符（与此前行为一致）
       cleaned = cleaned.substring(0, 100);
     }
-    return cleaned;
+    return _escapeReservedName(cleaned);
+  }
+
+  static String _trimTrailingDotsAndSpaces(String value) {
+    var out = value;
+    while (out.endsWith('.') || out.endsWith(' ')) {
+      out = out.substring(0, out.length - 1);
+    }
+    return out;
+  }
+
+  /// Windows 保留名：`CON` / `CON.mp4` / `con.txt` 都无法创建。
+  static String _escapeReservedName(String name) {
+    final dot = name.indexOf('.');
+    final stem = (dot < 0 ? name : name.substring(0, dot)).toUpperCase();
+    if (dot >= 0 && name.substring(dot).trim().isEmpty) return name;
+    if (_windowsReservedNames.contains(stem)) return '_$name';
+    return name;
   }
 
   static const _windowsReservedNames = {
@@ -1911,13 +1925,10 @@ class DownloadManager extends ChangeNotifier {
     final segs = <String>[];
     for (var s in name.split('/')) {
       var out = s.replaceAll(RegExp(r'[\\:*?"<>|\x00-\x1F]'), '_').trim();
-      while (out.endsWith('.')) {
-        out = out.substring(0, out.length - 1);
-      }
+      out = _trimTrailingDotsAndSpaces(out);
+      // `.` / `..` / 空段直接丢弃：这是防止 `../` 目录穿越的关键
       if (out.isEmpty || out == '.' || out == '..') continue;
-      if (_windowsReservedNames.contains(out.toUpperCase())) {
-        out = '_$out';
-      }
+      out = _escapeReservedName(out);
       segs.add(out);
     }
     return segs.join('/');
@@ -2398,7 +2409,14 @@ class DownloadManager extends ChangeNotifier {
         final fp = e['filePath']?.toString() ?? '';
         // 仅“重命名到非空分组”时改路径（删除分组不改，文件留在原目录）
         if (fp.isNotEmpty && g.isNotEmpty && newG.isNotEmpty) {
-          final rel = p.relative(fp, from: groupDir(g));
+          final from = groupDir(g);
+          // 历史/被外部移动过的记录，filePath 可能根本不在该分组目录下；
+          // 此时 p.relative 会产出 `../../..`，拼回去就把路径指到下载根之外了。
+          if (!p.isWithin(from, fp) && p.normalize(fp) != p.normalize(from)) {
+            changed = true;
+            continue;
+          }
+          final rel = p.relative(fp, from: from);
           e['filePath'] = p.join(groupDir(newG), rel);
         }
         changed = true;

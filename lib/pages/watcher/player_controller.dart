@@ -518,7 +518,15 @@ abstract class _PlayerController with Store {
   }
 
   /// 当前是否正在播放种子（loopback）媒体
-  bool get isTorrentPlayback => playUrl.startsWith('http://127.0.0.1:');
+  ///
+  /// 不能只看「是不是回环地址」：m3u8 广告过滤代理同样是
+  /// `http://127.0.0.1:<port>/playlist.m3u8`，那样开启广告过滤的
+  /// HLS 剧集会被误判成 BT 播放、错误地显示「切回线上源」。
+  bool get isTorrentPlayback {
+    if (!playUrl.startsWith('http://127.0.0.1:')) return false;
+    final path = Uri.tryParse(playUrl)?.path ?? '';
+    return !path.endsWith('.m3u8');
+  }
 
   /// 在当前播放器里播放已下载的本地文件（保持选集/进度逻辑，离线可播）
   Future<void> playLocalFile(

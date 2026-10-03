@@ -1,5 +1,6 @@
 import 'package:kostori/database/download_database.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/log.dart';
 
 /// 内容标识：有 bangumiId 用它（跨源共享），否则用「源 + 条目 id」。
 String playbackContentKey({
@@ -113,16 +114,29 @@ class _BindingStore {
   static final Map<String, dynamic> active = {};
   static final Map<String, dynamic> bindings = {};
   static bool _loaded = false;
-  static Future<void> _writeChain = Future.value();
 
-  static Future<void> ensureLoaded() async {
-    if (_loaded) return;
-    _loaded = true;
+  /// 在途的加载 Future：并发调用共享同一次加载。
+  ///
+  /// 之前在第一条 await **之前**就置 `_loaded = true`，第二个并发调用会直接
+  /// 返回，拿到空的 lines/active/bindings（表现为「线路都没了」）。
+  static Future<void>? _loading;
+
+  static Future<void> writeChain = Future.value();
+
+  static Future<void> ensureLoaded() {
+    if (_loaded) return Future.value();
+    return _loading ??= _load().whenComplete(() => _loading = null);
+  }
+
+  static Future<void> _load() async {
     try {
       _merge(lines, await DownloadDatabase.instance.loadLines());
       _merge(active, await DownloadDatabase.instance.loadActive());
       _merge(bindings, await DownloadDatabase.instance.loadBindings());
-    } catch (_) {}
+    } catch (e) {
+      // 之前是 catch (_) {}，一行坏数据导致整份配置静默丢失且毫无痕迹
+      Log.error('BT 线路加载失败', '$e');
+    }
     // 迁移：早期版本存在 implicitData 里
     final legacy = <String, dynamic>{};
     for (final key in const ['btLines', 'btActive', 'torrentBindings']) {
@@ -139,6 +153,7 @@ class _BindingStore {
         legacy[key] = v;
       }
     }
+    _loaded = true;
     if (legacy.isNotEmpty) {
       _persist();
       for (final key in legacy.keys) {
@@ -156,7 +171,7 @@ class _BindingStore {
     final l = Map<String, dynamic>.from(lines);
     final a = Map<String, dynamic>.from(active);
     final b = Map<String, dynamic>.from(bindings);
-    _writeChain = _writeChain
+    writeChain = writeChain
         .then((_) async {
           await DownloadDatabase.instance.replaceLines(l);
           await DownloadDatabase.instance.replaceActive(a);

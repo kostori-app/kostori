@@ -100,6 +100,26 @@ class _BtLineSheetState extends State<_BtLineSheet> {
   static final Map<String, DateTime> _cacheTime = {};
   static const _cacheTtl = Duration(minutes: 30);
 
+  /// 缓存条目上限：TTL 只在读取时判断，过期条目不会被删掉，
+  /// 每个不同关键词都会永久留下一份完整结果列表。
+  static const _cacheMaxEntries = 32;
+
+  /// 写入前清掉过期条目；超限时丢最旧的。
+  static void _putCache(String key, List<BtSearchResult> value) {
+    final now = DateTime.now();
+    _cacheTime.removeWhere((k, at) => now.difference(at) >= _cacheTtl);
+    _cache.removeWhere((k, _) => !_cacheTime.containsKey(k));
+    if (_cache.length >= _cacheMaxEntries && !_cache.containsKey(key)) {
+      final oldest = _cacheTime.keys.reduce(
+        (a, b) => _cacheTime[a]!.isBefore(_cacheTime[b]!) ? a : b,
+      );
+      _cache.remove(oldest);
+      _cacheTime.remove(oldest);
+    }
+    _cache[key] = List.of(value);
+    _cacheTime[key] = now;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -149,8 +169,7 @@ class _BtLineSheetState extends State<_BtLineSheet> {
         } catch (_) {}
         if (!mounted || r.isEmpty) return;
         setState(() => _results = [..._results, ...r]);
-        _cache[key] = List.of(_results);
-        _cacheTime[key] = DateTime.now();
+        _putCache(key, _results);
       }),
     );
     if (mounted) setState(() => _searching = false);

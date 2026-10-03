@@ -41,13 +41,14 @@ class DirectDownloadSink implements DownloadSink {
 ///
 /// 单例长驻；`Isolate.spawn` 失败时 [instance] 返回 null，回退 [DirectDownloadSink]。
 class DownloadFileWriter {
-  DownloadFileWriter._(this._responses, this._errors) {
+  DownloadFileWriter._(this._responses, this._errors, this._isolate) {
     _responses.listen(_onMessage, onError: (_) => _failAll('writer crashed'));
     _errors.listen((e) => _failAll('writer error: $e'));
   }
 
   final ReceivePort _responses;
   final ReceivePort _errors;
+  Isolate? _isolate;
 
   static DownloadFileWriter? _shared;
   static Future<DownloadFileWriter?>? _spawning;
@@ -65,6 +66,9 @@ class DownloadFileWriter {
 
   final List<Completer<void>> _slotWaiters = [];
   final Map<int, Completer<void>> _pending = {};
+
+  /// 按 handle 记录的写块错误，等下一次 flush/close 抛出。
+  final Map<int, String> _handleErrors = {};
 
   /// 获取共享写盘 isolate；不可用时返回 null。
   static Future<DownloadFileWriter?> instance() {
@@ -85,7 +89,7 @@ class DownloadFileWriter {
       );
       // 捕获取 isolate 内未处理错误，避免拖垮进程
       isolate.addErrorListener(errors.sendPort);
-      final writer = DownloadFileWriter._(responses, errors);
+      final writer = DownloadFileWriter._(responses, errors, isolate);
       _shared = writer;
       return writer;
     } catch (_) {
@@ -126,6 +130,12 @@ class DownloadFileWriter {
     List<Object?> extra = const [],
   ]) {
     if (_closed) return Future.error(StateError('download writer closed'));
+    // 之前 flush/close 之前若有写块失败，在这里抛出：
+    // add() 是 fire-and-forget，没有返回值可以把错误递给调用方
+    final pendingError = _handleErrors.remove(handle);
+    if (pendingError != null) {
+      return Future<void>.error(StateError(pendingError), StackTrace.current);
+    }
     final req = _nextReq++;
     final completer = Completer<void>();
     _pending[req] = completer;
@@ -170,6 +180,10 @@ class DownloadFileWriter {
         final error = msg.length > 2 ? msg[2] : 'write failed';
         if (req > 0) {
           _pending.remove(req)?.completeError(StateError('$error'));
+        } else {
+          // 无 req 的写块错误：记到 handle 上，下一次 flush/close 时抛出
+          final handle = msg.length > 3 && msg[3] is int ? msg[3] as int : -1;
+          if (handle > 0) _handleErrors[handle] = '$error';
         }
     }
   }
@@ -181,6 +195,7 @@ class DownloadFileWriter {
   }
 
   void _failAll(Object error) {
+    if (_closed) return;
     _closed = true;
     if (!_commandsReady.isCompleted) _commandsReady.completeError(error);
     for (final c in _pending.values) {
@@ -191,6 +206,17 @@ class DownloadFileWriter {
       if (!c.isCompleted) c.complete();
     }
     _slotWaiters.clear();
+    _handleErrors.clear();
+    // 关掉端口并杀掉 isolate：否则每次写盘失败都会留下一个
+    // 永远收不到消息的 ReceivePort 和一个空转的 isolate
+    final isolate = _isolate;
+    _isolate = null;
+    if (isolate != null) {
+      isolate.kill(priority: Isolate.immediate);
+    }
+    _responses.close();
+    _errors.close();
+    if (identical(_shared, this)) _shared = null;
   }
 }
 
@@ -229,6 +255,7 @@ Future<void> _writerMain(SendPort main) async {
     if (msg is! List || msg.isEmpty) continue;
     final tag = msg[0];
     if (tag == _kWrite) {
+      // 协议：[tag, handle, transferable, length]
       final handle = msg[1] as int;
       final length = msg[3] as int;
       try {
@@ -237,7 +264,10 @@ Future<void> _writerMain(SendPort main) async {
             .asUint8List();
         sinks[handle]?.add(bytes);
       } catch (e) {
-        main.send([_kError, 0, e.toString()]);
+        // 写数据块没有 req（add 是 fire-and-forget），错误挂到 handle 上，
+        // 由随后的 flush/close 抛出。之前固定回 0 且主 isolate 直接丢弃，
+        // 写盘失败会被当成成功 —— 截断文件也算下载完成。
+        main.send([_kError, 0, e.toString(), handle]);
       } finally {
         // 无论成败都要 ack，否则主 isolate 的背压计数永不回落
         main.send([_kAck, length]);
