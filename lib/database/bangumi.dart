@@ -309,7 +309,9 @@ BangumiItem _calendarRowToItem(BangumiCalendarTableData r) => BangumiItem(
   airWeekday: r.airWeekday ?? 0,
   rank: r.rank ?? 0,
   total: r.total ?? 0,
-  totalEpisodes: 0,
+  // 当季 API 的 total 就是总集数，此前硬写 0 让「末话集数 == 总话数」的
+  // 完结判定对所有当季条目恒为 false
+  totalEpisodes: r.total ?? 0,
   score: r.score ?? 0.0,
   images: r.images != null
       ? Map<String, String>.from(jsonDecode(r.images!))

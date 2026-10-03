@@ -304,6 +304,9 @@ class EpisodeResult {
   /// 刚完结后仍保留的天数（按自然日）。
   static const int finishGraceDays = 3;
 
+  /// end 与总话数都拿不到时，末话距今超过这么多天即视为早已完结。
+  static const int staleEpisodeDays = 21;
+
   /// 完结日是否已超出宽限期。
   static bool isFinishedDate(DateTime? date, DateTime now) {
     if (date == null) return false;
@@ -333,12 +336,14 @@ class EpisodeResult {
 
 /// 根据剧集信息判断当前话与完结状态。[seriesTotal] 为系列总话数（未知传 0）。
 /// bgm 剧集列表常只到已播出的最新一话，故须末话集数达到总话数才算完结。
+/// [officialEnd] 为 bangumi-data 的官方完结日；与总话数、末话新鲜度同为完结依据。
 EpisodeResult? resolveEpisodeResult({
   required List<EpisodeInfo> type0Episodes,
   required EpisodeInfo? currentEpisode,
   required int seriesTotal,
   required DateTime now,
   required int currentWeek,
+  DateTime? officialEnd,
 }) {
   if (type0Episodes.isEmpty) return null;
   final currentEp = currentEpisode;
@@ -357,9 +362,24 @@ EpisodeResult? resolveEpisodeResult({
 
   final seriesReachedEnd = seriesTotal > 0 && finalEpisode.sort >= seriesTotal;
 
+  // 总话数拿不到时 seriesReachedEnd 恒为 false，已完结的番会一直留在
+  // 时间表里；官方 end 与末话新鲜度是另外两个依据
+  final endedByOfficialDate = EpisodeResult.isFinishedDate(officialEnd, now);
+
+  // end 与总话数都没有时看末话新鲜度：周更连续 3 周没出新区间基本可判定
+  // 已完结（或休刊）
+  final staleByEpisodes =
+      seriesTotal <= 0 &&
+      officialEnd == null &&
+      finalAirDate != null &&
+      now.difference(
+            DateTime(finalAirDate.year, finalAirDate.month, finalAirDate.day),
+          ) >
+          const Duration(days: EpisodeResult.staleEpisodeDays);
+
   final isFinished =
       isFinalEpisode &&
-      seriesReachedEnd &&
+      (seriesReachedEnd || endedByOfficialDate || staleByEpisodes) &&
       EpisodeResult.isFinishedDate(finalAirDate, now);
 
   return EpisodeResult(

@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +18,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
+import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 
@@ -239,6 +238,7 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
             currentWeekInfo: currentWeekInfo,
             bangumiItem: item,
             seriesTotal: seriesTotalMap[item.id] ?? 0,
+            officialEnd: entry.end,
           );
         }
         episodeResult ??= EpisodeResult.fromEndDate(entry.end);
@@ -267,6 +267,7 @@ Future<EpisodeResult?> _processEpisodeInfo({
   required (int, int) currentWeekInfo,
   required BangumiItem bangumiItem,
   required int seriesTotal,
+  String? officialEnd,
 }) async {
   if (episodes == null || episodes.isEmpty) return null;
 
@@ -290,6 +291,7 @@ Future<EpisodeResult?> _processEpisodeInfo({
     seriesTotal: effectiveTotal,
     now: now,
     currentWeek: currentWeek,
+    officialEnd: officialEnd != null ? DateTime.tryParse(officialEnd) : null,
   );
 }
 
@@ -972,142 +974,47 @@ class _ScreenshotPreviewSheetState extends State<_ScreenshotPreviewSheet> {
   }
 }
 
+/// 渲染番剧时间表截图。
+///
+/// 复用 [ImageExporter] 的离屏渲染：宿主解析（GUI 界面 / 无头 [OffscreenHost]）、
+/// 配色覆盖、网络图预热、超长切分与失败降级全部由框架处理，
+/// 这里只负责整理数据与拼装 [CalendarScreenshotWidget]。
 Future<Uint8List?> generateBangumiCalendarPng({
-  required BuildContext context,
+  BuildContext? context,
   required List<List<BangumiItem>> bangumiCalendar,
   required DateTime captureTime,
   required bool showWeekly,
 
-  /// 离屏渲染时由调用方直接提供；缺省时回退到从 context 向上查找宿主 Overlay。
+  /// 显式指定承载离屏渲染的 Overlay；缺省时由框架自行解析。
   OverlayState? offscreenOverlay,
 
   /// 覆盖截图配色。null 表示沿用当前主题。
   /// 调用方（如 HTTP 接口）可据此指定 light/dark 与主题种子色。
   ThemeData? themeOverride,
 }) async {
-  final overlay =
-      offscreenOverlay ??
-      context
-          .findAncestorStateOfType<OverlayWidgetState>()
-          ?.overlayKey
-          .currentState;
-  if (overlay == null) {
-    Log.error('截图失败', '未找到 OverlayWidgetState');
-    return null;
-  }
-
-  final todayIndex = captureTime.weekday - 1;
-  // 数据未加载完全时（为空或不足 7 天）补空行，避免越界/空列表崩溃
-  final calendarToCapture = List<List<BangumiItem>>.generate(7, (i) {
-    if (showWeekly) {
-      return i < bangumiCalendar.length
-          ? bangumiCalendar[i]
-          : const <BangumiItem>[];
-    }
-    return i == todayIndex && todayIndex < bangumiCalendar.length
-        ? bangumiCalendar[i]
-        : const <BangumiItem>[];
-  });
-
-  // 封面是异步网络图，不预热的话抓帧时大多还是占位图
-  final providers = <ImageProvider>[
-    for (final day in calendarToCapture)
-      for (final item in day)
-        if (item.images['large']?.isNotEmpty ?? false)
-          CachedImageProvider(item.images['large']!, sourceKey: 'bangumi')
-              as ImageProvider,
-  ];
-  if (providers.isNotEmpty) {
-    await Future.wait(
-      providers.map((p) => precacheImage(p, context).catchError((_) {})),
-    );
-  }
-
-  final repaintKey = GlobalKey();
-  final screenshotWidget = RepaintBoundary(
-    key: repaintKey,
-    child: MediaQuery(
-      data: MediaQuery.of(context),
-      child: Theme(
-        data: themeOverride ?? Theme.of(context),
-        child: DefaultTextStyle(
-          // 离屏渲染拿不到宿主的正文样式，这里显式给一个，保证文字可见
-          style: TextStyle(
-            color: (themeOverride ?? Theme.of(context)).colorScheme.onSurface,
-            fontSize: 13,
-          ),
-          child: CalendarScreenshotWidget(
-            bangumiCalendar: calendarToCapture,
-            captureTime: captureTime,
-          ),
-        ),
+  return ImageExporter.captureSingle(
+    context: context,
+    overlay: offscreenOverlay,
+    themeOverride: themeOverride,
+    child: CalendarScreenshotWidget(
+      bangumiCalendar: _normalizeCalendar(
+        bangumiCalendar,
+        showWeekly: showWeekly,
+        captureTime: captureTime,
       ),
+      captureTime: captureTime,
     ),
   );
-
-  final renderEntry = OverlayEntry(
-    builder: (_) => Positioned(
-      left: -10000,
-      child: SizedBox(width: 800, child: screenshotWidget),
-    ),
-  );
-  overlay.insert(renderEntry);
-
-  try {
-    // 等封面真正解码完成：逐帧等待，直到 precache 全部结束
-    final deadline = DateTime.now().add(const Duration(seconds: 20));
-    while (DateTime.now().isBefore(deadline)) {
-      await WidgetsBinding.instance.endOfFrame;
-      if (providers.every((p) => imageCache.containsKey(p))) break;
-      await Future.delayed(const Duration(milliseconds: 50));
-    }
-    await Future.delayed(const Duration(milliseconds: 200));
-    await WidgetsBinding.instance.endOfFrame;
-
-    final boundary =
-        repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-
-    if (boundary == null) {
-      Log.error('截图失败', 'RenderRepaintBoundary 为空');
-      return null;
-    }
-
-    final image = await boundary.toImage(pixelRatio: 2.0);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  } catch (e, s) {
-    Log.error('截图失败', '$e\n$s');
-    return null;
-  } finally {
-    renderEntry.remove();
-  }
 }
 
 Future<void> captureBangumiCalendarScreenshot(
   BuildContext context,
   List<List<BangumiItem>> bangumiCalendar,
 ) async {
-  final overlayState = context.findAncestorStateOfType<OverlayWidgetState>();
-  OverlayEntry? loadingEntry;
-
-  void showLoading(String message) {
-    loadingEntry?.remove();
-    loadingEntry = OverlayEntry(
-      builder: (_) => LoadingOverlay(message: message),
-    );
-    overlayState?.addOverlay(loadingEntry!);
-  }
-
-  void removeLoading() {
-    if (loadingEntry != null) {
-      overlayState?.remove(loadingEntry!);
-      loadingEntry = null;
-    }
-  }
+  final timestamp = DateTime.now().millisecondsSinceEpoch;
 
   try {
-    showLoading(t.calLoadingImage);
-
+    const batchSize = 8;
     final imageUrls = bangumiCalendar
         .expand((day) => day)
         .map((item) => item.images['large'])
@@ -1115,27 +1022,32 @@ Future<void> captureBangumiCalendarScreenshot(
         .toSet()
         .toList();
 
-    const batchSize = 8;
-    for (var i = 0; i < imageUrls.length; i += batchSize) {
-      final batch = imageUrls.sublist(
-        i,
-        (i + batchSize).clamp(0, imageUrls.length),
-      );
-      await Future.wait(
-        batch.map((url) async {
-          try {
-            await precacheImage(
-              CachedImageProvider(url, sourceKey: 'bangumi'),
-              context,
-            );
-          } catch (_) {}
-        }),
-      );
-    }
+    final loading = await runWithLoadingDialog<bool>(
+      context,
+      message: t.calLoadingImage,
+      task: (controller) async {
+        for (var i = 0; i < imageUrls.length; i += batchSize) {
+          final batch = imageUrls.sublist(
+            i,
+            (i + batchSize).clamp(0, imageUrls.length),
+          );
+          await Future.wait(
+            batch.map((url) async {
+              try {
+                await precacheImage(
+                  CachedImageProvider(url, sourceKey: 'bangumi'),
+                  context,
+                );
+              } catch (_) {}
+            }),
+          );
+          controller.setProgress((i + batch.length) / imageUrls.length);
+        }
+        return true;
+      },
+    );
 
-    removeLoading();
-
-    if (!context.mounted) return;
+    if (loading != true || !context.mounted) return;
 
     final captureTime = DateTime.now();
     final previewKey = GlobalKey<_ScreenshotPreviewSheetState>();
@@ -1164,38 +1076,47 @@ Future<void> captureBangumiCalendarScreenshot(
 
     if (result == null || !context.mounted) return;
 
-    showLoading(t.calGeneratingScreenshot);
-
-    final bytes = await generateBangumiCalendarPng(
-      context: context,
-      bangumiCalendar: bangumiCalendar,
-      captureTime: captureTime,
-      showWeekly: result == 'weekly',
+    final showWeekly = result == 'weekly';
+    await ImageExporter.run(
+      context,
+      filename:
+          '${showWeekly ? 'timetable_weekly' : 'timetable_today'}_$timestamp',
+      // 「保存」语义：只落盘，不拉起系统分享面板
+      share: false,
+      generatingMessage: t.calGeneratingScreenshot,
+      failureMessage: t.screenshotFailed,
+      generate: ImageExporter.bytes(
+        () => generateBangumiCalendarPng(
+          context: context,
+          bangumiCalendar: bangumiCalendar,
+          captureTime: captureTime,
+          showWeekly: showWeekly,
+        ),
+      ),
     );
-
-    removeLoading();
-
-    if (bytes == null) {
-      if (context.mounted) {
-        ImageSaver.showResult(success: false, message: t.screenshotFailed);
-      }
-      return;
-    }
-
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    if (context.mounted) {
-      await ImageSaver.saveImage(
-        bytes: bytes,
-        filename: result == 'weekly'
-            ? 'timetable_weekly_$timestamp.png'
-            : 'timetable_today_$timestamp.png',
-      );
-    }
-  } catch (e) {
-    removeLoading();
+  } catch (e, s) {
+    Log.error('截图失败', '$e\n$s');
     if (context.mounted) {
       ImageSaver.showResult(success: false, message: t.screenshotFailed);
     }
-    Log.error('截图失败', '$e');
   }
+}
+
+/// 补齐 / 裁剪日历数据，保证截图始终是 7 天、且按模式过滤。
+List<List<BangumiItem>> _normalizeCalendar(
+  List<List<BangumiItem>> bangumiCalendar, {
+  required bool showWeekly,
+  required DateTime captureTime,
+}) {
+  final todayIndex = captureTime.weekday - 1;
+  return List<List<BangumiItem>>.generate(7, (i) {
+    if (showWeekly) {
+      return i < bangumiCalendar.length
+          ? bangumiCalendar[i]
+          : const <BangumiItem>[];
+    }
+    return i == todayIndex && todayIndex < bangumiCalendar.length
+        ? bangumiCalendar[i]
+        : const <BangumiItem>[];
+  });
 }
