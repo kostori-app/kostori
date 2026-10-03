@@ -9249,8 +9249,14 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Please enter a magnet link'
 	String get torrentNeedMagnet => 'Please enter a magnet link';
 
+	/// en: 'Failed to start torrent playback. Try again or re-add the torrent'
+	String get torrentPlaybackFailed => 'Failed to start torrent playback. Try again or re-add the torrent';
+
 	/// en: 'Peers'
 	String get torrentPeers => 'Peers';
+
+	/// en: 'Downloaders'
+	String get torrentLeechers => 'Downloaders';
 
 	/// en: 'Trackers'
 	String get torrentTrackers => 'Trackers';
@@ -9263,6 +9269,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'One tracker per line; appended to the magnet automatically'
 	String get torrentTrackersHint => 'One tracker per line; appended to the magnet automatically';
+
+	/// en: 'Timed out fetching metadata; no usable peer found. Try again later or use a different torrent'
+	String get torrentMetadataTimeout => 'Timed out fetching metadata; no usable peer found. Try again later or use a different torrent';
+
+	/// en: 'Fetched metadata could not be parsed after several attempts; this torrent is likely dead'
+	String get torrentMetadataParseFailed => 'Fetched metadata could not be parsed after several attempts; this torrent is likely dead';
 
 	/// en: 'One DHT node per line, host:port'
 	String get torrentNodesHint => 'One DHT node per line, host:port';
@@ -12750,11 +12762,15 @@ extension on Translations {
 			'torrentBuffering' => 'Buffering…',
 			'torrentStop' => 'Stop',
 			'torrentNeedMagnet' => 'Please enter a magnet link',
+			'torrentPlaybackFailed' => 'Failed to start torrent playback. Try again or re-add the torrent',
 			'torrentPeers' => 'Peers',
+			'torrentLeechers' => 'Downloaders',
 			'torrentTrackers' => 'Trackers',
 			'torrentTrackerUrlHint' => 'Tracker list URL',
 			'torrentFetchTrackers' => 'Fetch trackers',
 			'torrentTrackersHint' => 'One tracker per line; appended to the magnet automatically',
+			'torrentMetadataTimeout' => 'Timed out fetching metadata; no usable peer found. Try again later or use a different torrent',
+			'torrentMetadataParseFailed' => 'Fetched metadata could not be parsed after several attempts; this torrent is likely dead',
 			'torrentNodesHint' => 'One DHT node per line, host:port',
 			'torrentTrackersAuto' => 'Auto-append trackers from the URL to new downloads',
 			'torrentDhtExplain' => 'DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.',

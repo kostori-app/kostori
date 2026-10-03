@@ -3148,11 +3148,15 @@ torrentFetchingMeta: Fetching metadata…
 torrentBuffering: Buffering…
 torrentStop: Stop
 torrentNeedMagnet: Please enter a magnet link
+torrentPlaybackFailed: Failed to start torrent playback. Try again or re-add the torrent
 torrentPeers: Peers
+torrentLeechers: Downloaders
 torrentTrackers: Trackers
 torrentTrackerUrlHint: Tracker list URL
 torrentFetchTrackers: Fetch trackers
 torrentTrackersHint: One tracker per line; appended to the magnet automatically
+torrentMetadataTimeout: Timed out fetching metadata; no usable peer found. Try again later or use a different torrent
+torrentMetadataParseFailed: Fetched metadata could not be parsed after several attempts; this torrent is likely dead
 torrentNodesHint: One DHT node per line, host:port
 torrentTrackersAuto: Auto-append trackers from the URL to new downloads
 torrentDhtExplain: DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.
