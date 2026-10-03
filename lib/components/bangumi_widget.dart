@@ -765,28 +765,28 @@ class _ExpandableTagsState extends State<ExpandableTags>
       },
       child: _currentButton == ToggleButtonType.none
           ? const SizedBox(key: ValueKey('empty_button'))
-          : ActionChip(
+          : CapsuleChip(
               key: ValueKey(_currentButton),
-              label: Text(
-                _currentButton == ToggleButtonType.showLess
-                    ? t.showLess
-                    : t.showMore,
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
-              ),
-              onPressed: _handleToggle,
+              isSelected: true,
+              onTap: _handleToggle,
+              text: _currentButton == ToggleButtonType.showLess
+                  ? t.showLess
+                  : t.showMore,
             ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AnimatedSize(
       duration: Duration(milliseconds: _totalDuration()),
       curve: Curves.easeInOut,
       alignment: Alignment.topLeft,
-      child: Wrap(
-        spacing: 8.0,
-        runSpacing: 8.0,
+      // 轨道随可见标签数量收缩：折叠后不会留下一截空槽
+      child: CapsuleChipGroup(
+        spacing: 2,
+        runSpacing: 2,
         children: [
           ...List.generate(_showingTagsCount, (index) {
             final isPreview = index < ExpandableTags.previewCount;
@@ -803,20 +803,20 @@ class _ExpandableTagsState extends State<ExpandableTags>
                   child: Transform.scale(scale: scale, child: child),
                 );
               },
-              child: ActionChip(
-                label: Row(
+              child: CapsuleChip(
+                isSelected: false,
+                onTap: () => widget.onTagTap(index),
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('${widget.tags[index].name} '),
+                    Text('${widget.tags[index].name}'),
+                    const SizedBox(width: 4),
                     Text(
                       '${widget.tags[index].count}',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      style: TextStyle(color: cs.primary),
                     ),
                   ],
                 ),
-                onPressed: () => widget.onTagTap(index),
               ),
             );
           }),

@@ -356,14 +356,18 @@ class CapsuleChipGroup extends StatelessWidget {
 class CapsuleChip extends StatelessWidget {
   const CapsuleChip({
     super.key,
-    required this.text,
+    this.text,
+    this.child,
     required this.isSelected,
     required this.onTap,
     this.onLongPress,
     this.selectedColor,
-  });
+  }) : assert(text != null || child != null, '需要 text 或 child');
 
-  final String text;
+  final String? text;
+
+  /// 自定义内容（替代 [text]），如「标签名 + 计数」这类两段式胶囊
+  final Widget? child;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -399,16 +403,18 @@ class CapsuleChip extends StatelessWidget {
           onLongPress: onLongPress,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: isSelected
-                    ? (selectedColor ?? cs.primary)
-                    : cs.onSurfaceVariant,
-              ),
-            ),
+            child:
+                child ??
+                Text(
+                  text!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isSelected
+                        ? (selectedColor ?? cs.primary)
+                        : cs.onSurfaceVariant,
+                  ),
+                ),
           ),
         ),
       ),

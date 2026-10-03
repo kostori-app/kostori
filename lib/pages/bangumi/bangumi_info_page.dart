@@ -230,7 +230,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
       App.rootContext,
       StatefulBuilder(
         builder: (context, setState) {
-          return ShareWidget(id: bangumiId);
+          return ShareWidget(id: bangumiId, singleImage: true);
         },
       ),
     );
