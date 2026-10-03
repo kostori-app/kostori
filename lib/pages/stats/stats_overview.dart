@@ -74,7 +74,6 @@ class _StatsOverviewScreenState extends ConsumerState<StatsOverviewScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: RepaintBoundary(
-                  key: repaintKey,
                   child: StatsOverview(
                     stats: stats,
                     selectedDate: selectedDay,

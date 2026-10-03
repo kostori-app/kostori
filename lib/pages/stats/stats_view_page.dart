@@ -469,21 +469,21 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
     );
   }
 
-  Future<void> savePng({required BuildContext context}) async {
-    final bytes = await exportWordCloudToPng(
-      data: WordCloudData(data: wordCloudData),
-      width: 1600,
-      height: 1600,
-      minTextSize: 12,
-      maxTextSize: 120,
-      colorlist: standardColorMap.keys.toList(),
-      ratio: 3,
-    );
-
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    await ImageSaver.saveImage(
-      bytes: bytes,
-      filename: 'word_cloud_$timestamp.png',
+  Future<void> savePng({required BuildContext context}) {
+    return ImageExporter.run(
+      context,
+      filename: 'word_cloud_${DateTime.now().millisecondsSinceEpoch}',
+      generate: ImageExporter.bytes(
+        () => exportWordCloudToPng(
+          data: WordCloudData(data: wordCloudData),
+          width: 1600,
+          height: 1600,
+          minTextSize: 12,
+          maxTextSize: 120,
+          colorlist: standardColorMap.keys.toList(),
+          ratio: 3,
+        ),
+      ),
     );
   }
 

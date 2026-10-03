@@ -237,7 +237,7 @@ abstract class CollageEditorState<T extends CollageEditorPage>
     return composePainterToPng(
       painter: buildPainter(images, border),
       size: computeCanvasSize(images, border),
-      dpr: MediaQuery.devicePixelRatioOf(context),
+      pixelRatio: MediaQuery.devicePixelRatioOf(context),
     );
   }
 

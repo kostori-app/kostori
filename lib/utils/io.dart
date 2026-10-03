@@ -2,11 +2,8 @@
 
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
@@ -422,7 +419,7 @@ String bytesToReadableString(int bytes) {
   }
 }
 
-/// 短字节格式（1 位小数，支持到 GB）：下载页与图片预览共用，
+/// 短字节格式（1 位小数，支持到 TB）：下载页与图片预览共用，
 /// 替代两处逐字相同的私有 _formatBytes/_formatFileSize
 String formatBytesShort(int bytes) {
   if (bytes < 1024) return '$bytes B';
@@ -432,7 +429,11 @@ String formatBytesShort(int bytes) {
   if (bytes < 1024 * 1024 * 1024) {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
-  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  if (bytes < 1024 * 1024 * 1024 * 1024) {
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+  // 超过 1 TB 还显示 GB 会变成「1024.0 GB」，BT 合集很常见
+  return '${(bytes / (1024 * 1024 * 1024 * 1024)).toStringAsFixed(2)} TB';
 }
 
 /// 网速格式（下载页与系统状态 widget 共用）：
@@ -591,7 +592,7 @@ class ImageSaver {
 
   static Future<void> saveImageToGallery(String imageUrl) async {
     try {
-      App.rootContext.showMessage(message: t.savingImage);
+      App.rootContextOrNull?.showMessage(message: t.savingImage);
 
       final response = await AppDio().request<Uint8List>(
         imageUrl,
@@ -613,46 +614,6 @@ class ImageSaver {
         message: t.saveFailedWithError(e: e.toString()),
       );
       Log.error('saveImageToGallery', '$e\n$s');
-    }
-  }
-
-  /// 将任意 Widget 渲染为 PNG 字节（离屏渲染）
-  static Future<Uint8List?> captureWidgetToImage({
-    required BuildContext context,
-    required Widget child,
-    double width = 800.0,
-    double pixelRatio = 2.0,
-    Duration delay = const Duration(milliseconds: 400),
-  }) async {
-    final offscreenKey = GlobalKey();
-
-    final entry = OverlayEntry(
-      builder: (_) => Positioned(
-        left: -10000,
-        top: -10000,
-        width: width,
-        child: RepaintBoundary(
-          key: offscreenKey,
-          child: Material(child: child),
-        ),
-      ),
-    );
-
-    Overlay.of(context).insert(entry);
-
-    try {
-      await Future.delayed(delay);
-
-      final boundary =
-          offscreenKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-      if (boundary == null) return null;
-
-      final image = await boundary.toImage(pixelRatio: pixelRatio);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      return byteData?.buffer.asUint8List();
-    } finally {
-      entry.remove();
     }
   }
 
@@ -680,37 +641,52 @@ class ImageSaver {
   /// 桌面端逐张保存并复制第一张到剪贴板；移动端逐张保存后一次性分享全部，
   /// 用于超长内容切成的多张图。[onProgress] 驱动保存进度，[onSaved] 在保存
   /// 完成、弹出结果提示或分享面板前回调（便于收起进度弹窗）。
+  ///
+  /// [share] 为 false 时只写入图片目录并提示，不复制剪贴板、不拉起分享面板。
+  ///
+  /// [headless] 为 true（无头 / 无界面环境）时只落盘并记日志，
+  /// 不弹提示、不复制剪贴板、不拉起分享面板。
   static Future<void> saveOrShareImages({
     required List<Uint8List> bytes,
     required List<String> filenames,
+    bool share = true,
+    bool headless = false,
     String? desktopSuccessMessage,
     String? mobileSuccessMessage,
     void Function(int done, int total)? onProgress,
     void Function()? onSaved,
   }) async {
     if (bytes.isEmpty || bytes.length != filenames.length) return;
+
+    final saved = <File>[];
+    for (var i = 0; i < bytes.length; i++) {
+      final file = await writeFile(bytes: bytes[i], filename: filenames[i]);
+      if (file != null) saved.add(file);
+      onProgress?.call(i + 1, bytes.length);
+    }
+    if (saved.isEmpty) return;
+
+    if (headless) {
+      Log.info('已保存图片', saved.map((f) => f.path).join(', '));
+      return;
+    }
+
+    await refreshImageList();
+    onSaved?.call();
+
+    if (!share) {
+      await _scanFolder(saved);
+      showResult(success: true, message: t.saveSuccess);
+      return;
+    }
+
     if (App.isDesktop) {
-      for (var i = 0; i < bytes.length; i++) {
-        await writeFile(bytes: bytes[i], filename: filenames[i]);
-        onProgress?.call(i + 1, bytes.length);
-      }
-      await refreshImageList();
-      onSaved?.call();
       await Pasteboard.writeImage(bytes.first);
       showResult(
         success: true,
         message: desktopSuccessMessage ?? t.saveSuccess,
       );
     } else {
-      final saved = <File>[];
-      for (var i = 0; i < bytes.length; i++) {
-        final file = await writeFile(bytes: bytes[i], filename: filenames[i]);
-        if (file != null) saved.add(file);
-        onProgress?.call(i + 1, bytes.length);
-      }
-      if (saved.isEmpty) return;
-      await refreshImageList();
-      onSaved?.call();
       showResult(
         success: true,
         message: mobileSuccessMessage ?? t.screenshotSuccess,
@@ -720,13 +696,17 @@ class ImageSaver {
         filenames: filenames,
         mime: 'image/png',
       );
-      if (App.isAndroid) {
-        const platform = MethodChannel('kostori/media');
-        await platform.invokeMethod('scanFolder', {
-          'path': saved.first.parent.path,
-        });
-      }
+      await _scanFolder(saved);
     }
+  }
+
+  /// Android 上通知系统媒体库扫描目录，否则相册里看不到新图。
+  static Future<void> _scanFolder(List<File> saved) async {
+    if (!App.isAndroid || saved.isEmpty) return;
+    const platform = MethodChannel('kostori/media');
+    await platform.invokeMethod('scanFolder', {
+      'path': saved.first.parent.path,
+    });
   }
 
   static Future<File?> writeFile({
@@ -791,11 +771,20 @@ class ImageSaver {
   }
 
   static void showResult({required bool success, String? message}) {
+    final text = message ?? (success ? t.saveSuccess : t.saveFailed);
+    final level = success ? LogLevel.info : LogLevel.error;
+    // 无头模式下没有 runApp，也没有可用的 Toast 宿主，退化为日志
+    final context = App.rootContextOrNull;
+    if (context == null) {
+      if (success) {
+        Log.info('保存结果', text);
+      } else {
+        Log.error('保存结果', text);
+      }
+      return;
+    }
     // 统一用底部小提示，不再弹居中的大结果覆盖层
-    App.rootContext.showMessage(
-      message: message ?? (success ? t.saveSuccess : t.saveFailed),
-      level: success ? LogLevel.info : LogLevel.error,
-    );
+    context.showMessage(message: text, level: level);
   }
 
   static String generateFilename(String url) {

@@ -637,24 +637,13 @@ class _ModeAwareBackButton extends StatelessWidget {
 }
 
 /// 将 [painter] 绘制到 [size] 画布并导出为 PNG 字节。
-/// [dpr] > 1 时先缩放画布再导出，保证高清晰度。
+/// [pixelRatio] > 1 时先缩放画布再导出，保证高清晰度。
 Future<Uint8List> composePainterToPng({
   required CustomPainter painter,
   required Size size,
-  double dpr = 1.0,
-}) async {
-  final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  if (dpr != 1.0) canvas.scale(dpr);
-  painter.paint(canvas, size);
-  final picture = recorder.endRecording();
-  final image = await picture.toImage(
-    (size.width * dpr).ceil(),
-    (size.height * dpr).ceil(),
-  );
-  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-  if (byteData == null) throw Exception('生成图片数据失败');
-  return byteData.buffer.asUint8List();
+  double pixelRatio = 1.0,
+}) {
+  return ImageExporter.painterToPng(painter, size, pixelRatio);
 }
 
 class SelectImagesPage extends StatefulWidget {

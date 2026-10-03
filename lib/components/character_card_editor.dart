@@ -1,7 +1,6 @@
 // 角色卡编辑 / 查看组件（故事与全局角色卡库共用）
 
 import 'dart:convert';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,7 +23,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:kostori/utils/io.dart';
+import 'package:kostori/utils/image_export.dart';
 
 /// 打开角色头像的图片预览（支持 data URL / http）
 Future<void> showAvatarPreview(
@@ -1327,10 +1326,7 @@ class _CharacterCardViewState extends State<CharacterCardView>
 Future<Uint8List?> renderCharacterCardImage(
   CharacterCard card, {
   double size = 512,
-}) async {
-  final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  final rect = Rect.fromLTWH(0, 0, size, size);
+}) {
   final hash = card.name.codeUnits.fold<int>(0, (a, b) => a + b);
   final baseColor = HSVColor.fromAHSV(
     1,
@@ -1338,61 +1334,108 @@ Future<Uint8List?> renderCharacterCardImage(
     0.45,
     0.35,
   ).toColor();
-  final paint = Paint()
-    ..shader = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [baseColor, baseColor.withValues(alpha: 0.6)],
-    ).createShader(rect);
-  canvas.drawRect(rect, paint);
-
   final n = card.name.trim();
   final initial = n.isEmpty ? '' : n.characters.first;
-  if (initial.isNotEmpty) {
-    final avatarTp = TextPainter(
+
+  return ImageExporter.painterToPng(
+    CharacterCardPlaceholderPainter(
+      background: baseColor,
+      initial: initial,
+      displayName: card.displayName,
+    ),
+    Size(size, size),
+    // 角色卡规格固定为 1:1 输出，酒馆导入依赖实际像素尺寸
+    1.0,
+  );
+}
+
+/// 导出角色卡为 PNG（内嵌 chara 块），酒馆可直接导入
+Future<void> exportCharacterCardPng(
+  BuildContext context,
+  CharacterCard card, {
+  int spec = 3,
+}) {
+  return ImageExporter.run(
+    context,
+    filename: card.name,
+    failureMessage: t.screenshotFailed,
+    generate: ImageExporter.bytes(() async {
+      final base =
+          card.decodeAvatarImage() ?? await renderCharacterCardImage(card);
+      if (base == null) return null;
+      return CharacterCard.embedCharaChunk(base, card.toCharaText(spec: spec));
+    }),
+  );
+}
+
+/// 角色卡占位图的绘制逻辑：[renderCharacterCardImage] 的实现。
+class CharacterCardPlaceholderPainter extends CustomPainter {
+  const CharacterCardPlaceholderPainter({
+    required this.background,
+    required this.initial,
+    required this.displayName,
+  });
+
+  final Color background;
+  final String initial;
+  final String displayName;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [background, background.withValues(alpha: 0.6)],
+        ).createShader(rect),
+    );
+
+    if (initial.isNotEmpty) {
+      final avatarTp = TextPainter(
+        text: TextSpan(
+          text: initial,
+          style: TextStyle(
+            fontSize: size.width * 0.42,
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      avatarTp.paint(
+        canvas,
+        Offset((size.width - avatarTp.width) / 2, size.height * 0.16),
+      );
+    }
+
+    final nameTp = TextPainter(
       text: TextSpan(
-        text: initial,
+        text: displayName,
         style: TextStyle(
-          fontSize: size * 0.42,
+          fontSize: size.width * 0.09,
           color: Colors.white,
           fontWeight: FontWeight.w700,
         ),
       ),
       textDirection: TextDirection.ltr,
-    )..layout();
-    avatarTp.paint(canvas, Offset((size - avatarTp.width) / 2, size * 0.16));
+      textAlign: TextAlign.center,
+      maxLines: 2,
+      ellipsis: '…',
+    )..layout(maxWidth: size.width * 0.86);
+    nameTp.paint(
+      canvas,
+      Offset((size.width - nameTp.width) / 2, size.height * 0.68),
+    );
   }
 
-  final nameTp = TextPainter(
-    text: TextSpan(
-      text: card.displayName,
-      style: TextStyle(
-        fontSize: size * 0.09,
-        color: Colors.white,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-    textDirection: TextDirection.ltr,
-    textAlign: TextAlign.center,
-    maxLines: 2,
-    ellipsis: '…',
-  )..layout(maxWidth: size * 0.86);
-  nameTp.paint(canvas, Offset((size - nameTp.width) / 2, size * 0.68));
-
-  final picture = recorder.endRecording();
-  final image = await picture.toImage(size.toInt(), size.toInt());
-  final data = await image.toByteData(format: ui.ImageByteFormat.png);
-  picture.dispose();
-  image.dispose();
-  return data?.buffer.asUint8List();
-}
-
-/// 导出角色卡为 PNG（内嵌 chara 块），酒馆可直接导入
-Future<void> exportCharacterCardPng(CharacterCard card, {int spec = 3}) async {
-  final base = card.decodeAvatarImage() ?? await renderCharacterCardImage(card);
-  if (base == null) return;
-  final png = CharacterCard.embedCharaChunk(base, card.toCharaText(spec: spec));
-  await saveFile(data: png, filename: '${card.name}.png');
+  @override
+  bool shouldRepaint(covariant CharacterCardPlaceholderPainter oldDelegate) =>
+      oldDelegate.background != background ||
+      oldDelegate.initial != initial ||
+      oldDelegate.displayName != displayName;
 }
 
 /// 以底部弹窗展示角色卡

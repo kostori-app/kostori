@@ -89,7 +89,7 @@ class _CharacterCardsSettingsPageState
   }
 
   Future<void> _export(CharacterCard card, int spec) async {
-    await exportCharacterCardPng(card, spec: spec);
+    await exportCharacterCardPng(context, card, spec: spec);
   }
 
   @override

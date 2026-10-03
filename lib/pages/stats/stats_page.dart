@@ -10,7 +10,6 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/components/timeline_tree.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/components/watermark.dart';
@@ -33,7 +32,6 @@ import 'package:kostori/pages/stats/all_stats_timeline_page.dart';
 import 'package:kostori/pages/stats/stat_display.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/image_export.dart';
-import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:word_cloud/word_cloud_data.dart';
@@ -743,7 +741,7 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
         generate: ImageExporter.offscreen(
           context: context,
           width: 1200.0,
-          delay: const Duration(milliseconds: 500),
+          timeout: const Duration(seconds: 30),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(

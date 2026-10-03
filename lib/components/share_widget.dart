@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,14 +32,117 @@ import 'package:kostori/utils/utils.dart';
 
 part 'share_cards.dart';
 
-final GlobalKey repaintKey = GlobalKey();
-
-/// 分享页截图：进度弹窗、超长切分、保存 / 分享全部交给 [ImageExporter]。
-Future<void> captureAndSave(BuildContext context) async {
-  await ImageExporter.run(
+/// 分享页截图入口：进度弹窗、保存 / 分享全部交给 [ImageExporter]。
+///
+/// [boundaryKey] 由 [ShareWidget] 的 State 持有（每个实例一份），
+/// 避免多个分享页同时挂载时争抢同一个 [GlobalKey]。
+Future<void> captureShareWidget(
+  BuildContext context,
+  GlobalKey boundaryKey, {
+  String? filename,
+  bool singleImage = false,
+}) {
+  return ImageExporter.run(
     context,
-    filename: 'popup_${DateTime.now().millisecondsSinceEpoch}',
-    generate: ImageExporter.repaintBoundary(repaintKey),
+    filename: filename ?? 'popup_${DateTime.now().millisecondsSinceEpoch}',
+    generate: ImageExporter.repaintBoundary(
+      boundaryKey,
+      singleImage: singleImage,
+    ),
+  );
+}
+
+/// 离屏渲染任意分享卡片，GUI 与无头模式共用同一份组件。
+///
+/// 入参与 [ShareWidget] 的数据字段一一对应；卡片自身会先异步拉取数据，
+/// 框架通过 [readyWhen] 等到数据就绪再抓帧；宿主解析、配色覆盖、
+/// 网络图预热、超长切分同样由 [ImageExporter] 负责。
+/// 返回多张图片表示卡片过高被纵向切分。
+Future<List<Uint8List>> renderShareWidget({
+  int? id,
+  Map<BangumiItem, bool>? selectedBangumiItems,
+  Map<CharacterActor, bool>? selectedCharacterItems,
+  AnimeDetails? anime,
+  String? airDate,
+  String? endDate,
+  List<String>? tag,
+  String? sort,
+  CharacterFullItem? characterFullItem,
+  bool? isCharacter,
+  BuildContext? context,
+  ThemeData? themeOverride,
+  Brightness? brightness,
+  double width = ImageExporter.defaultWidth,
+  Duration timeout = ImageExporter.settleTimeout,
+}) {
+  final stateKey = GlobalKey<_ShareWidgetState>();
+  return ImageExporter.offscreen(
+    context: context,
+    themeOverride: themeOverride,
+    brightness: brightness,
+    width: width,
+    timeout: timeout,
+    readyWhen: () => stateKey.currentState?.ready ?? false,
+    child: ShareWidget(
+      key: stateKey,
+      embedded: true,
+      id: id,
+      selectedBangumiItems: selectedBangumiItems,
+      selectedCharacterItems: selectedCharacterItems,
+      anime: anime,
+      airDate: airDate,
+      endDate: endDate,
+      tag: tag,
+      sort: sort,
+      characterFullItem: characterFullItem,
+      isCharacter: isCharacter,
+    ),
+  )(const SilentImageExportReporter());
+}
+
+/// 渲染分享卡片为一张完整 PNG（不切片），失败返回 null。
+///
+/// 与 [renderShareWidget] 共用同一份组件，只是输出策略不同：
+/// 适合 HTTP 直出整图；分享到聊天软件请用 [captureShareWidget]，会自动切片。
+Future<Uint8List?> renderShareWidgetPng({
+  int? id,
+  Map<BangumiItem, bool>? selectedBangumiItems,
+  Map<CharacterActor, bool>? selectedCharacterItems,
+  AnimeDetails? anime,
+  String? airDate,
+  String? endDate,
+  List<String>? tag,
+  String? sort,
+  CharacterFullItem? characterFullItem,
+  bool? isCharacter,
+  BuildContext? context,
+  ThemeData? themeOverride,
+  Brightness? brightness,
+  double width = ImageExporter.defaultWidth,
+  Duration timeout = ImageExporter.settleTimeout,
+}) {
+  final stateKey = GlobalKey<_ShareWidgetState>();
+  return ImageExporter.captureSingle(
+    context: context,
+    themeOverride: themeOverride,
+    brightness: brightness,
+    width: width,
+    timeout: timeout,
+    readyWhen: () => stateKey.currentState?.ready ?? false,
+    child: ShareWidget(
+      key: stateKey,
+      embedded: true,
+      id: id,
+      selectedBangumiItems: selectedBangumiItems,
+      selectedCharacterItems: selectedCharacterItems,
+      anime: anime,
+      airDate: airDate,
+      endDate: endDate,
+      tag: tag,
+      sort: sort,
+      characterFullItem: characterFullItem,
+      isCharacter: isCharacter,
+    ),
   );
 }
 
@@ -54,6 +159,8 @@ class ShareWidget extends ConsumerStatefulWidget {
     this.characterFullItem,
     this.selectedCharacterItems,
     this.isCharacter,
+    this.embedded = false,
+    this.singleImage = false,
   });
 
   final int? id;
@@ -76,11 +183,70 @@ class ShareWidget extends ConsumerStatefulWidget {
 
   final bool? isCharacter;
 
+  /// 离屏渲染模式：只输出卡片本体，不带弹层外壳、标题与分享按钮。
+  final bool embedded;
+
+  /// 截图输出整图而不切片。条目详情是纵向长卡片，切成两张会打断排版，
+  /// 列表类分享仍按内容高度切片。
+  final bool singleImage;
+
+  /// 详情卡片里展示的最新评论条数上限。
+  static const int kShareCommentLimit = 10;
+
+  /// 取出实际要渲染的评论（最多 [kShareCommentLimit] 条）。
+  ///
+  /// 条数不足时**必须**按实际条数渲染：之前 `ListView.separated` 的
+  /// `itemCount` 写死 10，`commentsList[index]` 会抛 RangeError，
+  /// release 下被 `ErrorWidget` 接住、渲染成「加载失败，请重试。」的占位卡片
+  /// （评论不足 10 条的条目必现）。
+  static List<CommentItem> shareCommentsOf(List<CommentItem> all) =>
+      all.take(kShareCommentLimit).toList();
+
   @override
   ConsumerState<ShareWidget> createState() => _ShareWidgetState();
 }
 
 class _ShareWidgetState extends ConsumerState<ShareWidget> {
+  /// 截图边界，每个分享页实例独占，避免多实例争抢同一个 [GlobalKey]。
+  final GlobalKey _repaintKey = GlobalKey();
+
+  /// 分享卡片外层统一的截图容器：离屏圆角卡片 + 画布底色。
+  Widget _captureShell(Widget child) {
+    // 离屏宿主没有系统安全区，用固定留白保证与界面上一致的观感
+    final top = widget.embedded ? 20.0 : context.padding.top;
+    final bottom = widget.embedded ? 16.0 : context.padding.bottom + 16;
+    return TileableRepaintBoundary(
+      key: _repaintKey,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottom, top: top, right: 20, left: 20),
+        child: Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: Material(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.72)
+                : const Color(0xFF1E1E1E).toOpacity(0.72),
+            elevation: 4,
+            shadowColor: Theme.of(context).colorScheme.shadow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 实际要渲染的评论（最多 [kShareCommentLimit] 条）。
+  ///
+  /// 预先物化一份，既避免 build 期间反复 `take`，也保证标题计数与
+  /// `itemCount` 用的是同一份数据。
+  List<CommentItem> get _shareComments =>
+      ShareWidget.shareCommentsOf(commentsList);
+
+  /// 数据是否就绪，可以抓帧。离屏渲染时由 [renderShareWidget] 轮询。
+  bool get ready => !isLoding;
+
   bool isLoding = true;
   Map<bool, EpisodeInfo?> _currentWeekEp = {false: null};
 
@@ -349,110 +515,84 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   }
 
   Widget _animeInfoPage() {
-    return TileableRepaintBoundary(
-      key: repaintKey,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: context.padding.bottom + 16,
-          top: context.padding.top,
-          right: 20,
-          left: 20,
-        ),
-        child: Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: Material(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.72)
-                : const Color(0xFF1E1E1E).toOpacity(0.72),
-            elevation: 4,
-            shadowColor: Theme.of(context).colorScheme.shadow,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
+    return _captureShell(
+      Column(
+        children: [
+          SizedBox(height: 32.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 32.0),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(width: 16),
-                      //封面
-                      Material(
-                        color: Colors.transparent,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: context.colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          height: 256,
-                          width: 256 * 0.72,
-                          clipBehavior: Clip.antiAlias,
-                          child: AnimatedImage(
-                            image: CachedImageProvider(
-                              anime.cover,
-                              sourceKey: anime.sourceKey,
-                            ),
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
-                        ),
+                const SizedBox(width: 16),
+                //封面
+                Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    height: 256,
+                    width: 256 * 0.72,
+                    clipBehavior: Clip.antiAlias,
+                    child: AnimatedImage(
+                      image: CachedImageProvider(
+                        anime.cover,
+                        sourceKey: anime.sourceKey,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(anime.title, style: ts.s20),
-                              if (anime.subTitle != null)
-                                AppSelectableText(
-                                  anime.subTitle!,
-                                  style: ts.s14,
-                                  scrollPhysics:
-                                      const NeverScrollableScrollPhysics(),
-                                ),
-                              //源名称
-                              Text(
-                                (AnimeSource.find(anime.sourceKey)?.name) ?? '',
-                                style: ts.s12,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                anime.tags.entries
-                                    .map((entry) {
-                                      return '${entry.key}: ${entry.value.join(', ')}';
-                                    })
-                                    .join('\n'),
-                                style: ts.s12,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const Divider(),
-                    ],
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
                   ),
                 ),
-                Text(t.introduction, style: ts.s18),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 16,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(anime.title, style: ts.s20),
+                        if (anime.subTitle != null)
+                          AppSelectableText(
+                            anime.subTitle!,
+                            style: ts.s14,
+                            scrollPhysics: const NeverScrollableScrollPhysics(),
+                          ),
+                        //源名称
+                        Text(
+                          (AnimeSource.find(anime.sourceKey)?.name) ?? '',
+                          style: ts.s12,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          anime.tags.entries
+                              .map((entry) {
+                                return '${entry.key}: ${entry.value.join(', ')}';
+                              })
+                              .join('\n'),
+                          style: ts.s12,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: AppSelectableText(anime.description!)
-                      .fixWidth(double.infinity),
                 ),
-                ShareQrCode(
-                  type: KostoriRouteType.anime,
-                  payload: '${anime.id}|${anime.sourceKey}',
-                ),
+                const Divider(),
               ],
             ),
           ),
-        ),
+          Text(t.introduction, style: ts.s18),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: AppSelectableText(anime.description!)
+                .fixWidth(double.infinity),
+          ),
+          ShareQrCode(
+            type: KostoriRouteType.anime,
+            payload: '${anime.id}|${anime.sourceKey}',
+          ),
+        ],
       ),
     );
   }
@@ -474,706 +614,235 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
         currentWeekEp.values.first != null &&
         type0Episodes.isNotEmpty &&
         currentWeekEp.values.first == type0Episodes.last;
-    return TileableRepaintBoundary(
-      key: repaintKey,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: context.padding.bottom + 16,
-          top: context.padding.top,
-          right: 20,
-          left: 20,
-        ),
-        child: Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: Material(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.72)
-                : const Color(0xFF1E1E1E).toOpacity(0.72),
-            elevation: 4,
-            shadowColor: Theme.of(context).colorScheme.shadow,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 32.0),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      double height = constraints.maxWidth / 1.5;
-                      double width = height * 0.72;
-                      return Container(
-                        width: constraints.maxWidth,
-                        height: height,
-                        padding: EdgeInsets.all(2),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(width: 16),
-                            //封面
-                            Material(
-                              color: Colors.transparent,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: context.colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                height: height,
-                                width: width,
-                                clipBehavior: Clip.antiAlias,
-                                child: BangumiWidget.kostoriImage(
-                                  context,
-                                  bangumiItem.images['large']!,
-                                  width: width,
-                                  height: height,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      bangumiItem.nameCn.isNotEmpty
-                                          ? bangumiItem.nameCn
-                                          : bangumiItem.name,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      bangumiItem.name,
-                                      style: TextStyle(fontSize: 8),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        if (bangumiItem.airDate.isNotEmpty)
-                                          Container(
-                                            padding: EdgeInsets.fromLTRB(
-                                              8,
-                                              5,
-                                              8,
-                                              5,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(8.0),
-                                              border: Border.all(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary
-                                                    .toOpacity(0.72),
-                                                width: 1.0,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              bangumiItem.airDate,
-                                              style: TextStyle(fontSize: 12),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 6.0),
-                                    BangumiWidget.bangumiTimeText(
-                                      bangumiItem,
-                                      currentWeekEp,
-                                      isCompleted,
-                                    ),
-                                    Spacer(),
-                                    score(context, bangumiItem),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 2,
-                    horizontal: 16,
-                  ),
-                  child: Align(
-                    child: BangumiWidget.buildStatsRow(
-                      context: context,
-                      bangumiItem: bangumiItem,
-                      isCenter: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
+    return _captureShell(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 32.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                double height = constraints.maxWidth / 1.5;
+                double width = height * 0.72;
+                return Container(
+                  width: constraints.maxWidth,
+                  height: height,
+                  padding: EdgeInsets.all(2),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const SizedBox(width: 16),
+                      //封面
+                      Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: context.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          height: height,
+                          width: width,
+                          clipBehavior: Clip.antiAlias,
+                          child: BangumiWidget.kostoriImage(
+                            context,
+                            bangumiItem.images['large']!,
+                            width: width,
+                            height: height,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                bangumiItem.nameCn.isNotEmpty
+                                    ? bangumiItem.nameCn
+                                    : bangumiItem.name,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                bangumiItem.name,
+                                style: TextStyle(fontSize: 8),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  if (bangumiItem.airDate.isNotEmpty)
+                                    Container(
+                                      padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          8.0,
+                                        ),
+                                        border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .toOpacity(0.72),
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        bangumiItem.airDate,
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 6.0),
+                              BangumiWidget.bangumiTimeText(
+                                bangumiItem,
+                                currentWeekEp,
+                                isCompleted,
+                              ),
+                              Spacer(),
+                              score(context, bangumiItem),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
+            child: Align(
+              child: BangumiWidget.buildStatsRow(
+                context: context,
+                bangumiItem: bangumiItem,
+                isCenter: true,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t.introduction,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                TranslateIconButton(data: bangumiItem.summary, controller: _tc),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            child: BBCodeWidget(bbcode: bangumiItem.summary),
+          ),
+          TranslationOutput(
+            controller: _tc,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                _sectionTitle(context, t.tags, '${bangumiItem.tags.length}'),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: CapsuleChipGroup(
+              children: List<Widget>.generate(bangumiItem.tags.length, (
+                int index,
+              ) {
+                return CapsuleChip(
+                  isSelected: false,
+                  onTap: () {},
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(bangumiItem.tags[index].name),
+                      const SizedBox(width: 4),
                       Text(
-                        t.introduction,
+                        '${bangumiItem.tags[index].count}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          if (bangumiSRI.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              child: Row(
+                children: [
+                  _sectionTitle(context, t.linkedItems, '${bangumiSRI.length}'),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final crossAxisCount = 3;
+                  final spacing = 8.0;
+                  final totalSpacing = (crossAxisCount - 1) * spacing;
+                  final itemWidth =
+                      (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                  final imageHeight = itemWidth * 1.3;
+
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: 16,
+                    alignment: WrapAlignment.start,
+                    crossAxisAlignment: WrapCrossAlignment.start,
+                    children: bangumiSRI.map((item) {
+                      return BangumiHorizontalCard(
+                        bangumiItem: item,
+                        width: itemWidth,
+                        imageHeight: imageHeight,
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ),
+          ],
+          if (bangumiItem.total >= 20) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        t.ratingChart,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Spacer(),
-                      TranslateIconButton(
-                        data: bangumiItem.summary,
-                        controller: _tc,
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 24,
-                  ),
-                  child: BBCodeWidget(bbcode: bangumiItem.summary),
-                ),
-                TranslationOutput(
-                  controller: _tc,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      _sectionTitle(
-                        context,
-                        t.tags,
-                        '${bangumiItem.tags.length}',
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 16,
-                  ),
-                  child: Wrap(
-                    spacing: 8.0,
-                    runSpacing: App.isDesktop ? 8 : 0,
-                    children: List<Widget>.generate(bangumiItem.tags.length, (
-                      int index,
-                    ) {
-                      return Chip(
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('${bangumiItem.tags[index].name} '),
-                            Text(
-                              '${bangumiItem.tags[index].count}',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                if (bangumiSRI.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        _sectionTitle(
-                          context,
-                          t.linkedItems,
-                          '${bangumiSRI.length}',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 16,
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final crossAxisCount = 3;
-                        final spacing = 8.0;
-                        final totalSpacing = (crossAxisCount - 1) * spacing;
-                        final itemWidth =
-                            (constraints.maxWidth - totalSpacing) /
-                            crossAxisCount;
-                        final imageHeight = itemWidth * 1.3;
-
-                        return Wrap(
-                          spacing: spacing,
-                          runSpacing: 16,
-                          alignment: WrapAlignment.start,
-                          crossAxisAlignment: WrapCrossAlignment.start,
-                          children: bangumiSRI.map((item) {
-                            return BangumiHorizontalCard(
-                              bangumiItem: item,
-                              width: itemWidth,
-                              imageHeight: imageHeight,
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-                if (bangumiItem.total >= 20) ...[
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              t.ratingChart,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .secondaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${bangumiItem.score}',
-                                style: ts.s12,
-                              ),
-                            ),
-                            Text(t.votes(n: bangumiItem.total)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 2,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          t.standardDeviationS(
-                            s: standardDeviation.toStringAsFixed(2),
-                          ),
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          Utils.getDispute(standardDeviation),
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 2,
-                    ),
-                    child: BangumiBarChartPage(bangumiItem: bangumiItem),
-                  ),
-                ],
-                if (commentsList.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        _sectionTitle(
-                          context,
-                          t.latestComments,
-                          '${commentsList.length >= 10 ? 10 : commentsList.length}',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 16,
-                    ),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: 10,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final commentItem = commentsList[index];
-                        return CommentsCard(commentItem: commentItem);
-                      },
-                    ),
-                  ),
-                ],
-                if (latestComment != null || latestRating != null) ...[
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          t.myRating,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 24,
-                    ),
-                    child: Column(
-                      children: [
-                        if (latestRating != null) ...[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 优先显示 Bangumi 账号头像，未设置时兜底应用图标
-                              Builder(
-                                builder: (ctx) {
-                                  final avatar =
-                                      appdata.implicitData['nameAvatar']
-                                          as String?;
-                                  if (avatar == null || avatar.isEmpty) {
-                                    return CircleAvatar(
-                                      child: Image(
-                                        image: const AssetImage(
-                                          "images/app_icon.png",
-                                        ),
-                                        filterQuality: FilterQuality.medium,
-                                      ),
-                                    );
-                                  }
-                                  return BangumiAvatar(url: avatar, radius: 18);
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    appdata.implicitData['bangumiUserName']
-                                            ?.toString() ??
-                                        'Kostori',
-                                  ),
-                                  Text(
-                                    t.reviewedAtTime(
-                                      time: Utils.formatHMS(watchDuration ?? 0),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Spacer(),
-                              RatingBarIndicator(
-                                itemCount: 5,
-                                rating: latestRating!.toDouble() / 2,
-                                itemBuilder: (context, index) =>
-                                    const Icon(Icons.star_rounded),
-                                itemSize: 20.0,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                        if (latestComment != null)
-                          Row(
-                            children: [Expanded(child: Text(latestComment!))],
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-                ShareQrCode(
-                  type: KostoriRouteType.bangumi,
-                  payload: '${bangumiItem.id}',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _searchSubjectPage() {
-    final keyList = selectedBangumiItems.keys.toList();
-
-    return TileableRepaintBoundary(
-      key: repaintKey,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: context.padding.bottom + 16,
-          top: context.padding.top,
-          right: 20,
-          left: 20,
-        ),
-        child: Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: Material(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.72)
-                : const Color(0xFF1E1E1E).toOpacity(0.72),
-            elevation: 4,
-            shadowColor: Theme.of(context).colorScheme.shadow,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                SizedBox(height: 32.0),
-                // 日期范围行
-                if ((widget.airDate ?? '').isNotEmpty ||
-                    (widget.endDate ?? '').isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if ((widget.airDate ?? '').isNotEmpty)
-                          _buildDateChip(
-                            context,
-                            widget.airDate!,
-                            Theme.of(context).colorScheme.primary,
-                          ),
-                        if ((widget.airDate ?? '').isNotEmpty &&
-                            (widget.endDate ?? '').isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Text(
-                              '→',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
-                            ),
-                          ),
-                        if ((widget.endDate ?? '').isNotEmpty)
-                          _buildDateChip(
-                            context,
-                            widget.endDate!,
-                            Theme.of(context).colorScheme.secondary,
-                          ),
-                      ],
-                    ),
-                  ),
-
-                // 排序 + 数量行
-                if ((widget.sort ?? '').isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          widget.sort!,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              width: 0.5,
-                              color: Theme.of(context).colorScheme.outline
-                                  .toOpacity(0.3),
-                            ),
-                          ),
-                          child: Text(
-                            '${keyList.length}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // 标签行
-                if ((widget.tag ?? []).isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 16,
-                    ),
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: widget.tag!.map((tag) {
-                        final color = Theme.of(context).colorScheme.primary;
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.toOpacity(0.08),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              width: 0.5,
-                              color: color.toOpacity(0.4),
-                            ),
-                          ),
-                          child: Text(
-                            tag,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: color,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final crossAxisCount = 3;
-                      final spacing = 8.0;
-                      final totalSpacing = (crossAxisCount - 1) * spacing;
-                      final itemWidth =
-                          (constraints.maxWidth - totalSpacing) /
-                          crossAxisCount;
-                      final itemHeight = itemWidth * 1.4;
-
-                      return Center(
-                        child: Wrap(
-                          spacing: spacing,
-                          runSpacing: 16,
-                          children: keyList.map((item) {
-                            return BangumiGridCard(
-                              bangumiItem: item,
-                              width: itemWidth,
-                              height: itemHeight,
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                _buildBottomTitle(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _searchCharacterPage() {
-    final keyList = selectedCharacterItems.keys.toList();
-
-    return TileableRepaintBoundary(
-      key: repaintKey,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: context.padding.bottom + 16,
-          top: context.padding.top,
-          right: 20,
-          left: 20,
-        ),
-        child: Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: Material(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.72)
-                : const Color(0xFF1E1E1E).toOpacity(0.72),
-            elevation: 4,
-            shadowColor: Theme.of(context).colorScheme.shadow,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                SizedBox(height: 32.0),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
                         padding: const EdgeInsets.symmetric(
@@ -1186,186 +855,461 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                               .secondaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text('${keyList.length}', style: ts.s12),
+                        child: Text('${bangumiItem.score}', style: ts.s12),
                       ),
+                      Text(t.votes(n: bangumiItem.total)),
                     ],
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final crossAxisCount = 3;
-                      final spacing = 8.0;
-                      final totalSpacing = (crossAxisCount - 1) * spacing;
-                      final itemWidth =
-                          (constraints.maxWidth - totalSpacing) /
-                          crossAxisCount;
-                      final itemHeight = itemWidth * 1.4;
-
-                      return Center(
-                        child: Wrap(
-                          spacing: spacing,
-                          runSpacing: 16,
-                          children: keyList.map((item) {
-                            return _BangumiCharacterCard(
-                              character: item,
-                              width: itemWidth,
-                              height: itemHeight,
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    },
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              child: Row(
+                children: [
+                  Text(
+                    t.standardDeviationS(
+                      s: standardDeviation.toStringAsFixed(2),
+                    ),
+                    style: TextStyle(fontSize: 12),
                   ),
+                  const SizedBox(width: 8),
+                  Text(
+                    Utils.getDispute(standardDeviation),
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              child: BangumiBarChartPage(bangumiItem: bangumiItem),
+            ),
+          ],
+          if (commentsList.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              child: Row(
+                children: [
+                  _sectionTitle(
+                    context,
+                    t.latestComments,
+                    '${_shareComments.length}',
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                // 必须用实际条数，不能写死 10：条数不足时 itemBuilder 里的
+                // commentsList[index] 会抛 RangeError，release 下被
+                // ErrorWidget 接住、渲染成「加载失败，请重试。」的占位卡片。
+                itemCount: _shareComments.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  return CommentsCard(commentItem: _shareComments[index]);
+                },
+              ),
+            ),
+          ],
+          if (latestComment != null || latestRating != null) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    t.myRating,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              child: Column(
+                children: [
+                  if (latestRating != null) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 优先显示 Bangumi 账号头像，未设置时兜底应用图标
+                        Builder(
+                          builder: (ctx) {
+                            final avatar =
+                                appdata.implicitData['nameAvatar'] as String?;
+                            if (avatar == null || avatar.isEmpty) {
+                              return CircleAvatar(
+                                child: Image(
+                                  image: const AssetImage(
+                                    "images/app_icon.png",
+                                  ),
+                                  filterQuality: FilterQuality.medium,
+                                ),
+                              );
+                            }
+                            return BangumiAvatar(url: avatar, radius: 18);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              appdata.implicitData['bangumiUserName']
+                                      ?.toString() ??
+                                  'Kostori',
+                            ),
+                            Text(
+                              t.reviewedAtTime(
+                                time: Utils.formatHMS(watchDuration ?? 0),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Spacer(),
+                        RatingBarIndicator(
+                          itemCount: 5,
+                          rating: latestRating!.toDouble() / 2,
+                          itemBuilder: (context, index) =>
+                              const Icon(Icons.star_rounded),
+                          itemSize: 20.0,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (latestComment != null)
+                    Row(children: [Expanded(child: Text(latestComment!))]),
+                ],
+              ),
+            ),
+          ],
+          ShareQrCode(
+            type: KostoriRouteType.bangumi,
+            payload: '${bangumiItem.id}',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _searchSubjectPage() {
+    final keyList = selectedBangumiItems.keys.toList();
+
+    return _captureShell(
+      Column(
+        children: [
+          SizedBox(height: 32.0),
+          // 日期范围行
+          if ((widget.airDate ?? '').isNotEmpty ||
+              (widget.endDate ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if ((widget.airDate ?? '').isNotEmpty)
+                    _buildDateChip(
+                      context,
+                      widget.airDate!,
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                  if ((widget.airDate ?? '').isNotEmpty &&
+                      (widget.endDate ?? '').isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        '→',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  if ((widget.endDate ?? '').isNotEmpty)
+                    _buildDateChip(
+                      context,
+                      widget.endDate!,
+                      Theme.of(context).colorScheme.secondary,
+                    ),
+                ],
+              ),
+            ),
+
+          // 排序 + 数量行
+          if ((widget.sort ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.sort!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        width: 0.5,
+                        color: Theme.of(context).colorScheme.outline
+                            .toOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      '${keyList.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // 标签行
+          if ((widget.tag ?? []).isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: widget.tag!.map((tag) {
+                  final color = Theme.of(context).colorScheme.primary;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.toOpacity(0.08),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        width: 0.5,
+                        color: color.toOpacity(0.4),
+                      ),
+                    ),
+                    child: Text(
+                      tag,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: color,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = 3;
+                final spacing = 8.0;
+                final totalSpacing = (crossAxisCount - 1) * spacing;
+                final itemWidth =
+                    (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                final itemHeight = itemWidth * 1.4;
+
+                return Center(
+                  child: Wrap(
+                    spacing: spacing,
+                    runSpacing: 16,
+                    children: keyList.map((item) {
+                      return BangumiGridCard(
+                        bangumiItem: item,
+                        width: itemWidth,
+                        height: itemHeight,
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
+            ),
+          ),
+          _buildBottomTitle(),
+        ],
+      ),
+    );
+  }
+
+  Widget _searchCharacterPage() {
+    final keyList = selectedCharacterItems.keys.toList();
+
+    return _captureShell(
+      Column(
+        children: [
+          SizedBox(height: 32.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('${keyList.length}', style: ts.s12),
                 ),
-                _buildBottomTitle(),
               ],
             ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = 3;
+                final spacing = 8.0;
+                final totalSpacing = (crossAxisCount - 1) * spacing;
+                final itemWidth =
+                    (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                final itemHeight = itemWidth * 1.4;
+
+                return Center(
+                  child: Wrap(
+                    spacing: spacing,
+                    runSpacing: 16,
+                    children: keyList.map((item) {
+                      return _BangumiCharacterCard(
+                        character: item,
+                        width: itemWidth,
+                        height: itemHeight,
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
+            ),
+          ),
+          _buildBottomTitle(),
+        ],
       ),
     );
   }
 
   Widget _characterPage() {
-    return TileableRepaintBoundary(
-      key: repaintKey,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: context.padding.bottom + 16,
-          top: context.padding.top,
-          right: 20,
-          left: 20,
-        ),
-        child: Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: Material(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.72)
-                : const Color(0xFF1E1E1E).toOpacity(0.72),
-            elevation: 4,
-            shadowColor: Theme.of(context).colorScheme.shadow,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+    return _captureShell(
+      Column(
+        children: [
+          SizedBox(height: 32.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SizedBox(
+                  width: constraints.maxWidth,
+                  child: BangumiWidget.kostoriImage(
+                    context,
+                    characterFullItem.image,
+                    enableDefaultSize: false,
+                  ),
+                );
+              },
             ),
-            child: Column(
-              children: [
-                SizedBox(height: 32.0),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SizedBox(
-                        width: constraints.maxWidth,
-                        child: BangumiWidget.kostoriImage(
-                          context,
-                          characterFullItem.image,
-                          enableDefaultSize: false,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: Text(
-                    characterFullItem.name,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.tertiary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 3,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: Text(
-                    characterFullItem.nameCN,
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(color: Colors.grey[700]),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: Text(
-                    t.profileInformation,
-                    style: Theme.of(context).textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: Text(
-                    characterFullItem.info,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.justify,
-                  ),
-                ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Text(
+              characterFullItem.name,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.tertiary,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 3,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Text(
+              characterFullItem.nameCN,
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(color: Colors.grey[700]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Text(
+              t.profileInformation,
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Text(
+              characterFullItem.info,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.justify,
+            ),
+          ),
 
-                const SizedBox(height: 16.0),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        t.characterIntroduction,
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      TranslateIconButton(
-                        data: characterFullItem.summary,
-                        controller: _tc,
-                      ),
-                    ],
-                  ),
+          const SizedBox(height: 16.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Row(
+              children: [
+                Text(
+                  t.characterIntroduction,
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: Text(
-                    characterFullItem.summary,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.justify,
-                  ),
-                ),
-                TranslationOutput(
+                const Spacer(),
+                TranslateIconButton(
+                  data: characterFullItem.summary,
                   controller: _tc,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                ),
-                ShareQrCode(
-                  type: isCharacter
-                      ? KostoriRouteType.character
-                      : KostoriRouteType.person,
-                  payload: '${characterFullItem.id}',
                 ),
               ],
             ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            child: Text(
+              characterFullItem.summary,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.justify,
+            ),
+          ),
+          TranslationOutput(
+            controller: _tc,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          ShareQrCode(
+            type: isCharacter
+                ? KostoriRouteType.character
+                : KostoriRouteType.person,
+            payload: '${characterFullItem.id}',
+          ),
+        ],
       ),
     );
   }
@@ -1389,17 +1333,20 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   @override
   Widget build(BuildContext context) {
     if (isLoding) {
-      return PopUpWidgetScaffold(
-        title: t.screenshotShare,
-        body: Center(child: KostoriRefreshIndicator()),
-      );
+      final loading = Center(child: KostoriRefreshIndicator());
+      return widget.embedded
+          ? loading
+          : PopUpWidgetScaffold(title: t.screenshotShare, body: loading);
     }
+
+    final body = SingleChildScrollView(child: _buildBody());
+    if (widget.embedded) return body;
 
     return PopUpWidgetScaffold(
       title: t.screenshotShare,
       body: Stack(
         children: [
-          Positioned.fill(child: SingleChildScrollView(child: _buildBody())),
+          Positioned.fill(child: body),
 
           Positioned(
             bottom: 10,
@@ -1421,7 +1368,11 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () async {
-                    await captureAndSave(context);
+                    await captureShareWidget(
+                      context,
+                      _repaintKey,
+                      singleImage: widget.singleImage,
+                    );
                     if (context.mounted) App.rootContext.pop();
                   },
                   child: Padding(

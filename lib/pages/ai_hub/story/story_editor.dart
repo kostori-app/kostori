@@ -2093,7 +2093,8 @@ class _StoryEditorState extends State<_StoryEditor>
                   IconButton(
                     icon: const Icon(Icons.save_alt),
                     tooltip: t.characterExport,
-                    onPressed: () => exportCharacterCardPng(_characters[i]),
+                    onPressed: () =>
+                        exportCharacterCardPng(context, _characters[i]),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
