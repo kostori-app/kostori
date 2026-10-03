@@ -189,6 +189,7 @@ Future<File> exportAppData() async {
   } catch (e) {
     DebugLog.error('exportAppData', 'stats_merge.json 导出失败：$e');
   }
+  await writeSyncableAppData();
   await Isolate.run(() {
     var zipFile = ZipFile.open(cacheFilePath);
     var historyFile = FilePath.join(dataPath, "history.db");
@@ -196,7 +197,7 @@ Future<File> exportAppData() async {
     var bangumiFile = FilePath.join(dataPath, "bangumi.db");
     var statsFile = FilePath.join(dataPath, "stats.db");
     var searchHistoryFile = FilePath.join(dataPath, "search_history.db");
-    var appdata = FilePath.join(dataPath, "appdata.json");
+    var appdata = _syncableAppDataPath();
     var cookies = FilePath.join(dataPath, "cookie.db");
     var aiDatabase = FilePath.join(dataPath, "ai_database.db");
     zipFile.addFile("history.db", historyFile);
@@ -322,6 +323,17 @@ const syncParts = <SyncPart>[
   SyncPart('data', 'data', 'data'),
 ];
 
+/// 剔除设备本地键后的 appdata 副本路径（zip 内仍叫 appdata.json，导入端不用改）
+String _syncableAppDataPath() =>
+    FilePath.join(App.cachePath, 'appdata_sync.json');
+
+/// 生成 [_syncableAppDataPath]，供打包与内容哈希使用
+Future<void> writeSyncableAppData() async {
+  final data = {'settings': appdata.syncableSettingsJson()};
+  final json = await Isolate.run(() => jsonEncode(data));
+  await File(_syncableAppDataPath()).writeAsString(json);
+}
+
 /// 生成某部分需要的字段级合并文件
 Future<void> _writeMergeFilesFor(String key) async {
   Future<void> write(String path, Object data) async {
@@ -411,6 +423,7 @@ Future<void> _writeMergeFilesFor(String key) async {
       );
     }
   } else if (key == 'data') {
+    await writeSyncableAppData();
     // 助手档案与长期记忆存在 shared_preferences 里，不在任何目录/DB 中，
     // 单独导出成合并文件
     await write(FilePath.join(App.cachePath, 'assistant_merge.json'), {
@@ -501,7 +514,7 @@ List<(String, String)> _partEntries(String key) {
     // 不放进整包，避免重复与体积膨胀。注意：番源/插件的本地配置（勾选的
     // 文本规则、下载标题格式）都存在它们自己的 `<key>.data` 里，随本部分的
     // anime_source / plugins 目录一起同步，implicitData 仍不参与同步。
-    add('appdata.json', FilePath.join(dp, 'appdata.json'));
+    add('appdata.json', _syncableAppDataPath());
     add(
       'assistant_merge.json',
       FilePath.join(App.cachePath, 'assistant_merge.json'),

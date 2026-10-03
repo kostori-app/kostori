@@ -59,7 +59,7 @@ _SettingsData _$SettingsDataFromJson(
   favoritePageId: (json['favoritePageId'] as num?)?.toInt() ?? 0,
   amoled: json['amoled'] as bool? ?? false,
   dynamicColor: json['dynamicColor'] as bool? ?? false,
-  enableNoProxyOverrides: json['enableNoProxyOverrides'] as bool? ?? true,
+  enableNoProxyOverrides: json['enableNoProxyOverrides'] as bool? ?? false,
   noProxyOverrides:
       json['noProxyOverrides'] as List<dynamic>? ??
       const [

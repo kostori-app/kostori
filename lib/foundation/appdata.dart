@@ -35,11 +35,16 @@ class Appdata with Init {
     return {'settings': settings.toJson()};
   }
 
+  /// 不参与 WebDAV 同步的设置键：各端网络环境不同，强制对齐反而让一端用不了。
+  /// - `proxy` / `authorizationRequired`：代理与局域网鉴权因设备而异
+  /// - `enableNoProxyOverrides`：移动端要靠无代理覆盖才能访问，桌面端开了反而
+  ///   连不上，同步过去等于把一端的网络搞坏
   static const _disableSync = [
     "proxy",
     "authorizationRequired",
     "customImageProcessing",
     "webdav",
+    "enableNoProxyOverrides",
   ];
 
   void syncData(Map<String, dynamic> data) {
@@ -53,6 +58,18 @@ class Appdata with Init {
       settings.fromJson(current);
     }
     saveData();
+  }
+
+  /// 可同步的设置子集（已剔除 [_disableSync]）。
+  ///
+  /// 打包与内容哈希都必须用这份：若把设备本地键一起算进去，两端在这些键上
+  /// 取值不同就会导致哈希永远不等，每次同步都重新上传、版本号互相顶。
+  Map<String, dynamic> syncableSettingsJson() {
+    final out = Map<String, dynamic>.from(settings.toJson());
+    for (final key in _disableSync) {
+      out.remove(key);
+    }
+    return out;
   }
 
   var implicitData = <String, dynamic>{};
@@ -172,6 +189,14 @@ class Appdata with Init {
       } catch (_) {
         implicitDataFile.deleteIgnoreError();
       }
+    }
+    // 无代理覆写改为默认关闭：预置规则会让 bgm 域名绕过代理，
+    // 在 DNS 被污染的环境里反而连不上。只迁移一次，尊重用户后续的手动开启。
+    if (implicitData['noProxyOverridesDefaultOff'] != true) {
+      if (settings.s.enableNoProxyOverrides) {
+        settings.update((s) => s.copyWith(enableNoProxyOverrides: false));
+      }
+      implicitData['noProxyOverridesDefaultOff'] = true;
     }
     // 磨砂玻璃效果默认值（外观设置）：默认开启、强度 15（范围 5~20）
     implicitData['blurEnabled'] ??= true;

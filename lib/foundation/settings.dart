@@ -49,7 +49,8 @@ abstract class SettingsData with _$SettingsData {
     @Default(0) int favoritePageId,
     @Default(false) bool amoled,
     @Default(false) bool dynamicColor,
-    @Default(true) bool enableNoProxyOverrides,
+    // 默认关闭：直连规则会让 bgm 域名绕过代理，在 DNS 被污染的环境里反而连不上
+    @Default(false) bool enableNoProxyOverrides,
     // 旧版无代理覆写列表，仅用于迁移到 [domainRules]，新逻辑不再读取
     @Default([
       {'domain': 'bgm', 'enabled': true},

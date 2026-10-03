@@ -190,7 +190,7 @@ void setDnsOverridesEnabled(bool value) {
 
 /// 无代理覆写总开关。
 bool get noProxyOverridesEnabled =>
-    appdata.settings['enableNoProxyOverrides'] != false;
+    appdata.settings['enableNoProxyOverrides'] == true;
 
 void setNoProxyOverridesEnabled(bool value) {
   appdata.settings['enableNoProxyOverrides'] = value;
