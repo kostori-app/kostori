@@ -79,6 +79,13 @@ class DownloadForegroundService : Service() {
 
     private var wakeLock: PowerManager.WakeLock? = null
 
+    /**
+     * 是否已经处于前台。`startForeground` 每次调用都会重新发布并重放入场动画，
+     * 进度每秒刷新一次的话通知栏就会一闪一闪；进入前台只做一次，之后只用
+     * `NotificationManager.notify` 原地更新。
+     */
+    private var isForeground = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -116,6 +123,7 @@ class DownloadForegroundService : Service() {
     }
 
     private fun stopSelfInternal() {
+        isForeground = false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
@@ -213,21 +221,29 @@ class DownloadForegroundService : Service() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             // Android 14+：dataSync 在 targetSDK 36 被禁止，改用 specialUse
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
+            startForegroundType(
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                notification,
             )
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-            )
+            startForegroundType(ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC, notification)
         } else {
-            startForeground(NOTIFICATION_ID, notification)
+            startForegroundOnce(notification)
         }
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIFICATION_ID, notification)
+    }
+
+    /** 首次进入前台才调`startForeground`，重复调用会让通知反复重放入场动画。 */
+    private fun startForegroundOnce(notification: Notification) {
+        if (isForeground) return
+        startForeground(NOTIFICATION_ID, notification)
+        isForeground = true
+    }
+
+    private fun startForegroundType(type: Int, notification: Notification) {
+        if (isForeground) return
+        startForeground(NOTIFICATION_ID, notification, type)
+        isForeground = true
     }
 }
