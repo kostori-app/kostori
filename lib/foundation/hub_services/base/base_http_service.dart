@@ -344,6 +344,32 @@ abstract class BaseHttpService implements BaseService {
   // ── 子类实现 ──────────────────────────────────
   void registerRoutes();
 
+  /// 截图配色覆盖：theme=light|dark 决定明暗，seed 指定主题色名或 #RRGGBB。
+  ///
+  /// 两个参数都缺省时返回 null，表示沿用当前主题。
+  /// 各截图接口共用，避免每个接口各写一份。
+  ThemeData? themeOverrideFromQuery(Map<String, String> query) {
+    final themeParam = query['theme'];
+    final seedParam = query['seed'];
+    if (themeParam == null && seedParam == null) return null;
+
+    final base = OffscreenHost.instance.theme;
+    final brightness = switch (themeParam?.toLowerCase()) {
+      'light' => Brightness.light,
+      'dark' => Brightness.dark,
+      _ => base.brightness,
+    };
+    final seed = resolveSeedColor(
+      seedParam,
+      customColor: seedParam?.startsWith('#') ?? false ? seedParam : null,
+    );
+    return buildAppTheme(
+      primary: seed,
+      brightness: brightness,
+      amoled: brightness == Brightness.dark,
+    );
+  }
+
   // ── WebSocket 鉴权工具 ────────────────────────
   /// 从 WebSocket 请求中提取 token 并校验
   bool _validateWsToken(shelf.Request req, {bool admin = false}) {
@@ -380,6 +406,9 @@ abstract class BaseHttpService implements BaseService {
       doc: RouteDoc(summary: '应用图标', description: '返回应用图标', response: '图片 PNG'),
     );
 
+    // 番剧条目查询 / 条目详情分享截图（公开接口）
+    registerBangumiRoutes();
+
     addGet(
       '/bangumi/calendar/screenshot',
       (req, params) async {
@@ -396,54 +425,19 @@ abstract class BaseHttpService implements BaseService {
         }
         final showWeekly = mode != 'today';
 
-        // 主题参数：theme=light|dark 决定明暗，seed 指定主题色名或 #RRGGBB
-        final themeParam = req.requestedUri.queryParameters['theme'];
-        final seedParam = req.requestedUri.queryParameters['seed'];
-        ThemeData? themeOverride;
-        if (themeParam != null || seedParam != null) {
-          final base = OffscreenHost.instance.theme;
-          final brightness = switch (themeParam?.toLowerCase()) {
-            'light' => Brightness.light,
-            'dark' => Brightness.dark,
-            _ => base.brightness,
-          };
-          final seed = resolveSeedColor(
-            seedParam,
-            customColor: seedParam?.startsWith('#') ?? false ? seedParam : null,
-          );
-          themeOverride = buildAppTheme(
-            primary: seed,
-            brightness: brightness,
-            amoled: brightness == Brightness.dark,
-          );
-        }
+        final themeOverride = themeOverrideFromQuery(
+          req.requestedUri.queryParameters,
+        );
 
         try {
           final calendar = await loadBangumiCalendar();
-          // 需要一个 BuildContext 来渲染截图：GUI 下复用 navigator 上下文，
-          // 无头模式下退回离屏宿主（attachRootWidget 挂的不可见 widget 树）
-          final guiContext = App.mainNavigatorKey?.currentContext;
-          final useOffscreen = guiContext == null || !guiContext.mounted;
-          final context = useOffscreen
-              ? OffscreenHost.instance.context
-              : guiContext;
-          final offscreenOverlay = useOffscreen
-              ? OffscreenHost.instance.overlay
-              : null;
-          if (context == null || (offscreenOverlay == null && useOffscreen)) {
-            return sendError(
-              req,
-              HttpStatus.serviceUnavailable,
-              'NO_CONTEXT',
-              'Flutter context not available',
-            );
-          }
+          // 截图宿主由框架解析：GUI 下复用 navigator 上下文，
+          // 无头模式下回退到 OffscreenHost 挂的不可见 widget 树
           final bytes = await generateBangumiCalendarPng(
-            context: context,
+            context: App.mainNavigatorKey?.currentContext,
             bangumiCalendar: calendar,
             captureTime: DateTime.now(),
             showWeekly: showWeekly,
-            offscreenOverlay: offscreenOverlay,
             themeOverride: themeOverride,
           );
 
@@ -932,18 +926,30 @@ abstract class BaseHttpService implements BaseService {
   shelf.Response sendBytes(
     shelf.Request req,
     List<int> bytes,
-    ContentType contentType,
-  ) => shelf.Response(
+    ContentType contentType, {
+    Map<String, String>? extraHeaders,
+  }) => shelf.Response(
     HttpStatus.ok,
     body: bytes,
-    headers: {'content-type': contentType.toString()},
+    headers: {
+      'content-type': contentType.toString(),
+      // shelf 1.4 起 Response.body 不再公开，无法取出后重新包装，
+      // 需要附加响应头（如 x-bangumiid）时在这里一并传入
+      ...?extraHeaders,
+    },
   );
 
   shelf.Response sendImage(
     shelf.Request req,
     Uint8List bytes, {
     String format = 'png',
-  }) => sendBytes(req, bytes, ContentType('image', format));
+    Map<String, String>? extraHeaders,
+  }) => sendBytes(
+    req,
+    bytes,
+    ContentType('image', format),
+    extraHeaders: extraHeaders,
+  );
 
   shelf.Response sendFile(
     shelf.Request req,

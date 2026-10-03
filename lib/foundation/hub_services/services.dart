@@ -16,17 +16,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:kostori/components/components.dart'
     show ToastStyle, ContentDialog;
+import 'package:kostori/components/share_widget.dart' show renderShareWidgetPng;
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/app_theme.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/offscreen_host.dart';
 import 'package:kostori/foundation/hub_services/hub_keep_alive.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/network/bangumi.dart';
 import 'package:mime/mime.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -52,6 +56,8 @@ import 'package:kostori/foundation/secret_vault.dart';
 part 'app_service.dart';
 
 part 'base/api_key_manager.dart';
+
+part 'base/base_bangumi_routes.dart';
 
 part 'base/base_http_service.dart';
 
