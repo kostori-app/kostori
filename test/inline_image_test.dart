@@ -19,7 +19,10 @@ void main() {
         isTrue,
       );
       expect(InlineImageStore.looksLikeBase64('a' * 200), isTrue);
-      expect(InlineImageStore.looksLikeBase64('https://a.com/b.jpg'), isFalse);
+      expect(
+        InlineImageStore.looksLikeBase64('https://site.example/b.jpg'),
+        isFalse,
+      );
       expect(InlineImageStore.looksLikeBase64('/data/a.jpg'), isFalse);
       expect(InlineImageStore.looksLikeBase64('short'), isFalse);
     });
@@ -33,8 +36,8 @@ void main() {
       expect(InlineImageStore.isRef(ref), isTrue);
       // 非 base64 原样返回，不会被改写
       expect(
-        InlineImageStore.refOfBase64('https://a.com/b.jpg'),
-        'https://a.com/b.jpg',
+        InlineImageStore.refOfBase64('https://site.example/b.jpg'),
+        'https://site.example/b.jpg',
       );
     });
 
@@ -67,8 +70,11 @@ void main() {
       // 普通 URL 保持与磁盘键同一格式（此前内存键 `url+src` 与磁盘键 `url@src`
       // 不一致，坏缓存删不掉；统一后内存键重建不影响落盘）
       expect(
-        const CachedImageProvider('https://a.com/b.jpg', sourceKey: 'demo').key,
-        'https://a.com/b.jpg@demo',
+        const CachedImageProvider(
+          'https://site.example/b.jpg',
+          sourceKey: 'demo',
+        ).key,
+        'https://site.example/b.jpg@demo',
       );
     });
 

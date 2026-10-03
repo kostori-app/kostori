@@ -2,8 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/network/mirror_store.dart';
 
+// 输入主机必须是 lain.bgm.tv（_bangumiImageMirrorableHosts 只认它），
+// 否则这条用例会退化成「原样返回」；镜像地址本身用保留域名。
 const _img = 'https://lain.bgm.tv/pic/cover/l/ab/4f/639938_2JKQ7.jpg';
-const _host = 'aged-lake-6ad1.xiuzhantianming.workers.dev';
+const _host = 'mirror.bgm.example';
 const _expected = 'https://$_host/bgm-img/pic/cover/l/ab/4f/639938_2JKQ7.jpg';
 
 void main() {

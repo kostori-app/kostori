@@ -4,38 +4,67 @@ import 'package:kostori/network/domain_rules.dart';
 void main() {
   group('hostMatchesDomain', () {
     test('精确匹配与子域名后缀匹配', () {
-      expect(hostMatchesDomain('bgm.tv', 'bgm.tv'), isTrue);
-      expect(hostMatchesDomain('api.bgm.tv', 'bgm.tv'), isTrue);
-      expect(hostMatchesDomain('lain.bgm.tv', 'bgm.tv'), isTrue);
-      expect(hostMatchesDomain('notbgm.tv', 'bgm.tv'), isFalse);
-      expect(hostMatchesDomain('bgm.tv.evil.com', 'bgm.tv'), isFalse);
-      expect(hostMatchesDomain('api.bgm.tv', 'api.bgm.tv'), isTrue);
+      expect(hostMatchesDomain('bgm.example', 'bgm.example'), isTrue);
+      expect(hostMatchesDomain('api.bgm.example', 'bgm.example'), isTrue);
+      expect(hostMatchesDomain('cdn.bgm.example', 'bgm.example'), isTrue);
+      expect(hostMatchesDomain('notbgm.example', 'bgm.example'), isFalse);
+      expect(hostMatchesDomain('bgm.example.evil.com', 'bgm.example'), isFalse);
+      expect(hostMatchesDomain('api.bgm.example', 'api.bgm.example'), isTrue);
     });
 
     test('只写主机名时按标签匹配（兼容旧条目与内置的 bgm / bangumi）', () {
-      expect(hostMatchesDomain('bgm.tv', 'bgm'), isTrue);
-      expect(hostMatchesDomain('api.bgm.tv', 'bgm'), isTrue);
+      expect(hostMatchesDomain('bgm.example', 'bgm'), isTrue);
+      expect(hostMatchesDomain('api.bgm.example', 'bgm'), isTrue);
       expect(hostMatchesDomain('bgm', 'bgm'), isTrue);
-      expect(hostMatchesDomain('bangumi.tv', 'bgm'), isFalse);
+      expect(hostMatchesDomain('bangumi.example', 'bgm'), isFalse);
       expect(hostMatchesDomain('bgm.evil.com', 'bgm'), isTrue);
     });
 
     test('空输入不匹配', () {
-      expect(hostMatchesDomain('bgm.tv', ''), isFalse);
-      expect(hostMatchesDomain('', 'bgm.tv'), isFalse);
+      expect(hostMatchesDomain('bgm.example', ''), isFalse);
+      expect(hostMatchesDomain('', 'bgm.example'), isFalse);
     });
   });
 
   group('DomainRule 序列化', () {
+    test('hosts 与指定 DNS 的地址同时保留，来回切换不丢', () {
+      const rule = DomainRule(
+        domain: 'bgm.example',
+        dnsMode: DnsRuleMode.hosts,
+        ips: ['1.1.1.1'],
+        servers: ['8.8.8.8'],
+      );
+      final restored = DomainRule.fromJson(rule.toJson());
+      expect(restored.ips, ['1.1.1.1']);
+      expect(restored.servers, ['8.8.8.8']);
+    });
+
+    test('dnsMode 决定用哪一份地址，另一份不影响生效', () {
+      const asHosts = DomainRule(
+        domain: 'bgm.example',
+        dnsMode: DnsRuleMode.hosts,
+        ips: ['1.1.1.1'],
+        servers: ['8.8.8.8'],
+      );
+      expect(buildHostsOverrides([asHosts]), {
+        'bgm.example': ['1.1.1.1'],
+      });
+      expect(hasDnsServerRules([asHosts]), isFalse);
+
+      final asServers = asHosts.copyWith(dnsMode: DnsRuleMode.servers);
+      expect(buildHostsOverrides([asServers]), isEmpty);
+      expect(hasDnsServerRules([asServers]), isTrue);
+    });
+
     test('往返保持一致', () {
       const rule = DomainRule(
-        domain: 'bgm.tv',
+        domain: 'bgm.example',
         dnsMode: DnsRuleMode.hosts,
         ips: ['1.1.1.1', '2.2.2.2'],
         noProxy: true,
       );
       final restored = DomainRule.fromJson(rule.toJson());
-      expect(restored.domain, 'bgm.tv');
+      expect(restored.domain, 'bgm.example');
       expect(restored.dnsMode, DnsRuleMode.hosts);
       expect(restored.ips, ['1.1.1.1', '2.2.2.2']);
       expect(restored.noProxy, isTrue);
@@ -44,7 +73,7 @@ void main() {
 
     test('兼容旧版的单个 ip 字段与 static 标记', () {
       final fromIp = DomainRule.fromJson({
-        'domain': 'bgm.tv',
+        'domain': 'bgm.example',
         'ip': '1.2.3.4',
         'dns': 'static',
       });
@@ -53,13 +82,13 @@ void main() {
     });
 
     test('未写 noProxy 时默认为直连关闭', () {
-      final rule = DomainRule.fromJson({'domain': 'bgm.tv'});
+      final rule = DomainRule.fromJson({'domain': 'bgm.example'});
       expect(rule.noProxy, isFalse);
     });
 
     test('空项与重复项会被清理', () {
       const rule = DomainRule(
-        domain: 'bgm.tv',
+        domain: 'bgm.example',
         dnsMode: DnsRuleMode.hosts,
         ips: [' 1.1.1.1 ', '1.1.1.1', '', '  '],
       );
@@ -153,7 +182,7 @@ void main() {
     test('收集启用中的 hosts 规则并过滤非法 IP', () {
       final overrides = buildHostsOverrides([
         const DomainRule(
-          domain: 'BGM.tv',
+          domain: 'BGM.example',
           dnsMode: DnsRuleMode.hosts,
           ips: ['1.1.1.1', '2.2.2.2'],
         ),
@@ -171,7 +200,7 @@ void main() {
         const DomainRule(domain: 'plain.tv', noProxy: true),
       ]);
       expect(overrides, {
-        'bgm.tv': ['1.1.1.1', '2.2.2.2'],
+        'bgm.example': ['1.1.1.1', '2.2.2.2'],
       });
     });
 
@@ -189,7 +218,7 @@ void main() {
   group('hostsIpsOf', () {
     test('过滤掉非法 IP', () {
       const rule = DomainRule(
-        domain: 'bgm.tv',
+        domain: 'bgm.example',
         dnsMode: DnsRuleMode.hosts,
         ips: ['1.1.1.1', 'oops', '::1'],
       );

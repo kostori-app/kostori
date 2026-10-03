@@ -386,8 +386,10 @@ class _DomainRuleEditorPageState extends State<DomainRuleEditorPage> {
       domain: domain,
       enabled: _enabled,
       dnsMode: _mode,
-      ips: _mode == DnsRuleMode.hosts ? _ips : const [],
-      servers: _mode == DnsRuleMode.servers ? _servers : const [],
+      // 两种模式的地址都存下来：dnsMode 决定用哪一份，另一份留着，
+      // 否则 hosts ↔ 指定 DNS 来回切一次就得重填一遍
+      ips: _ips,
+      servers: _servers,
       noProxy: _noProxy,
     );
     final index = widget.index;

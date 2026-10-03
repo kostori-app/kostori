@@ -40,26 +40,26 @@ void main() {
   group('firstUrlInSelection', () {
     test('纯链接原样返回', () {
       expect(
-        firstUrlInSelection('https://mypikpak.com/s/abc123'),
-        'https://mypikpak.com/s/abc123',
+        firstUrlInSelection('https://drive.example.com/s/abc123'),
+        'https://drive.example.com/s/abc123',
       );
     });
 
     test('去掉结尾的标点', () {
       expect(
-        firstUrlInSelection(' https://mypikpak.com/s/abc123。 '),
-        'https://mypikpak.com/s/abc123',
+        firstUrlInSelection(' https://drive.example.com/s/abc123。 '),
+        'https://drive.example.com/s/abc123',
       );
       expect(
-        firstUrlInSelection('（https://mypikpak.com/s/abc123）'),
-        'https://mypikpak.com/s/abc123',
+        firstUrlInSelection('（https://drive.example.com/s/abc123）'),
+        'https://drive.example.com/s/abc123',
       );
     });
 
     test('从整段文本里取第一个链接', () {
       expect(
-        firstUrlInSelection('看这个 https://a.com/p/1 提取码 1234'),
-        'https://a.com/p/1',
+        firstUrlInSelection('看这个 https://site.example/p/1 提取码 1234'),
+        'https://site.example/p/1',
       );
     });
 
@@ -98,7 +98,7 @@ void main() {
 
     test('没有磁力链时返回 null', () {
       expect(firstMagnetInSelection('hello world'), isNull);
-      expect(firstMagnetInSelection('https://a.com/p/1'), isNull);
+      expect(firstMagnetInSelection('https://site.example/p/1'), isNull);
       expect(firstMagnetInSelection(''), isNull);
     });
   });
