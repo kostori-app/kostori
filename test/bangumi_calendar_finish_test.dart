@@ -260,6 +260,34 @@ void main() {
       expect(r!.isFinished, isTrue);
     });
 
+    test('总话数比末话还多（计划集数）且末话已停播 → 判完结', () {
+      // 回归：新鲜度曾被 `seriesTotal <= 0` 挡住，而 total 一旦有值就失效，
+      // 于是「末话停在 3 个月前、总数只填了一半」的条目永远留在时间表里
+      final eps = _weekly(
+        count: 13,
+        firstSort: 1,
+        lastDate: DateTime(2026, 7, 19),
+      );
+      final r = _resolve(eps, seriesTotal: 24, currentSort: 13);
+      expect(r!.isFinished, isTrue);
+      expect(r.shouldSkip, isTrue);
+    });
+
+    test('官方 end 存在时新鲜度不参与判定', () {
+      final eps = _weekly(
+        count: 13,
+        firstSort: 1,
+        lastDate: DateTime(2026, 7, 19),
+      );
+      final r = _resolve(
+        eps,
+        seriesTotal: 0,
+        currentSort: 13,
+        officialEnd: _fmt(_now.add(const Duration(days: 60))),
+      );
+      expect(r!.isFinished, isFalse, reason: '官方说未完结就以官方为准');
+    });
+
     test('末话新鲜但总话数已满 → 判完结', () {
       final eps = _weekly(
         count: 13,

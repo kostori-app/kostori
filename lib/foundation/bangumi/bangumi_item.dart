@@ -304,7 +304,7 @@ class EpisodeResult {
   /// 刚完结后仍保留的天数（按自然日）。
   static const int finishGraceDays = 3;
 
-  /// end 与总话数都拿不到时，末话距今超过这么多天即视为早已完结。
+  /// 末话距今超过这么多天即视为早已完结（周更约 3 周），仅在官方 end 缺失时启用。
   static const int staleEpisodeDays = 21;
 
   /// 完结日是否已超出宽限期。
@@ -366,10 +366,10 @@ EpisodeResult? resolveEpisodeResult({
   // 时间表里；官方 end 与末话新鲜度是另外两个依据
   final endedByOfficialDate = EpisodeResult.isFinishedDate(officialEnd, now);
 
-  // end 与总话数都没有时看末话新鲜度：周更连续 3 周没出新区间基本可判定
-  // 已完结（或休刊）
+  // 末话新鲜度：周更连续 3 周没出新区间，基本可判定已完结（或休刊）。
+  // 不能用 seriesTotal 是否已知来开关——总话数一旦有值这条就失效了，
+  // 而总话数不可靠（bangumi 的 total 常是计划集数）恰恰是需要它兜底的场景。
   final staleByEpisodes =
-      seriesTotal <= 0 &&
       officialEnd == null &&
       finalAirDate != null &&
       now.difference(
