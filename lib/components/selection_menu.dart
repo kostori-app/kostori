@@ -121,6 +121,22 @@ BuildContext _navContextOf(BuildContext context) {
   return App.mainNavigatorKey?.currentContext ?? App.rootContext;
 }
 
+/// 关闭选中文本菜单后再弹出弹层。
+///
+/// 菜单是 [ContextMenuController] 插在**根Overlay** 上的 OverlayEntry，排在
+/// Navigator 的 Overlay 之后、压在所有路由之上。`removeAny` 会同步把它从 Overlay
+/// 列表摘掉，让出一个事件循环即可；不要改回 `endOfFrame`——那要等下一帧绘制，
+/// 帧被取消时永不完成，表现为点击后完全没反应。
+Future<void> _presentOverContextMenu(
+  BuildContext context,
+  Future<void> Function(BuildContext context) present,
+) async {
+  ContextMenuController.removeAny();
+  await Future<void>.delayed(Duration.zero);
+  if (!context.mounted) return;
+  await present(_navContextOf(context));
+}
+
 /// 选中文本的菜单：默认项 + 翻译 + 搜索
 ///
 /// [selectedText] 延迟到点击时才取值，避免菜单构建时选中内容尚未同步。
@@ -137,17 +153,17 @@ Widget appSelectionContextMenu(
   return AdaptiveTextSelectionToolbar.buttonItems(
     anchors: state.contextMenuAnchors,
     buttonItems: [
-      // 复制 / 全选 / 分享（文案与回调由框架按平台给出）
       ...items,
       if (hasSelection)
         ContextMenuButtonItem(
           label: t.translate,
           onPressed: () {
-            ContextMenuController.removeAny();
             final text = selectedText().trim();
             if (text.isEmpty) return;
-            // 用菜单所在上下文弹出，归属当前路由
-            showTranslationSheet(_navContextOf(context), text);
+            _presentOverContextMenu(
+              context,
+              (ctx) => showTranslationSheet(ctx, text),
+            );
           },
         ),
       if (hasSelection)
@@ -157,9 +173,6 @@ Widget appSelectionContextMenu(
             ContextMenuController.removeAny();
             final text = selectedText().trim();
             if (text.isEmpty) return;
-            // 此前用 App.rootContext，导致从搜索页内选中搜索时，
-            // 新页面被压在搜索页下面（被覆盖）。改用当前 context，
-            // 保证覆盖在当前页之上
             _navContextOf(context).to(() => SearchPage(keyword: text));
           },
         ),
@@ -282,9 +295,11 @@ Widget appEditableSelectionContextMenu(
         ContextMenuButtonItem(
           label: t.translate,
           onPressed: () {
-            ContextMenuController.removeAny();
             if (text.isEmpty) return;
-            showTranslationSheet(_navContextOf(context), text);
+            _presentOverContextMenu(
+              context,
+              (ctx) => showTranslationSheet(ctx, text),
+            );
           },
         ),
       if (hasSelection)
@@ -330,8 +345,10 @@ List<ContextMenuButtonItem> appSelectionMagnetItems(
     ContextMenuButtonItem(
       label: t.addToTorrentDownload,
       onPressed: () {
-        ContextMenuController.removeAny();
-        showAddTorrentSheet(_navContextOf(context), initialMagnet: magnet);
+        _presentOverContextMenu(
+          context,
+          (ctx) => showAddTorrentSheet(ctx, initialMagnet: magnet),
+        );
       },
     ),
   ];
@@ -363,7 +380,6 @@ Future<void> showTranslationSheet(BuildContext context, String text) {
   );
 }
 
-/// 翻译结果弹层：上方原文卡片、下方译文（加载用骨架屏、失败可重试）。
 class _TranslationSheet extends StatefulWidget {
   const _TranslationSheet({required this.source});
 

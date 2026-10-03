@@ -264,14 +264,13 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         characterItmes.addAll(result);
       }
 
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
     }
   }
 
-  // 构建所有标签分类
-  // 在State类中添加以下变量
   int selectedCountForCategory(TagCategory category) {
     return tags.where((tag) => category.tags.contains(tag)).length;
   }
@@ -286,94 +285,33 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     TagCategory(title: t.categories, tags: classification),
   ];
 
-  // 分类选择栏
   List<Widget> _buildTagCategories() {
     return [
       SliverToBoxAdapter(
-        child: SizedBox(
-          height: 40,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              final selectedCount = selectedCountForCategory(category);
-              final isSelected = selectedCount > 0;
-              final colorScheme = Theme.of(context).colorScheme;
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: InkWell(
-                  onTap: () => _showTagSelectionDialog(context, category),
-                  borderRadius: BorderRadius.circular(6),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? colorScheme.primary.toOpacity(0.08)
-                          : colorScheme.surfaceContainerHighest.toOpacity(0.6),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        width: 0.5,
-                        color: isSelected
-                            ? colorScheme.primary.toOpacity(0.5)
-                            : colorScheme.outline.toOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          category.title,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isSelected
-                                ? colorScheme.primary
-                                : colorScheme.onSurface,
-                            fontWeight: isSelected
-                                ? FontWeight.w500
-                                : FontWeight.normal,
-                          ),
-                        ),
-                        if (isSelected) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '$selectedCount',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onPrimary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+          child: CapsuleChipGroup(
+            children: [
+              for (final category in categories) _tagCategoryChip(category),
+            ],
           ),
         ),
       ),
     ];
   }
 
-  // 标签选择对话框
+  Widget _tagCategoryChip(TagCategory category) {
+    final selectedCount = selectedCountForCategory(category);
+    return CapsuleChip(
+      text: selectedCount > 0
+          ? '${category.title} $selectedCount'
+          : category.title,
+      isSelected: selectedCount > 0,
+      onTap: () => _showTagSelectionDialog(context, category),
+    );
+  }
+
   void _showTagSelectionDialog(BuildContext context, TagCategory category) {
     final currentSelected = List<String>.from(
       tags.where((tag) => category.tags.contains(tag)),
@@ -399,7 +337,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 标签区
                       Flexible(
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -472,7 +409,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                           ),
                         ),
                       ),
-                      // 操作栏
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                         child: Row(
@@ -534,6 +470,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     });
     final newItems = await bangumiSearch();
     bangumiItems = newItems;
+    if (!mounted) return;
     setState(() {
       _isLoading = false;
     });
@@ -549,7 +486,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
           content: TextField(
             autofocus: true,
             decoration: InputDecoration(
-              // filled: true,
               fillColor: Theme.of(context).cardColor,
               hintText: t.enterKeywords,
               prefixIcon: Icon(Icons.search),
@@ -586,7 +522,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     }
   }
 
-  // 内容列表（根据选中标签过滤）
   Widget _buildContentListSliver() {
     void toggleSelect<T>(T item, Map<T, bool> selectedMap, List<T> list) {
       if (selectedMap.containsKey(item)) {
@@ -760,7 +695,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     );
   }
 
-  // 时间选择对话框
   void _showAirEndDateDialog(BuildContext context) {
     DateTime now = DateTime.now();
     DateTime? air = Utils.safeParseDate(airDate);
@@ -777,7 +711,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               return Utils.formatDate(date);
             }
 
-            // 自定义日期选择器（年月日）
             Future<DateTime?> pickDate(DateTime? initial) async {
               DateTime temp = initial ?? now;
               int selYear = temp.year;
@@ -861,7 +794,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        // 月份网格
                         GridView.count(
                           crossAxisCount: 4,
                           shrinkWrap: true,
@@ -937,7 +869,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // 星期标题
                         Row(
                           children:
                               [
@@ -967,7 +898,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                   .toList(),
                         ),
                         const SizedBox(height: 4),
-                        // 日历网格
                         Builder(
                           builder: (_) {
                             final firstDay =
@@ -1052,7 +982,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               );
             }
 
-            // 快捷选择：设置区间
             void applyQuick(DateTime start, DateTime end_) {
               setStates(() {
                 air = start;
@@ -1060,7 +989,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               });
             }
 
-            // 季度信息
             final quarters = [
               {
                 'label': t.fullYear,
@@ -1111,7 +1039,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  // 年份导航
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1185,7 +1112,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // 快捷按钮行
                   Row(
                     children: quarters.map((q) {
                       return Expanded(
@@ -1299,6 +1225,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     });
                     final newItems = await bangumiSearch();
                     bangumiItems = newItems;
+                    if (!mounted) return;
                     setState(() => _isLoading = false);
                   },
                   child: Text(t.apply),
@@ -1374,6 +1301,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   _isLoading = true;
                 });
                 bangumiItems = await bangumiSearch();
+                if (!mounted) return;
                 setState(() {
                   _isLoading = false;
                 });
@@ -1519,6 +1447,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         characterItmes = newItems;
       }
 
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -1777,7 +1706,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     _showSearchSuggestions = true;
                   });
 
-                  // 取消之前的防抖定时器
                   _debounce?.cancel();
 
                   _debounce = Timer(const Duration(seconds: 2), () async {
@@ -1808,7 +1736,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                           .postPersonsSearchByStringNext(keyword: keyword);
                     }
 
-                    // 只处理最新的一次搜索结果
+                    if (!mounted) return;
                     if (token == _searchToken) {
                       setState(() {
                         if (subjectSearch) {
@@ -1855,6 +1783,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               });
               final newItems = await bangumiSearch();
               bangumiItems = newItems;
+              if (!mounted) return;
               setState(() => _isLoading = false);
             },
             borderRadius: BorderRadius.circular(6),
@@ -1943,6 +1872,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             });
             final newItems = await bangumiSearch();
             bangumiItems = newItems;
+            if (!mounted) return;
             setState(() => _isLoading = false);
           },
         ),
@@ -1961,6 +1891,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             });
             final newItems = await bangumiSearch();
             bangumiItems = newItems;
+            if (!mounted) return;
             setState(() => _isLoading = false);
           },
         ),
