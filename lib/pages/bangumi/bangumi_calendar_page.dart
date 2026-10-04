@@ -245,6 +245,13 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
 
         if (episodeResult.shouldSkip) continue;
 
+        // 未完结但近期没有集（休刊 / 季间空档）→ 本周不该占着这个星期格子
+        if (hasEpisodes &&
+            !episodeResult.isFinished &&
+            !BangumiUtils.hasEpisodeNearNow(episodes, now)) {
+          continue;
+        }
+
         newCalendar[weekday - 1].add(
           item.copyWith(airTime: airTimeStr, extraInfo: episodeResult),
         );

@@ -673,6 +673,31 @@ class BangumiUtils {
     }
   }
 
+  /// 时间表只该列出「近期确实有集」的条目。
+  ///
+  /// 之前只判是否完结，未完结的番即使本周没有集（休刊、季间空档、特别篇之后
+  /// 断更）也会一直占着首播日对应的星期格子。
+  ///
+  /// 用「距今若干天内有集」而不是精确的 ISO 周：周更间隔 7 天，取 4 天窗口
+  /// 能覆盖正常周更，同时避开周日凌晨档（00:30 属于上一周）的边界误判。
+  static bool hasEpisodeNearNow(
+    List<EpisodeInfo> episodes,
+    DateTime now, {
+    int days = 4,
+  }) {
+    final window = Duration(days: days);
+    for (final ep in episodes) {
+      if (ep.type != 0) continue;
+      final airDate = DateTime.tryParse(ep.airDate);
+      if (airDate == null) continue;
+      final day = DateTime(airDate.year, airDate.month, airDate.day);
+      final today = DateTime(now.year, now.month, now.day);
+      final diff = day.difference(today).abs();
+      if (diff <= window) return true;
+    }
+    return false;
+  }
+
   static List<MapEntry<String, int>> sortedTagCounts(
     List<BangumiItem> items, {
     int minTagCount = 0,

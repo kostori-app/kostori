@@ -110,5 +110,92 @@ void main() {
       );
       expect(r!.isFinished, isTrue);
     });
+
+    test('缓存 total 含特别篇时 seriesReachedEnd 必然为 false', () {
+      // bangumi_AllEpInfo 缓存里 total=13（12 正片 + 1 特别篇），
+      // 而最后一个 type=0 的 sort 是 12 —— 拿 total 当「已播完」判据永远不成立
+      final cachedTotal = 13;
+      final lastType0Sort = eps.where((e) => e.type == 0).last.sort;
+      expect(cachedTotal > lastType0Sort, isTrue);
+      final r = resolveEpisodeResult(
+        type0Episodes: eps,
+        currentEpisode: eps.last,
+        seriesTotal: cachedTotal,
+        now: _now,
+        currentWeek: _currentWeek,
+        officialEnd: null,
+      );
+      expect(r!.isFinished, isFalse, reason: '单靠 total 判不出来');
+    });
+  });
+
+  group('hasEpisodeNearNow — 时间表本周是否该显示', () {
+    test('末话 7 天前播出（怪奇組实况）→ 本周不显示', () {
+      expect(BangumiUtils.hasEpisodeNearNow(_eps(), _now), isFalse);
+    });
+
+    test('周更正常播出 → 显示', () {
+      // 末话 2026-10-01，3 天前
+      final fresh = List.generate(12, (i) {
+        final d = DateTime(2026, 7, 16).add(Duration(days: 7 * i));
+        return EpisodeInfo(
+          id: i + 1,
+          sort: i + 1,
+          ep: i + 1,
+          comment: 0,
+          type: 0,
+          name: 'ep${i + 1}',
+          nameCn: '',
+          airDate:
+              '${d.year.toString().padLeft(4, '0')}-'
+              '${d.month.toString().padLeft(2, '0')}-'
+              '${d.day.toString().padLeft(2, '0')}',
+          duration: '',
+          desc: '',
+        );
+      });
+      expect(fresh.last.airDate, '2026-10-01');
+      expect(BangumiUtils.hasEpisodeNearNow(fresh, _now), isTrue);
+    });
+
+    test('未来几天待播的集也算本周显示', () {
+      final upcoming = [
+        EpisodeInfo(
+          id: 99,
+          sort: 99,
+          ep: 99,
+          comment: 0,
+          type: 0,
+          name: 'next',
+          nameCn: '',
+          airDate: '2026-10-06',
+          duration: '',
+          desc: '',
+        ),
+      ];
+      expect(BangumiUtils.hasEpisodeNearNow(upcoming, _now), isTrue);
+    });
+
+    test('只有特别篇在附近也不算数', () {
+      final specialOnly = [
+        EpisodeInfo(
+          id: 1,
+          sort: 1,
+          ep: 0,
+          comment: 0,
+          type: 1,
+          name: '特別怪',
+          nameCn: '',
+          airDate: '2026-10-02',
+          duration: '',
+          desc: '',
+        ),
+      ];
+      expect(BangumiUtils.hasEpisodeNearNow(specialOnly, _now), isFalse);
+    });
+
+    test('空列表 → 不显示', () {
+      expect(BangumiUtils.hasEpisodeNearNow(const [], _now), isFalse);
+    });
   });
 }
