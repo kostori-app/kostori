@@ -1,6 +1,55 @@
 /// 种子任务状态
 enum TorrentJobStatus { metadata, downloading, paused, completed, failed }
 
+/// base32 infohash（32 位）→ 40 位小写 hex；不是合法 base32 返回 null。
+String? base32ToInfoHashHex(String s) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  var bits = 0;
+  var value = 0;
+  final bytes = <int>[];
+  for (final ch in s.toUpperCase().codeUnits) {
+    final idx = alphabet.indexOf(String.fromCharCode(ch));
+    if (idx < 0) return null;
+    value = (value << 5) | idx;
+    bits += 5;
+    if (bits >= 8) {
+      bytes.add((value >> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  if (bytes.length != 20) return null;
+  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+}
+
+/// 可分享的种子识别码：40 位大写 hex infohash（BT 客户端通用格式）。
+///
+/// 直接粘进别的 BT 客户端的「添加种子」即可下载同一个种子。base32 磁力也会
+/// 转成 hex，保证复制出去的东西哪儿都能用。
+String? parseInfoHash(String magnet) {
+  final raw = magnet.trim();
+  if (!raw.contains('xt=urn:btih:')) {
+    final bare = raw.toUpperCase();
+    if (RegExp(r'^[0-9A-F]{40}$').hasMatch(bare)) return bare;
+    if (RegExp(r'^[A-Z2-7]{32}$').hasMatch(bare)) {
+      return base32ToInfoHashHex(bare)?.toUpperCase();
+    }
+    return null;
+  }
+  final hex = RegExp(r'xt=urn:btih:([0-9a-fA-F]{40})(?![0-9a-fA-F])')
+      .firstMatch(raw)
+      ?.group(1);
+  if (hex != null) return hex.toUpperCase();
+  final b32 = RegExp(
+    r'xt=urn:btih:([A-Z2-7]{32})(?![A-Z2-7])',
+    caseSensitive: false,
+  ).firstMatch(raw)?.group(1);
+  return b32 == null ? null : base32ToInfoHashHex(b32)?.toUpperCase();
+}
+
+/// 由识别码拼出最小磁力链（[normalizeMagnet] 的逆向补全）。
+String magnetFromInfoHash(String infoHash) =>
+    'magnet:?xt=urn:btih:${infoHash.toUpperCase()}';
+
 /// 添加种子后的停止策略
 enum TorrentStopPolicy { none, afterMetadata, afterDownload }
 
@@ -73,14 +122,15 @@ class TorrentJob {
 
   bool get isFinished => status == TorrentJobStatus.completed;
 
-  /// 从 magnet 提取 btih 信息哈希（仅支持 hex；base32 返回空）
-  String get infoHash {
-    final m = RegExp(
-      r'urn:btih:([^&]+)',
-      caseSensitive: false,
-    ).firstMatch(magnet);
-    return m?.group(1) ?? '';
-  }
+  /// 是否处于抓取元数据阶段（进度未知，进度条需用不确定动画）。
+  ///
+  /// 仅凭 [hasMetadata] 不足以判断：失败与暂停的条目同样没有元数据，
+  /// 会导致进度条持续动画化。
+  bool get isFetchingMeta =>
+      status == TorrentJobStatus.metadata && !hasMetadata;
+
+  /// 种子识别码：40 位大写 hex infohash（兼容裸 hash 与 base32 磁力）。
+  String get infoHash => parseInfoHash(magnet) ?? '';
 
   Map<String, dynamic> toJson() => {
     'id': id,

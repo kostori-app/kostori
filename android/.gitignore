@@ -4,7 +4,14 @@ gradle-wrapper.jar
 /gradlew
 /gradlew.bat
 /local.properties
-GeneratedPluginRegistrant.java
+
+# Flutter 3.47 会把插件注册器生成到 android/app/src/main/java/ 下（见
+# flutter_tools lib/src/project.dart: generatedPluginRegistrantFile）。
+# 只有 `flutter build`（releaseMode=true）会剔除 dev_dependency；
+# `flutter test` / debug 构建会把 integration_test 也写进去。之后若直接跑
+# `gradlew :app:packageRelease`（不经过 flutter），就会用这份含
+# integration_test 的陈旧文件编译主源码集，而 release 的 classpath 里没有
+# 那个包 → 编译失败。所以本地构建一律用 `flutter build apk --release`。
 
 # Remember to never publicly share your keystore.
 # See https://flutter.dev/docs/deployment/android#reference-the-keystore-from-the-app
@@ -12,4 +19,7 @@ key.properties
 **/*.keystore
 **/*.jks
 /app/.cxx/
-/java_pid70368.hprof
+
+# JVM OOM 堆转储（曾因 -XX:+HeapDumpOnOutOfMemoryError 在这里堆了 8GB 垃圾，
+# 把 D 盘写到只剩 4GB，APK 打包阶段直接失败；该开关已从 gradle.properties 移除）
+*.hprof

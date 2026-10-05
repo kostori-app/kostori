@@ -3101,6 +3101,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentContent => '内容';
 	@override String get torrentSavePathLabel => '保存路径';
 	@override String get torrentInfoHashLabel => '信息哈希';
+	@override String get torrentInfoHashHint => '复制后可在其它 BT 客户端添加同一个种子';
+	@override String get torrentMagnetLinkLabel => '磁力链接';
 	@override String get torrentProgressLabel => '进度';
 	@override String get torrentFileDone => '已下';
 	@override String get torrentFilePending => '未下';
@@ -3118,6 +3120,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentTrackersHint => '每行一个 tracker，播放时自动附加到磁力链接';
 	@override String get torrentMetadataTimeout => '获取元数据超时，未找到可用的下载节点，请稍后重试或更换种子';
 	@override String get torrentMetadataParseFailed => '多次获取到的元数据都无法解析，该种子可能已失效';
+	@override String get torrentMetadataInterrupted => '上次获取元数据被中断，点「开始」重试';
 	@override String get torrentNodesHint => '每行一个 DHT 节点，格式 host:port';
 	@override String get torrentTrackersAuto => '自动附加 URL 的 trackers 到新的下载';
 	@override String get torrentDhtExplain => 'DHT 是 BT 标准的「无 tracker 找 peer」网络，通常保持开启；下面可填自定义引导节点（可选）。';
@@ -6381,6 +6384,8 @@ extension on TranslationsZhCn {
 			'torrentContent' => '内容',
 			'torrentSavePathLabel' => '保存路径',
 			'torrentInfoHashLabel' => '信息哈希',
+			'torrentInfoHashHint' => '复制后可在其它 BT 客户端添加同一个种子',
+			'torrentMagnetLinkLabel' => '磁力链接',
 			'torrentProgressLabel' => '进度',
 			'torrentFileDone' => '已下',
 			'torrentFilePending' => '未下',
@@ -6398,6 +6403,7 @@ extension on TranslationsZhCn {
 			'torrentTrackersHint' => '每行一个 tracker，播放时自动附加到磁力链接',
 			'torrentMetadataTimeout' => '获取元数据超时，未找到可用的下载节点，请稍后重试或更换种子',
 			'torrentMetadataParseFailed' => '多次获取到的元数据都无法解析，该种子可能已失效',
+			'torrentMetadataInterrupted' => '上次获取元数据被中断，点「开始」重试',
 			'torrentNodesHint' => '每行一个 DHT 节点，格式 host:port',
 			'torrentTrackersAuto' => '自动附加 URL 的 trackers 到新的下载',
 			'torrentDhtExplain' => 'DHT 是 BT 标准的「无 tracker 找 peer」网络，通常保持开启；下面可填自定义引导节点（可选）。',

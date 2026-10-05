@@ -3100,6 +3100,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentContent => '內容';
 	@override String get torrentSavePathLabel => '保存路徑';
 	@override String get torrentInfoHashLabel => '資訊雜湊';
+	@override String get torrentInfoHashHint => '複製後可在其它 BT 用戶端加入同一個種子';
+	@override String get torrentMagnetLinkLabel => '磁力連結';
 	@override String get torrentProgressLabel => '進度';
 	@override String get torrentFileDone => '已下';
 	@override String get torrentFilePending => '未下';
@@ -3117,6 +3119,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentTrackersHint => '每行一個 tracker，播放時自動附加到磁力連結';
 	@override String get torrentMetadataTimeout => '取得中介資料逾時，找不到可用的下載節點，請稍後重試或更換種子';
 	@override String get torrentMetadataParseFailed => '多次取得的中介資料都無法解析，該種子可能已失效';
+	@override String get torrentMetadataInterrupted => '上次取得中介資料被中斷，點「開始」重試';
 	@override String get torrentNodesHint => '每行一個 DHT 節點，格式 host:port';
 	@override String get torrentTrackersAuto => '自動附加 URL 的 trackers 到新的下載';
 	@override String get torrentDhtExplain => 'DHT 是 BT 標準的「無 tracker 找 peer」網路，通常保持開啟；下面可填自訂引導節點（可選）。';
@@ -6379,6 +6382,8 @@ extension on TranslationsZhTw {
 			'torrentContent' => '內容',
 			'torrentSavePathLabel' => '保存路徑',
 			'torrentInfoHashLabel' => '資訊雜湊',
+			'torrentInfoHashHint' => '複製後可在其它 BT 用戶端加入同一個種子',
+			'torrentMagnetLinkLabel' => '磁力連結',
 			'torrentProgressLabel' => '進度',
 			'torrentFileDone' => '已下',
 			'torrentFilePending' => '未下',
@@ -6396,6 +6401,7 @@ extension on TranslationsZhTw {
 			'torrentTrackersHint' => '每行一個 tracker，播放時自動附加到磁力連結',
 			'torrentMetadataTimeout' => '取得中介資料逾時，找不到可用的下載節點，請稍後重試或更換種子',
 			'torrentMetadataParseFailed' => '多次取得的中介資料都無法解析，該種子可能已失效',
+			'torrentMetadataInterrupted' => '上次取得中介資料被中斷，點「開始」重試',
 			'torrentNodesHint' => '每行一個 DHT 節點，格式 host:port',
 			'torrentTrackersAuto' => '自動附加 URL 的 trackers 到新的下載',
 			'torrentDhtExplain' => 'DHT 是 BT 標準的「無 tracker 找 peer」網路，通常保持開啟；下面可填自訂引導節點（可選）。',

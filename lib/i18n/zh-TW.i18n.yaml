@@ -3106,7 +3106,7 @@ torrentSourceGroupField: 分組欄位
 torrentSourceDateField: 時間欄位
 torrentSourcesEmpty: 還沒有 BT 資源站：點右下角「匯入」，或把 .json 設定檔放進下面目錄
 torrentSourceExample: 填入示例
-torrentMagnetHint: 貼上磁力連結
+torrentMagnetHint: 貼上磁力連結，或 40 位資訊雜湊
 torrentPlay: 播放
 torrentParse: 解析
 torrentAdd: 新增種子
@@ -3141,6 +3141,8 @@ torrentInfo: 基本資訊
 torrentContent: 內容
 torrentSavePathLabel: 保存路徑
 torrentInfoHashLabel: 資訊雜湊
+torrentInfoHashHint: 複製後可在其它 BT 用戶端加入同一個種子
+torrentMagnetLinkLabel: 磁力連結
 torrentProgressLabel: 進度
 torrentFileDone: 已下
 torrentFilePending: 未下
@@ -3158,6 +3160,7 @@ torrentFetchTrackers: 取得 Tracker
 torrentTrackersHint: 每行一個 tracker，播放時自動附加到磁力連結
 torrentMetadataTimeout: 取得中介資料逾時，找不到可用的下載節點，請稍後重試或更換種子
 torrentMetadataParseFailed: 多次取得的中介資料都無法解析，該種子可能已失效
+torrentMetadataInterrupted: 上次取得中介資料被中斷，點「開始」重試
 torrentNodesHint: 每行一個 DHT 節點，格式 host:port
 torrentTrackersAuto: 自動附加 URL 的 trackers 到新的下載
 torrentDhtExplain: DHT 是 BT 標準的「無 tracker 找 peer」網路，通常保持開啟；下面可填自訂引導節點（可選）。

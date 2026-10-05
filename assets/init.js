@@ -1516,6 +1516,43 @@ let UI = {
     },
 
     /**
+     * Open the "add torrent download" sheet with the magnet link prefilled.
+     *
+     * Use it when the user taps a magnet link and clearly wants to download it
+     * (instead of copying it or opening it in another app). The sheet is shown
+     * prefilled only — nothing is added until the user confirms, so they can
+     * still pick the stop policy or cancel.
+     *
+     * ```js
+     * UI.addTorrentDownload(magnet);   // 'magnet:?xt=urn:btih:...'
+     * ```
+     *
+     * @param magnet {string} - A magnet link. Plain 40-char info hashes are
+     *                          accepted too and get wrapped into a magnet link.
+     * @returns {Promise<void>} - Resolved when the sheet is closed.
+     */
+    addTorrentDownload: (magnet) => {
+        return sendMessage({
+            method: 'UI',
+            function: 'addTorrentDownload',
+            magnet: String(magnet || ''),
+        })
+    },
+
+    /**
+     * Copy text to the system clipboard.
+     * @param text {string}
+     * @returns {Promise<void>}
+     */
+    copyToClipboard: (text) => {
+        return sendMessage({
+            method: 'UI',
+            function: 'copyToClipboard',
+            text: String(text == null ? '' : text),
+        })
+    },
+
+    /**
      * Show a loading dialog.
      * @param onCancel {() => void | null | undefined} - Called when the loading dialog is canceled. If [onCancel] is null, the dialog cannot be canceled by the user.
      * @returns {number} - A number that can be used to cancel the loading dialog.

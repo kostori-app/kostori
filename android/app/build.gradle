@@ -8,6 +8,31 @@ plugins {
 ext.abiCodes = ["armeabi-v7a": 1, "arm64-v8a": 2, "x86_64": 3]
 
 
+// Flutter 把插件注册器生成到 src/main/java 下，只有 `flutter build`
+// （releaseMode=true）会剔除 dev_dependency；`flutter test` 与 debug 构建会把
+// integration_test 也写进去。之后若直接执行 `gradlew :app:packageRelease`
+//（不经过 flutter），这份陈旧文件会被编进主源码集，而 release 的 classpath 里
+// 没有 dev_dependency → "程序包 dev.flutter.plugins.integration_test 不存在"。
+// 正常路径是 `flutter build apk --release`；这里再兜一层，让误用 gradle 也能过。
+def registrantFile = file("src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java")
+tasks.register("sanitizePluginRegistrant") {
+    def target = registrantFile
+    inputs.file(target).optional().withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.upToDateWhen { false }
+    doLast {
+        if (!target.exists()) return
+        def text = target.getText("UTF-8")
+        if (!text.contains("integration_test")) return
+        def cleaned = text.replaceAll(/(?m)^.*integration_test.*\R/, "")
+        target.write(cleaned, "UTF-8")
+        logger.lifecycle("sanitizePluginRegistrant: 已从生成的插件注册器中移除 integration_test（dev_dependency，不进 release）")
+    }
+}
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn("sanitizePluginRegistrant")
+}
+
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {

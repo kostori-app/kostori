@@ -128,17 +128,17 @@ const List<String> kDefaultTrackers = [
   'wss://tracker.openwebtorrent.com:443/announce',
 ];
 
-/// 内置公共 DHT 引导节点。库自带只有 3 个且只查询一轮，trackerless 磁力
-/// 常常因此找不到 peer；这里补入社区常用节点，配合周期重查扩大覆盖。
+/// 内置公共 DHT 引导节点。
+///
+/// 库自带的 [StandaloneDHT] 存在响应解码缺陷，元数据抓取改用 [DhtClient]
+///（BEP 5），引导节点需自行维护：`router.bitcomet.com` / `dht.bitcomet.com`
+/// 已 NXDOMAIN，`router.silotis.us` 仅剩 AAAA 记录，均已移除。
 const List<String> kDefaultDhtNodes = [
-  'udp://router.bittorrent.com:6881',
-  'udp://router.utorrent.com:6881',
   'udp://dht.transmissionbt.com:6881',
+  'udp://router.bittorrent.com:6881',
   'udp://dht.libtorrent.org:25401',
   'udp://dht.aelitis.com:6881',
-  'udp://router.silotis.us:6881',
-  'udp://router.bitcomet.com:6881',
-  'udp://dht.bitcomet.com:6881',
+  'udp://router.utorrent.com:6881',
 ];
 
 /// 视频/音频扩展名，用于判断是否可播放。
@@ -175,6 +175,14 @@ class TorrentState {
   final List<TorrentJob> jobs;
 }
 
+/// 用户主动停止导致元数据抓取被取消（不是失败）。
+class TorrentFetchCancelled implements Exception {
+  const TorrentFetchCancelled();
+
+  @override
+  String toString() => 'torrent metadata fetch cancelled';
+}
+
 /// 种子任务管理器（基于纯 Dart 的 dtorrent_task_v2，Riverpod Notifier）。
 ///
 /// 引擎实例只在需要时创建/启动；重启后只加载已持久化的 `.torrent`，
@@ -208,6 +216,9 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 每个任务已自动重试抓取元数据的次数，防止「抓到但解析不出来」时无限循环。
   final Map<String, int> _refetchAttempts = {};
+
+  /// 正在进行的元数据抓取与其取消信号，用户按「暂停」时立刻中止网络动作。
+  final Map<String, Completer<void>> _fetchCancels = {};
 
   /// 元数据抓取超时。
   ///
@@ -351,21 +362,34 @@ class TorrentManager extends Notifier<TorrentState> {
     _emit();
   }
 
+  /// 自定义 DHT 引导节点。`host:port` 会被补成 `udp://host:port`，
+  /// 否则被 [\_parseTrackers] 当成无效条目丢掉。
   List<String> get customNodes => _readList(
     appdata.implicitData,
     kTorrentCustomNodes,
-  ).split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+  ).split('\n').map(normalizeDhtNode).where((e) => e.isNotEmpty).toList();
+
+  static String normalizeDhtNode(String raw) {
+    var s = raw.trim();
+    if (s.isEmpty) return '';
+    if (!s.contains('://')) s = 'udp://$s';
+    final uri = Uri.tryParse(s);
+    if (uri == null || uri.host.isEmpty) return '';
+    return uri.port == 0 ? 'udp://${uri.host}:6881' : s;
+  }
 
   void setCustomNodes(List<String> list) {
-    appdata.implicitData[kTorrentCustomNodes] = list
-        .map((e) => e.trim())
+    final nodes = list
+        .map(normalizeDhtNode)
         .where((e) => e.isNotEmpty)
+        .toSet()
         .toList();
+    appdata.implicitData[kTorrentCustomNodes] = nodes;
     appdata.writeImplicitData();
     for (final job in _jobs) {
       final engine = _engines[job.id];
       if (engine == null) continue;
-      for (final n in _parseTrackers(list)) {
+      for (final n in _parseTrackers(nodes)) {
         try {
           engine.addDHTNode(n);
         } catch (_) {}
@@ -431,7 +455,9 @@ class TorrentManager extends Notifier<TorrentState> {
     }
     await _loadJobs();
     for (final job in _jobs) {
-      await _prepareEngine(job, start: false);
+      // refetch: false —— 仅恢复本地状态；元数据抓取是网络动作，
+      // 进程重启后不自动重试。
+      await _prepareEngine(job, start: false, refetch: false);
     }
     _syncTimer?.cancel();
     _syncTimer = Timer.periodic(const Duration(seconds: 1), (_) => _sync());
@@ -478,9 +504,11 @@ class TorrentManager extends Notifier<TorrentState> {
     TorrentStopPolicy stopAfter = TorrentStopPolicy.none,
   }) async {
     await init();
+    // 支持直接粘裸 infohash（BT 客户端「复制 info hash」得到的即是此格式）
+    final normalized = normalizeMagnet(magnet);
     // 已有同种任务：直接复用。有元数据就直接返回（免重新抓取，离线可用），
     // 没有则确保后台抓取，由调用方轮询 filesOf。
-    final ih = _infoHashOf(magnet);
+    final ih = _infoHashOf(normalized);
     if (ih != null) {
       for (final j in _jobs) {
         if (_infoHashOf(j.magnet) != ih) continue;
@@ -492,7 +520,7 @@ class TorrentManager extends Notifier<TorrentState> {
       }
     }
     final id = _newJobId();
-    final effectiveMagnet = _augmentTrackers(magnet);
+    final effectiveMagnet = _augmentTrackers(normalized);
     final job = TorrentJob(
       id: id,
       magnet: effectiveMagnet,
@@ -509,7 +537,7 @@ class TorrentManager extends Notifier<TorrentState> {
     _emit();
 
     try {
-      final bytes = await _fetchMetadata(effectiveMagnet);
+      final bytes = await _fetchMetadata(effectiveMagnet, jobId: job.id);
       await File(job.torrentPath).writeAsBytes(bytes, flush: true);
       await _prepareEngine(
         job,
@@ -520,6 +548,8 @@ class TorrentManager extends Notifier<TorrentState> {
           message: '${t.downloadFailed}: ${job.error ?? ''}',
         );
       }
+    } on TorrentFetchCancelled {
+      job.status = TorrentJobStatus.paused;
     } catch (e) {
       job.status = TorrentJobStatus.failed;
       job.error = e.toString();
@@ -603,11 +633,8 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 取出磁力的 infohash（用于去重复用已有任务）。
   static String? _infoHashOf(String magnet) {
-    final m = RegExp(
-      r'urn:btih:([^&]+)',
-      caseSensitive: false,
-    ).firstMatch(magnet);
-    return m?.group(1)?.toLowerCase();
+    final hash = parseInfoHash(normalizeMagnet(magnet));
+    return hash?.toLowerCase();
   }
 
   /// 给磁力补 tracker：合并「磁力自带 + 用户配置 + 内置公共」并去重。
@@ -632,10 +659,14 @@ class TorrentManager extends Notifier<TorrentState> {
   ///
   /// 必须保留原始字节：重新编码会改变字节（如 pieces），导致 info hash
   /// 与 magnet 不一致，tracker 拿不到 peer。
-  Future<Uint8List> _fetchMetadata(String magnet) async {
+  Future<Uint8List> _fetchMetadata(String magnet, {String? jobId}) async {
     final link = _tryParseMagnet(magnet);
     final downloader = MetadataDownloader.fromMagnet(magnet);
     final completer = Completer<Uint8List>();
+    // pause() 通过它提前结束等待
+    final cancel = jobId == null
+        ? null
+        : (_fetchCancels[jobId] = Completer<void>());
     downloader.createListener()
       ..on<MetaDataDownloadComplete>((event) {
         if (!completer.isCompleted) {
@@ -658,10 +689,10 @@ class TorrentManager extends Notifier<TorrentState> {
     if (infoHash != null) {
       dht = DhtClient(
         infoHash: infoHash,
-        bootstrapNodes: [
-          ...kDefaultDhtNodes,
-          ...customNodes,
-        ].map(Uri.tryParse).whereType<Uri>().toList(),
+        bootstrapNodes: [...dhtNodes]
+            .map(Uri.tryParse)
+            .whereType<Uri>()
+            .toList(),
         onPeer: (ip, port) {
           try {
             downloader.addNewPeerAddress(
@@ -676,14 +707,26 @@ class TorrentManager extends Notifier<TorrentState> {
     } else {
       Log.info('元数据', '无法解析 infohash，跳过 DHT：${_infoHashOf(magnet)}');
     }
-
     try {
-      return await completer.future.timeout(_metadataTimeout);
+      final Future<Uint8List> raced = cancel == null
+          ? completer.future
+          : Future.any<Uint8List>([
+              completer.future,
+              cancel.future.then(
+                (_) => Future<Uint8List>.error(const TorrentFetchCancelled()),
+              ),
+            ]);
+      return await raced.timeout(_metadataTimeout);
+    } on TorrentFetchCancelled {
+      rethrow;
     } on TimeoutException {
       // 引擎在「找不到 peer」时不会发 MetaDataDownloadFailed，
       // 只能靠这里的超时兜底。给出可读原因，别把原始异常文本抛给 UI。
       throw const TorrentMetadataTimeout();
     } finally {
+      if (jobId != null && identical(_fetchCancels[jobId], cancel)) {
+        _fetchCancels.remove(jobId);
+      }
       await dht?.stop();
       try {
         await downloader.stop();
@@ -727,14 +770,31 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   // ── 引擎准备 ──────────────────────────────────────────────────────────────
-  Future<void> _prepareEngine(TorrentJob job, {required bool start}) async {
+  ///
+  /// [refetch] 为 false（重启恢复路径）时保持持久化下来的状态，不自动重抓元数据。
+  Future<void> _prepareEngine(
+    TorrentJob job, {
+    required bool start,
+    bool refetch = true,
+  }) async {
     if (_engines.containsKey(job.id)) return;
     try {
       final magnet = _tryParseMagnet(job.magnet);
       final loaded = await _loadModel(job, magnet);
       final model = loaded == null ? null : _sanitizeModelPaths(loaded);
       if (model == null) {
-        // 元数据缺失或为旧的完整 .torrent 格式（hash 不对）：后台重新抓取。
+        // 元数据缺失或为旧的完整 .torrent 格式（hash 不对）。
+        if (!refetch) {
+          // 恢复路径保留持久化状态：不重置为 metadata，也不触发重抓。
+          // 上次退出时处于 metadata 的任务转为 paused，由用户决定是否重试。
+          if (job.status == TorrentJobStatus.metadata) {
+            job.status = TorrentJobStatus.paused;
+            job.error ??= t.torrentMetadataInterrupted;
+          }
+          job.hasMetadata = false;
+          _emit();
+          return;
+        }
         job.hasMetadata = false;
         job.error = null;
         job.status = TorrentJobStatus.metadata;
@@ -789,7 +849,7 @@ class TorrentManager extends Notifier<TorrentState> {
       if (start) {
         await task.start();
         _started.add(job.id);
-        _applyEndpoints(task, model);
+        _applyEndpoints(task, job, model);
         job.status = TorrentJobStatus.downloading;
       } else {
         // 加载状态文件，让暂停中的任务也能显示单文件进度
@@ -1015,10 +1075,14 @@ class TorrentManager extends Notifier<TorrentState> {
 
   Future<void> _refetchMetadata(TorrentJob job) async {
     try {
-      final bytes = await _fetchMetadata(job.magnet);
+      final bytes = await _fetchMetadata(job.magnet, jobId: job.id);
       await File(job.torrentPath).writeAsBytes(bytes, flush: true);
       final start = _wantStart.remove(job.id);
       await _prepareEngine(job, start: start);
+    } on TorrentFetchCancelled {
+      job.status = TorrentJobStatus.paused;
+      _wantStart.remove(job.id);
+      Log.info('元数据', '抓取已被取消：${job.id}');
     } on TorrentMetadataTimeout {
       job.status = TorrentJobStatus.failed;
       job.error = t.torrentMetadataTimeout;
@@ -1057,19 +1121,46 @@ class TorrentManager extends Notifier<TorrentState> {
       sel.length == 1 && sel.first == kTorrentNoFile;
 
   /// 应用 Tracker / DHT 节点 / 限速 到任务。
-  void _applyEndpoints(TorrentTask task, TorrentModel model) {
-    for (final tr in _parseTrackers(trackers)) {
+  void _applyEndpoints(TorrentTask task, TorrentJob job, TorrentModel model) {
+    for (final tr in _parseTrackers(trackersOf(job))) {
       try {
         task.startAnnounceUrl(tr, model.infoHashBuffer);
       } catch (_) {}
     }
-    for (final n in _parseTrackers([...kDefaultDhtNodes, ...customNodes])) {
+    for (final n in _parseTrackers(dhtNodes)) {
       try {
         task.addDHTNode(n);
       } catch (_) {}
     }
     _applyLimits(task);
   }
+
+  /// 任务实际会 announce 的地址（去重、保序）：模型 announce → 磁力 `tr`
+  /// → 用户 tracker → 内置公共。UI 与 [_applyEndpoints] 共用该集合，
+  /// 保证展示与实际 announce 一致。
+  List<String> trackersOf(TorrentJob job) {
+    final model = _models[job.id];
+    final out = <String>[];
+    final seen = <String>{};
+    void addAll(Iterable<String> values) {
+      for (final v in values) {
+        final s = v.trim();
+        if (s.isEmpty || !s.contains('://')) continue;
+        if (seen.add(s)) out.add(s);
+      }
+    }
+
+    if (model != null) addAll(model.announces.map((e) => e.toString()));
+    if (job.magnet.isNotEmpty) {
+      addAll(Uri.tryParse(job.magnet)?.queryParametersAll['tr'] ?? const []);
+    }
+    if (trackerAutoAdd) addAll(trackers);
+    addAll(kDefaultTrackers);
+    return out;
+  }
+
+  /// 实际使用的 DHT 引导节点：内置 + 用户自定义。
+  List<String> get dhtNodes => [...kDefaultDhtNodes, ...customNodes];
 
   int _wantedBytes(TorrentJob job, TorrentModel model) {
     if (job.selectedFiles.isEmpty) return model.totalSize;
@@ -1155,6 +1246,8 @@ class TorrentManager extends Notifier<TorrentState> {
 
   // ── 操作 ──────────────────────────────────────────────────────────────────
   void pause(TorrentJob job) {
+    // 中止进行中的元数据抓取，避免其在超时后覆盖 pause 设置的状态
+    _cancelFetch(job);
     final engine = _engines[job.id];
     if (engine != null && engine.state == TaskState.running) {
       engine.pause();
@@ -1164,6 +1257,15 @@ class TorrentManager extends Notifier<TorrentState> {
     job.status = TorrentJobStatus.paused;
     _persist();
     _emit();
+  }
+
+  /// 中止该任务正在进行的元数据抓取。
+  void _cancelFetch(TorrentJob job) {
+    final cancel = _fetchCancels.remove(job.id);
+    if (cancel != null && !cancel.isCompleted) cancel.complete();
+    _refetching.remove(job.id);
+    _refetchAttempts.remove(job.id);
+    _wantStart.remove(job.id);
   }
 
   /// 恢复任务；[isRetry] 为 true 时（用户手动点重试）重置元数据重试预算。
@@ -1195,7 +1297,7 @@ class TorrentManager extends Notifier<TorrentState> {
         }
         _started.add(job.id);
         final model = _models[job.id];
-        if (model != null) _applyEndpoints(engine, model);
+        if (model != null) _applyEndpoints(engine, job, model);
         job.status = TorrentJobStatus.downloading;
       }
       _sync();

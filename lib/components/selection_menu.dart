@@ -355,13 +355,17 @@ List<ContextMenuButtonItem> appSelectionMagnetItems(
 }
 
 /// 取文本里第一个 magnet 链接（去掉结尾常见的标点，
-/// 避免把中文句号/括号带进链接）。
+/// 避免把中文句号/括号带进链接）。裸 40 位 info hash 也认。
 String? firstMagnetInSelection(String text) {
+  final trimmed = text.trim();
   final match = RegExp(
     r'magnet:\?[^\s]+',
     caseSensitive: false,
-  ).firstMatch(text.trim());
-  if (match == null) return null;
+  ).firstMatch(trimmed);
+  if (match == null) {
+    final bare = RegExp(r'(?:^|[\s(（])([0-9A-Fa-f]{40})\b').firstMatch(trimmed);
+    return bare == null ? null : magnetFromInfoHash(bare.group(1)!);
+  }
   final magnet = match
       .group(0)!
       .replaceAll(RegExp(r'''[)\]}>）】」』》〉，。；、,.;:!?'"”’]+$'''), '');

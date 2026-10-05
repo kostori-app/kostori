@@ -244,6 +244,22 @@ class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => showPopUpWidget(context, const _TrackerEditorPage()),
         ),
+        ListTile(
+          leading: const Icon(Icons.hub_outlined),
+          title: Text(t.torrentDht),
+          subtitle: Text(
+            t.torrentDhtExplain,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: Text(
+            '${_m.dhtNodes.length}',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          onTap: () => showPopUpWidget(context, const _DhtNodesEditorPage()),
+        ),
         const SizedBox(height: 8),
       ],
     );
@@ -438,6 +454,114 @@ class _TrackerEditorPageState extends ConsumerState<_TrackerEditorPage> {
       borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: child,
+    );
+  }
+}
+
+/// 二级页面：DHT 引导节点编辑（内置节点始终生效，这里只追加自定义节点）
+class _DhtNodesEditorPage extends ConsumerStatefulWidget {
+  const _DhtNodesEditorPage();
+
+  @override
+  ConsumerState<_DhtNodesEditorPage> createState() =>
+      _DhtNodesEditorPageState();
+}
+
+class _DhtNodesEditorPageState extends ConsumerState<_DhtNodesEditorPage> {
+  TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
+  late final TextEditingController _ctrl = TextEditingController(
+    text: _m.customNodes.join('\n'),
+  );
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  static List<String> _lines(String value) => value
+      .split(RegExp(r'[\s,]+'))
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: t.torrentDht,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              Text(
+                t.torrentDhtExplain,
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 12),
+              Material(
+                color: cs.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.hub_outlined, size: 16),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              t.torrentDht,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${_m.dhtNodes.length}',
+                            style: TextStyle(color: cs.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                      child: TextField(
+                        controller: _ctrl,
+                        minLines: 4,
+                        maxLines: 12,
+                        style: const TextStyle(fontSize: 12, height: 1.4),
+                        decoration: InputDecoration(
+                          hintText: t.torrentNodesHint,
+                          border: const OutlineInputBorder(),
+                        ),
+                        onChanged: (v) {
+                          _debounce?.cancel();
+                          _debounce = Timer(
+                            const Duration(milliseconds: 700),
+                            () {
+                              _m.setCustomNodes(_lines(v));
+                              if (mounted) setState(() {});
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/services/torrent/torrent_job.dart';
 import 'package:path/path.dart' as p;
 
 /// BT 检索结果
@@ -50,45 +51,43 @@ final Dio _dio = Dio(
 /// 复用项目的 UA（含用户在设置里的覆盖）。
 String get _ua => appdata.implicitData['ua']?.toString() ?? webUA;
 
-/// 把 `xt=urn:btih:` 的 base32 infohash 规范成 hex（引擎只认 hex）。
+/// 把用户/插件给的种子标识规范成磁力链接：
+/// 完整磁力（base32 顺带转 hex）、裸 40 位 hex、裸 32 位 base32。
 ///
-/// 必须先排除 40 位 hex 形式：`[A-Za-z2-7]` 与 hex 的 `[0-9a-fA-F]` 有重叠，
-/// 直接按 32 位 base32 匹配会把一部分合法 hex 磁力链接误判成 base32 并改写成
-/// 错误的 infohash（约 1/7500），导致去重失效、「已添加」标记错乱。
+/// 裸 hash 会被包成最小磁力链；后续 `TorrentManager._augmentTrackers` 再补 tracker。
+///
+/// base32 必须放在 40 位 hex 之后判断：`[A-Za-z2-7]` 与 hex 有重叠，
+/// 反过来会把约 1/7500 的合法 hex 磁力误判成 base32 并改写成错误 infohash，
+/// 导致去重失效、「已添加」标记错乱。
 String normalizeMagnet(String magnet) {
-  // 已经是 40 位 hex，原样返回
-  if (RegExp(r'xt=urn:btih:[0-9a-fA-F]{40}(?![0-9a-fA-F])')
-          .firstMatch(magnet) !=
-      null) {
-    return magnet;
+  final raw = magnet.trim();
+  if (!raw.contains('xt=urn:btih:')) {
+    final bare = _bareInfoHashToMagnet(raw);
+    if (bare != null) return bare;
   }
   final m = RegExp(
     r'xt=urn:btih:([A-Z2-7]{32})(?![A-Z2-7])',
     caseSensitive: false,
-  ).firstMatch(magnet);
-  if (m == null) return magnet;
-  final hex = _base32ToHex(m.group(1)!);
-  if (hex == null) return magnet;
-  return magnet.replaceRange(m.start, m.end, 'xt=urn:btih:$hex');
+  ).firstMatch(raw);
+  if (m == null) return raw;
+  final hex = base32ToInfoHashHex(m.group(1)!);
+  if (hex == null) return raw;
+  return raw.replaceRange(m.start, m.end, 'xt=urn:btih:$hex');
 }
 
-String? _base32ToHex(String s) {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  var bits = 0;
-  var value = 0;
-  final bytes = <int>[];
-  for (final ch in s.toUpperCase().codeUnits) {
-    final idx = alphabet.indexOf(String.fromCharCode(ch));
-    if (idx < 0) return null;
-    value = (value << 5) | idx;
-    bits += 5;
-    if (bits >= 8) {
-      bytes.add((value >> (bits - 8)) & 0xff);
-      bits -= 8;
-    }
+/// 裸 infohash → `magnet:?xt=urn:btih:<hex>`；不是裸 infohash 返回 null。
+String? _bareInfoHashToMagnet(String raw) {
+  final s = raw.trim();
+  if (s.contains('://') || s.contains('=')) return null;
+  final upper = s.toUpperCase();
+  if (RegExp(r'^[0-9A-F]{40}$').hasMatch(upper)) {
+    return 'magnet:?xt=urn:btih:$upper';
   }
-  if (bytes.length != 20) return null;
-  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  if (RegExp(r'^[A-Z2-7]{32}$').hasMatch(upper)) {
+    final hex = base32ToInfoHashHex(upper);
+    return hex == null ? null : 'magnet:?xt=urn:btih:$hex';
+  }
+  return null;
 }
 
 /// 从磁力里取 hex infohash（小写），取不到返回 null。

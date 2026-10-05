@@ -246,6 +246,15 @@ class _GenericPluginCard extends StatelessWidget {
     final images = _btnImages(btn);
     final url = btn['url']?.toString() ?? '';
     final text = btn['text']?.toString() ?? '';
+    // torrent: 磁力链 / 裸 info hash → 打开「添加种子下载」并预填
+    final torrent = btn['torrent']?.toString() ?? '';
+    if (torrent.isNotEmpty) {
+      await showAddTorrentSheet(
+        App.rootContext,
+        initialMagnet: normalizeMagnet(torrent),
+      );
+      return;
+    }
     if (images.length == 1) {
       await BangumiWidget.showImagePreview(
         context: App.rootContext,

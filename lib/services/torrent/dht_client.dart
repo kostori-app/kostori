@@ -46,13 +46,20 @@ class DhtClient {
 
   final Map<String, _DhtNode> _known = {};
   final Map<String, _DhtNode> _pending = {};
-  final Set<String> _queried = {};
+  final Map<String, int> _queriedAt = {};
   final Set<String> _seenPeers = {};
 
   static const int _maxQueries = 2000;
 
   /// 未收到响应的查询上限；超过后丢弃最早的条目，避免无响应节点堆积。
   static const int _maxPending = 512;
+
+  /// 查询超时：超过该时长未应答的节点重新纳入候选，避免节点表枯竭。
+  static const int _retryAfterMs = 15000;
+
+  static const int _queriesPerRound = 40;
+
+  int _peerCount = 0;
 
   String _key(InternetAddress ip, int port) => '${ip.address}:$port';
 
@@ -87,22 +94,29 @@ class DhtClient {
     if (_stopped) return;
     if (_socketV4 == null && _socketV6 == null) return;
 
-    for (final uri in _bootstrap) {
-      if (_stopped) return;
-      try {
-        final port = uri.hasPort ? uri.port : 6881;
-        final ips = await InternetAddress.lookup(uri.host);
-        if (_stopped) return;
-        for (final ip in ips) {
-          _known[_key(ip, port)] ??= _DhtNode(ip, port);
-        }
-      } catch (e) {
-        _log('bootstrap ${uri.host} failed: $e');
-      }
-    }
+    // 并发解析引导节点：串行时一个慢节点就能吃掉十几秒元数据抓取预算
+    await Future.wait([for (final uri in _bootstrap) _addBootstrapNode(uri)]);
     if (_stopped) return;
+    if (_known.isEmpty) {
+      _log('引导节点全部不可用');
+      return;
+    }
     _pump();
     _ticker = Timer.periodic(const Duration(seconds: 3), (_) => _pump());
+  }
+
+  Future<void> _addBootstrapNode(Uri uri) async {
+    final port = uri.hasPort ? uri.port : 6881;
+    try {
+      final ips = await InternetAddress.lookup(uri.host)
+          .timeout(const Duration(seconds: 5));
+      for (final ip in ips) {
+        if (_stopped) return;
+        _known[_key(ip, port)] ??= _DhtNode(ip, port);
+      }
+    } catch (e) {
+      _log('bootstrap ${uri.host} failed: $e');
+    }
   }
 
   void _listen(RawDatagramSocket socket) {
@@ -128,21 +142,40 @@ class DhtClient {
     _socketV6 = null;
     _pending.clear();
     _known.clear();
-    _queried.clear();
+    _queriedAt.clear();
     _seenPeers.clear();
   }
 
   /// 选择距离目标最近、尚未查询的节点发起 get_peers
   void _pump() {
-    if (_stopped || _queried.length >= _maxQueries) return;
+    if (_stopped) return;
+    _expireQueries();
+    if (_queriedAt.length >= _maxQueries) return;
     final candidates =
         _known.values
-            .where((n) => !_queried.contains(_key(n.ip, n.port)))
+            .where((n) => !_queriedAt.containsKey(_key(n.ip, n.port)))
             .toList()
           ..sort(_compareDistance);
-    for (final node in candidates.take(40)) {
+    for (final node in candidates.take(_queriesPerRound)) {
       _query(node);
     }
+    _log(
+      'known=${_known.length} queried=${_queriedAt.length} '
+      'pending=${_pending.length} peers=$_peerCount',
+    );
+  }
+
+  /// 把超时未响应的节点重新放回候选集合。
+  void _expireQueries() {
+    if (_queriedAt.isEmpty) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final before = _queriedAt.length;
+    _queriedAt.removeWhere((_, at) => now - at >= _retryAfterMs);
+    if (_queriedAt.length == before) return;
+    // 重新纳入候选的节点必须同步清掉，否则同一地址会在待回列表里堆多条
+    _pending.removeWhere((_, node) {
+      return !_queriedAt.containsKey(_key(node.ip, node.port));
+    });
   }
 
   int _compareDistance(_DhtNode a, _DhtNode b) {
@@ -198,14 +231,33 @@ class DhtClient {
     if (nodes == null) return;
     for (var o = 0; o + stride <= nodes.length; o += stride) {
       final id = Uint8List.sublistView(nodes, o, o + 20);
-      final ip = InternetAddress.fromRawAddress(
-        Uint8List.sublistView(nodes, o + 20, o + 20 + addrLen),
-      );
+      final ip = _addr(Uint8List.sublistView(nodes, o + 20, o + 20 + addrLen));
+      if (ip == null) continue;
       final port = (nodes[o + 20 + addrLen] << 8) | nodes[o + 20 + addrLen + 1];
       if (port <= 0) continue;
       final key = _key(ip, port);
       _known[key] ??= _DhtNode(ip, port, Uint8List.fromList(id));
     }
+  }
+
+  /// 按字节长度还原地址。必须显式指定地址族：16 字节的 IPv6 地址按 IPv4
+  /// 解析会抛异常，进而丢弃同一数据报中的其余 peer 与节点。
+  static InternetAddress? _addr(Uint8List raw) {
+    try {
+      if (raw.length == 4) {
+        return InternetAddress.fromRawAddress(
+          raw,
+          type: InternetAddressType.IPv4,
+        );
+      }
+      if (raw.length == 16) {
+        return InternetAddress.fromRawAddress(
+          raw,
+          type: InternetAddressType.IPv6,
+        );
+      }
+    } catch (_) {}
+    return null;
   }
 
   void _emitPeer(Uint8List? bytes) {
@@ -218,19 +270,21 @@ class DhtClient {
     } else {
       return;
     }
-    final ip = InternetAddress.fromRawAddress(
-      Uint8List.sublistView(bytes, 0, addrLen),
-    );
+    final ip = _addr(Uint8List.sublistView(bytes, 0, addrLen));
+    if (ip == null) return;
     final port = (bytes[addrLen] << 8) | bytes[addrLen + 1];
     if (port <= 0) return;
-    if (_seenPeers.add(_key(ip, port))) onPeer(ip, port);
+    if (_seenPeers.add(_key(ip, port))) {
+      _peerCount++;
+      onPeer(ip, port);
+    }
   }
 
   void _query(_DhtNode node) {
     if (_stopped) return;
-    if (_queried.length >= _maxQueries) return;
+    if (_queriedAt.length >= _maxQueries) return;
     final nodeKey = _key(node.ip, node.port);
-    if (!_queried.add(nodeKey)) return;
+    _queriedAt[nodeKey] = DateTime.now().millisecondsSinceEpoch;
     final socket = node.ip.type == InternetAddressType.IPv6
         ? _socketV6
         : _socketV4;

@@ -18,8 +18,10 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/download/torrent_tab.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
+import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 

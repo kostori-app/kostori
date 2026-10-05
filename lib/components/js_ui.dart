@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/download/torrent_tab.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 mixin class JsUiApi {
@@ -49,6 +51,14 @@ mixin class JsUiApi {
         if (url.toString().isNotEmpty) {
           launchUrlString(url.toString());
         }
+      case 'addTorrentDownload':
+        var magnet = message['magnet'];
+        if (magnet is! String || magnet.isEmpty) return;
+        return _addTorrentDownload(magnet);
+      case 'copyToClipboard':
+        var text = message['text'];
+        if (text is! String || text.isEmpty) return;
+        return Clipboard.setData(ClipboardData(text: text));
       case 'showLoading':
         var onCancel = message['onCancel'];
         if (onCancel != null && onCancel is! JSInvokable) {
@@ -135,6 +145,11 @@ mixin class JsUiApi {
     ).then((value) {
       dialogContext = null;
     });
+  }
+
+  /// 仅展示添加弹层并预填磁力，任务创建与停止策略由用户确认。
+  Future<void> _addTorrentDownload(String magnet) {
+    return showAddTorrentSheet(App.rootContext, initialMagnet: magnet);
   }
 
   int _showLoading(JSInvokable? onCancel) {

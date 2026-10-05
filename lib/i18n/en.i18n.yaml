@@ -3105,7 +3105,7 @@ torrentSourceGroupField: Group field
 torrentSourceDateField: Date field
 torrentSourcesEmpty: No BT sources yet. Tap "Import" at the bottom-right, or drop .json files into the directory below
 torrentSourceExample: Fill example
-torrentMagnetHint: Paste magnet link
+torrentMagnetHint: Paste a magnet link, or a 40-char info hash
 torrentPlay: Play
 torrentParse: Parse
 torrentAdd: Add Torrent
@@ -3140,6 +3140,8 @@ torrentInfo: Info
 torrentContent: Content
 torrentSavePathLabel: Save path
 torrentInfoHashLabel: Info hash
+torrentInfoHashHint: Copy it to add the same torrent in another BT client
+torrentMagnetLinkLabel: Magnet link
 torrentProgressLabel: Progress
 torrentFileDone: Downloaded
 torrentFilePending: Not downloaded
@@ -3157,6 +3159,7 @@ torrentFetchTrackers: Fetch trackers
 torrentTrackersHint: One tracker per line; appended to the magnet automatically
 torrentMetadataTimeout: Timed out fetching metadata; no usable peer found. Try again later or use a different torrent
 torrentMetadataParseFailed: Fetched metadata could not be parsed after several attempts; this torrent is likely dead
+torrentMetadataInterrupted: Metadata fetch was interrupted; tap start to retry
 torrentNodesHint: One DHT node per line, host:port
 torrentTrackersAuto: Auto-append trackers from the URL to new downloads
 torrentDhtExplain: DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.

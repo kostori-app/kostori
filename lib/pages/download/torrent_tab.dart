@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
+import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:kostori/services/torrent/torrent_job.dart';
 import 'package:kostori/services/torrent/torrent_manager.dart';
 import 'package:kostori/utils/io.dart';
@@ -17,7 +19,10 @@ Future<void> showAddTorrentSheet(
   BuildContext context, {
   String? initialMagnet,
 }) async {
-  final magnetCtrl = TextEditingController(text: initialMagnet ?? '');
+  final magnetCtrl = TextEditingController(
+    // 预填时先规范化：插件传来的可能是裸 40 位信息哈希
+    text: initialMagnet == null ? '' : normalizeMagnet(initialMagnet),
+  );
   var stopAfter = TorrentStopPolicy.none;
   await showModalBottomSheet<void>(
     context: context,
@@ -176,6 +181,16 @@ String _progressText(TorrentJob job) {
   final done = (job.progress * total).round().clamp(0, total);
   return '${formatBytesShort(done)} / ${formatBytesShort(total)}  '
       '${(job.progress * 100).toStringAsFixed(1)}%';
+}
+
+/// 无种子名时的占位标题：仅抓取元数据阶段提示获取中，其余状态回退到 info hash。
+String _jobTitle(TorrentJob job) {
+  if (job.name.isNotEmpty) return job.name;
+  if (job.isFetchingMeta) return t.torrentFetchingMeta;
+  final hash = job.infoHash;
+  if (hash.isEmpty) return t.torrentFetchingMeta;
+  final upper = hash.toUpperCase();
+  return upper.length > 12 ? 'BTIH ${upper.substring(0, 12)}…' : upper;
 }
 
 class _TorrentTabState extends ConsumerState<TorrentTab> {
@@ -392,9 +407,7 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            job.name.isNotEmpty
-                                ? job.name
-                                : t.torrentFetchingMeta,
+                            _jobTitle(job),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -418,7 +431,8 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: job.hasMetadata ? job.progress : null,
+                  // 仅抓取元数据阶段使用不确定动画，其余状态显示确定进度
+                  value: job.isFetchingMeta ? null : job.progress,
                   borderRadius: BorderRadius.circular(4),
                   minHeight: 4,
                 ),
@@ -557,7 +571,7 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
     ref.watch(torrentManagerProvider);
     _refreshFiles();
     return Sheet(
-      title: job.name.isNotEmpty ? job.name : t.torrentFetchingMeta,
+      title: _jobTitle(job),
       icon: Icons.stream,
       initialSize: 0.8,
       builder: (_, _) => Column(
@@ -590,8 +604,24 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
   List<Widget> _infoSection(TorrentJob job) {
     final total = job.totalWanted > 0 ? job.totalWanted : job.totalDone;
     final done = total > 0 ? (job.progress * total).round().clamp(0, total) : 0;
+    final trackers = _m.trackersOf(job);
+    final dhtNodes = _m.dhtNodes;
+    final infoHash = job.infoHash;
     return [
       _infoRow(t.status, _statusLabel(job.status)),
+      // 种子识别码，可在其它 BT 客户端导入同一任务
+      if (infoHash.isNotEmpty) ...[
+        _infoRow(
+          t.torrentInfoHashLabel,
+          infoHash,
+          onCopy: () => _copy(infoHash),
+        ),
+        _infoRow(
+          t.torrentMagnetLinkLabel,
+          magnetFromInfoHash(infoHash),
+          onCopy: () => _copy(magnetFromInfoHash(infoHash)),
+        ),
+      ],
       _infoRow(
         t.torrentProgressLabel,
         job.hasMetadata ? '${(job.progress * 100).toStringAsFixed(1)}%' : '--',
@@ -606,9 +636,14 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
       _infoRow(t.torrentUploadLimit, '↑ ${formatSpeed(job.uploadRate)}'),
       _infoRow(t.torrentPeers, '${job.numPeers}/${job.numSeeds}'),
       _infoRow(t.torrentLeechers, '${job.numDownloaders}'),
+      // Tracker / DHT：没有 peer 时只有这两个来源
+      _infoRow(t.torrentTrackers, '${trackers.length}'),
+      for (final url in trackers.take(6)) _urlRow(url),
+      if (trackers.length > 6) _infoRow('  ', '+${trackers.length - 6}…'),
+      _infoRow(t.torrentDht, '${dhtNodes.length}'),
+      for (final node in dhtNodes.take(6)) _urlRow(node),
+      if (dhtNodes.length > 6) _infoRow('  ', '+${dhtNodes.length - 6}…'),
       _infoRow(t.torrentSavePathLabel, TorrentManager.downloadDir),
-      if (job.infoHash.isNotEmpty)
-        _infoRow(t.torrentInfoHashLabel, job.infoHash),
       if (job.error != null && job.error!.isNotEmpty)
         _infoRow(t.downloadFailed, job.error!),
     ];
@@ -622,7 +657,7 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            job.hasMetadata ? t.torrentPickFile : t.torrentFetchingMeta,
+            job.isFetchingMeta ? t.torrentFetchingMeta : t.torrentPickFile,
             style: TextStyle(color: cs.outline),
           ),
         ),
@@ -757,7 +792,7 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
                       ClipRRect(
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
-                          value: f.size > 0 ? f.progress : null,
+                          value: f.progress,
                           minHeight: 4,
                         ),
                       ),
@@ -802,7 +837,7 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(String label, String value, {VoidCallback? onCopy}) {
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -816,7 +851,49 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
             ),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 12))),
+          Expanded(
+            child: SelectableText(
+              value,
+              maxLines: onCopy == null ? null : 3,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+          if (onCopy != null)
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.copy_rounded, size: 16),
+              tooltip: t.copy,
+              onPressed: onCopy,
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _copy(String value) {
+    Clipboard.setData(ClipboardData(text: value));
+    App.rootContext.showMessage(message: t.copySuccess);
+  }
+
+  /// announce / 引导节点地址：允许换行并选中复制。
+  Widget _urlRow(String url) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(width: 96),
+          Expanded(
+            child: AppSelectableText(
+              url,
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.35,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
         ],
       ),
     );

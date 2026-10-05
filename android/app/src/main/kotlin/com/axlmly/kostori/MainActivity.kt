@@ -31,7 +31,6 @@ import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugins.GeneratedPluginRegistrant
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicInteger
@@ -149,8 +148,11 @@ class MainActivity : AudioServiceFragmentActivity() {
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        // super 已通过 GeneratedPluginRegister.registerGeneratedPlugins 注册全部插件，
+        // 这里不要再显式调 GeneratedPluginRegistrant.registerWith：
+        // 既会重复注册，也会让本文件编译期依赖 Flutter 生成到
+        // src/main/java 的那份文件（它可能残留 integration_test 引用）。
         super.configureFlutterEngine(flutterEngine)
-        GeneratedPluginRegistrant.registerWith(flutterEngine)
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "kostori/method_channel"

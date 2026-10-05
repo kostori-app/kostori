@@ -9225,6 +9225,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Info hash'
 	String get torrentInfoHashLabel => 'Info hash';
 
+	/// en: 'Copy it to add the same torrent in another BT client'
+	String get torrentInfoHashHint => 'Copy it to add the same torrent in another BT client';
+
+	/// en: 'Magnet link'
+	String get torrentMagnetLinkLabel => 'Magnet link';
+
 	/// en: 'Progress'
 	String get torrentProgressLabel => 'Progress';
 
@@ -9275,6 +9281,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Fetched metadata could not be parsed after several attempts; this torrent is likely dead'
 	String get torrentMetadataParseFailed => 'Fetched metadata could not be parsed after several attempts; this torrent is likely dead';
+
+	/// en: 'Metadata fetch was interrupted; tap start to retry'
+	String get torrentMetadataInterrupted => 'Metadata fetch was interrupted; tap start to retry';
 
 	/// en: 'One DHT node per line, host:port'
 	String get torrentNodesHint => 'One DHT node per line, host:port';
@@ -12754,6 +12763,8 @@ extension on Translations {
 			'torrentContent' => 'Content',
 			'torrentSavePathLabel' => 'Save path',
 			'torrentInfoHashLabel' => 'Info hash',
+			'torrentInfoHashHint' => 'Copy it to add the same torrent in another BT client',
+			'torrentMagnetLinkLabel' => 'Magnet link',
 			'torrentProgressLabel' => 'Progress',
 			'torrentFileDone' => 'Downloaded',
 			'torrentFilePending' => 'Not downloaded',
@@ -12771,6 +12782,7 @@ extension on Translations {
 			'torrentTrackersHint' => 'One tracker per line; appended to the magnet automatically',
 			'torrentMetadataTimeout' => 'Timed out fetching metadata; no usable peer found. Try again later or use a different torrent',
 			'torrentMetadataParseFailed' => 'Fetched metadata could not be parsed after several attempts; this torrent is likely dead',
+			'torrentMetadataInterrupted' => 'Metadata fetch was interrupted; tap start to retry',
 			'torrentNodesHint' => 'One DHT node per line, host:port',
 			'torrentTrackersAuto' => 'Auto-append trackers from the URL to new downloads',
 			'torrentDhtExplain' => 'DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.',
