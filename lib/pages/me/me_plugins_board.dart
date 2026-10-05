@@ -312,7 +312,9 @@ class PluginBoardContent extends StatefulWidget {
 }
 
 class _PluginBoardContentState extends State<PluginBoardContent>
-    with SingleTickerProviderStateMixin {
+        // 分类与排序各持一个 TabController，vsync 不能用 SingleTicker
+        with
+        TickerProviderStateMixin {
   List<Map<String, dynamic>> _tabs = [];
   String _listPage = 'boardList';
   int _index = 0;
@@ -747,51 +749,17 @@ class _PluginBoardContentState extends State<PluginBoardContent>
       right: 0,
       top: 0,
       child: _GlassBar(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_tabs.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: _CapsuleBar(
-                    keys: _tabs.map((t) => t['key']?.toString() ?? '').toList(),
-                    titles: _tabs
-                        .map((t) => t['title']?.toString() ?? '')
-                        .toList(),
-                    selected: _index < _tabs.length
-                        ? (_tabs[_index]['key']?.toString() ?? '')
-                        : '',
-                    onChanged: _selectTab,
-                    controller: _tabsCtrl,
-                  ),
-                ),
-              ),
-            if (_sorts.isNotEmpty)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  12,
-                  _tabs.isNotEmpty ? 0 : 2,
-                  12,
-                  6,
-                ),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: _CapsuleBar(
-                    keys: _sorts
-                        .map((s) => s['key']?.toString() ?? '')
-                        .toList(),
-                    titles: _sorts
-                        .map((s) => s['title']?.toString() ?? '')
-                        .toList(),
-                    selected: _sortKey,
-                    onChanged: _selectSort,
-                    controller: _sortsCtrl,
-                  ),
-                ),
-              ),
-          ],
+        child: _CapsuleSwitcher(
+          tabs: _tabs,
+          sorts: _sorts,
+          selectedTab: _index < _tabs.length
+              ? (_tabs[_index]['key']?.toString() ?? '')
+              : '',
+          selectedSort: _sortKey,
+          onTab: _selectTab,
+          onSort: _selectSort,
+          tabsController: _tabsCtrl,
+          sortsController: _sortsCtrl,
         ),
       ),
     );
@@ -887,10 +855,10 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     final edge = EdgeInsets.fromLTRB(
       8,
       // 外壳托管时顶部导航悬浮，内容按外壳下发的高度让位并从其下方滚过；
-      // 自管理模式按实际行数让出顶部玻璃胶囊（每行 ~42px）
+      // 自管理模式让出顶部玻璃胶囊条（分类与排序同行，约 50px）
       _external
           ? (widget.presetTopInset ?? 10)
-          : 8 + (_tabs.isNotEmpty ? 42 : 0) + (_sorts.isNotEmpty ? 42 : 0),
+          : (_tabs.isNotEmpty || _sorts.isNotEmpty ? 50 : 8),
       8,
       _continuous ? 24 : 66,
     );

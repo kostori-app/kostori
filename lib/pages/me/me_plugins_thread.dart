@@ -777,6 +777,8 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
               _quoteBlock(cs, b['text']?.toString() ?? '')
             else if (b['type'] == 'ref')
               _refBlock(cs, b['text']?.toString() ?? '', b['color'])
+            else if (b['type'] == 'links')
+              _linksBlock(cs, b)
             else if (b['text']?.toString().trim().isNotEmpty ?? false)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
@@ -930,6 +932,204 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         ),
       ),
     );
+  }
+
+  /// 链接组块：站点无关的地址卡片。插件给出
+  /// {title, desc, tip, action:{text,url,method,params},
+  ///  items:[{label,text,url,locked,action:{text,url}}]}；
+  /// action 带 method 时走插件方法，否则按链接打开。
+  Widget _linksBlock(ColorScheme cs, Map<String, dynamic> b) {
+    final title = b['title']?.toString() ?? '';
+    final desc = b['desc']?.toString() ?? '';
+    final tip = b['tip']?.toString() ?? '';
+    final action = _asMap2(b['action']);
+    final rawItems = b['items'];
+    final items = rawItems is List ? rawItems.map(_asMap2).toList() : const [];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: cs.outlineVariant, width: 0.6),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (desc.isNotEmpty || action.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                  child: Row(
+                    children: [
+                      if (desc.isNotEmpty)
+                        Expanded(
+                          child: Text(
+                            desc,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      else
+                        const Spacer(),
+                      if (action.isNotEmpty) ...[
+                        if (desc.isNotEmpty) const SizedBox(width: 10),
+                        _linkAction(cs, action),
+                      ],
+                    ],
+                  ),
+                ),
+              for (var i = 0; i < items.length; i++)
+                _linkRow(cs, items[i], i == 0),
+              if (tip.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  child: Text(
+                    tip,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: cs.outline,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _linkAction(ColorScheme cs, Map<String, dynamic> action) {
+    final text = action['text']?.toString() ?? '';
+    final url = action['url']?.toString() ?? '';
+    final method = action['method']?.toString() ?? '';
+    final params = action['params'];
+    if (text.isEmpty) return const SizedBox.shrink();
+    final args = params is Map
+        ? [params.map((k, v) => MapEntry(k.toString(), v))]
+        : const <Object?>[];
+    return CapsuleButton(
+      text: text,
+      primary: true,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      onTap: () async {
+        if (method.isEmpty) {
+          if (url.isNotEmpty) launchUrlString(url);
+          return;
+        }
+        if (_loading) return;
+        final res = await widget.plugin.invoke(method, args);
+        if (!mounted) return;
+        final map = res is Map
+            ? res.map((k, v) => MapEntry(k.toString(), v))
+            : const <String, dynamic>{};
+        final ok = map['ok'] == true;
+        final msg = map['message']?.toString() ?? '';
+        context.showMessage(
+          message: msg.isEmpty ? (ok ? t.ok : t.failed) : msg,
+        );
+        // 操作已改变服务端状态，重新拉取当前楼层
+        if (ok) await _reload();
+      },
+    );
+  }
+
+  Widget _linkRow(ColorScheme cs, Map<String, dynamic> item, bool first) {
+    final label = item['label']?.toString() ?? '';
+    final text = item['text']?.toString() ?? '';
+    final url = item['url']?.toString() ?? '';
+    final locked = item['locked'] == true;
+    final action = _asMap2(item['action']);
+    final actionText = action['text']?.toString() ?? '';
+    final actionUrl = action['url']?.toString() ?? '';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        border: first
+            ? null
+            : Border(top: BorderSide(color: cs.outlineVariant, width: 0.6)),
+      ),
+      child: Row(
+        children: [
+          if (label.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: locked
+                    ? cs.surfaceContainerHighest
+                    : cs.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: locked ? cs.onSurfaceVariant : cs.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: AppSelectableText(
+              url.isNotEmpty ? url : text,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.4,
+                color: locked ? cs.outline : cs.onSurface,
+                decoration: locked
+                    ? TextDecoration.none
+                    : TextDecoration.underline,
+                decorationColor: cs.primary,
+              ),
+            ),
+          ),
+          if (actionText.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                if (actionUrl.isNotEmpty) launchUrlString(actionUrl);
+              },
+              child: Text(
+                actionText,
+                style: TextStyle(fontSize: 12, color: cs.primary),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 回到第 1 页重新拉取（操作后刷新用）
+  Future<void> _reload() async {
+    if (!mounted) return;
+    setState(() {
+      _page = 1;
+      _posts.clear();
+      _fields = const [];
+      _bestText = '';
+      _error = null;
+      _hasMore = true;
+    });
+    await _load();
   }
 
   Widget _postImages(BuildContext context, ColorScheme cs, _ThreadPost post) {
@@ -1303,6 +1503,75 @@ class _CapsuleBar extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (_, _) => buildBar(animation.value),
+    );
+  }
+}
+
+/// 板块切换行：排序在左、分类在右，各自横向滚动
+class _CapsuleSwitcher extends StatelessWidget {
+  final List<Map<String, dynamic>> tabs;
+  final List<Map<String, dynamic>> sorts;
+  final String selectedTab;
+  final String selectedSort;
+  final TabController? tabsController;
+  final TabController? sortsController;
+  final ValueChanged<int> onTab;
+  final ValueChanged<int> onSort;
+  final EdgeInsets padding;
+
+  const _CapsuleSwitcher({
+    required this.tabs,
+    required this.sorts,
+    required this.selectedTab,
+    required this.selectedSort,
+    required this.onTab,
+    required this.onSort,
+    this.tabsController,
+    this.sortsController,
+    this.padding = const EdgeInsets.fromLTRB(12, 2, 12, 6),
+  });
+
+  // SlidingSegmentedBar 内的 Align 会吃满约束宽度，IntrinsicWidth 才能让两段
+  // 收缩到内容宽并紧挨着
+  @override
+  Widget build(BuildContext context) {
+    if (tabs.isEmpty && sorts.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: padding,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (sorts.isNotEmpty)
+            Flexible(
+              child: IntrinsicWidth(
+                child: _CapsuleBar(
+                  keys: sorts.map((s) => s['key']?.toString() ?? '').toList(),
+                  titles: sorts
+                      .map((s) => s['title']?.toString() ?? '')
+                      .toList(),
+                  selected: selectedSort,
+                  onChanged: onSort,
+                  controller: sortsController,
+                ),
+              ),
+            ),
+          if (sorts.isNotEmpty && tabs.isNotEmpty) const SizedBox(width: 8),
+          if (tabs.isNotEmpty)
+            Flexible(
+              child: IntrinsicWidth(
+                child: _CapsuleBar(
+                  keys: tabs.map((t) => t['key']?.toString() ?? '').toList(),
+                  titles: tabs
+                      .map((t) => t['title']?.toString() ?? '')
+                      .toList(),
+                  selected: selectedTab,
+                  onChanged: onTab,
+                  controller: tabsController,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

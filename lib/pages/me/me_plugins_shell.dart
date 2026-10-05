@@ -494,77 +494,59 @@ class _PluginShellPageState extends State<PluginShellPage>
     }
   }
 
-  /// 统一玻璃容器内的多行导航（主导航 + 分类 + 排序），避免分层的亚像素接缝
+  /// 统一玻璃容器内的导航（主导航 + 板块切换行），避免分层的亚像素接缝
   Widget? _buildCombinedHeader() {
     final showBig = _nav.length > 1;
     final info = _index < _boardInfos.length ? _boardInfos[_index] : null;
     final ctrl = _index < _boardCtrls.length ? _boardCtrls[_index] : null;
-    final showSub = info != null && ctrl != null && info.tabs.isNotEmpty;
     final sctrl = _index < _sortCtrls.length ? _sortCtrls[_index] : null;
+    final tabs = info == null || ctrl == null
+        ? const <Map<String, dynamic>>[]
+        : info.tabs;
     final sorts = info == null ? const <Map<String, dynamic>>[] : info.sorts;
-    final showSort = sorts.isNotEmpty && sctrl != null;
-    if (!showBig && !showSub && !showSort) return null;
+    if (!showBig && tabs.isEmpty && sorts.isEmpty) return null;
 
-    final rows = <Widget>[
-      if (showBig)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-          child: Align(
-            alignment: Alignment.center,
-            child: _CapsuleBar(
-              keys: _nav.map((n) => n['key']?.toString() ?? '').toList(),
-              titles: _nav.map((n) => n['title']?.toString() ?? '').toList(),
-              icons: _nav.map((n) => n['icon']?.toString() ?? '').toList(),
-              selected: _index < _nav.length
-                  ? (_nav[_index]['key']?.toString() ?? '')
-                  : '',
-              onChanged: _select,
-              controller: _outerTabs,
+    return _GlassBar(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showBig)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+              child: Align(
+                alignment: Alignment.center,
+                child: _CapsuleBar(
+                  keys: _nav.map((n) => n['key']?.toString() ?? '').toList(),
+                  titles: _nav
+                      .map((n) => n['title']?.toString() ?? '')
+                      .toList(),
+                  icons: _nav.map((n) => n['icon']?.toString() ?? '').toList(),
+                  selected: _index < _nav.length
+                      ? (_nav[_index]['key']?.toString() ?? '')
+                      : '',
+                  onChanged: _select,
+                  controller: _outerTabs,
+                ),
+              ),
             ),
-          ),
-        ),
-      if (showSub)
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            12,
-            showBig ? 2 : 6,
-            12,
-            showSort ? 2 : 6,
-          ),
-          child: Align(
-            alignment: Alignment.center,
-            child: _CapsuleBar(
-              keys: info.tabs.map((t) => t['key']?.toString() ?? '').toList(),
-              titles: info.tabs
-                  .map((t) => t['title']?.toString() ?? '')
-                  .toList(),
-              selected: ctrl.index < info.tabs.length
-                  ? (info.tabs[ctrl.index]['key']?.toString() ?? '')
+          if (tabs.isNotEmpty || sorts.isNotEmpty)
+            _CapsuleSwitcher(
+              tabs: tabs,
+              sorts: sorts,
+              selectedTab: ctrl != null && ctrl.index < tabs.length
+                  ? (tabs[ctrl.index]['key']?.toString() ?? '')
                   : '',
-              onChanged: (i) => _selectBoardTab(_index, i),
-              controller: ctrl,
-            ),
-          ),
-        ),
-      if (showSort)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-          child: Align(
-            alignment: Alignment.center,
-            child: _CapsuleBar(
-              keys: sorts.map((s) => s['key']?.toString() ?? '').toList(),
-              titles: sorts.map((s) => s['title']?.toString() ?? '').toList(),
-              selected: sctrl.index < sorts.length
+              selectedSort: sctrl != null && sctrl.index < sorts.length
                   ? (sorts[sctrl.index]['key']?.toString() ?? '')
                   : '',
-              onChanged: (i) => _selectBoardSort(_index, i),
-              controller: sctrl,
+              onTab: (i) => _selectBoardTab(_index, i),
+              onSort: (i) => _selectBoardSort(_index, i),
+              tabsController: ctrl,
+              sortsController: sctrl,
+              padding: EdgeInsets.fromLTRB(12, showBig ? 2 : 6, 12, 6),
             ),
-          ),
-        ),
-    ];
-    return _GlassBar(
-      child: Column(mainAxisSize: MainAxisSize.min, children: rows),
+        ],
+      ),
     );
   }
 
