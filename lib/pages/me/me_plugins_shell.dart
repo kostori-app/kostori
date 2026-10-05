@@ -1,5 +1,13 @@
 part of 'me_page_plugins.dart';
 
+/// 板块页元信息；tabs（分类）与 sorts（排序）相互独立，任一为空时只渲染另一行
+typedef _BoardInfo = ({
+  List<Map<String, dynamic>> tabs,
+  String listPage,
+  List<Map<String, dynamic>> sorts,
+  String sort,
+});
+
 Future<void> _pushPluginPage(
   BuildContext context,
   MePagePlugin plugin,
@@ -224,10 +232,11 @@ class _PluginShellPageState extends State<PluginShellPage>
   List<String?> _errors = const [];
   int _reqToken = 0;
 
-  // 板块页的分类信息与分类控制器（由外壳统一渲染顶部导航，避免两层玻璃接缝）
-  List<({List<Map<String, dynamic>> tabs, String listPage})?> _boardInfos =
-      const [];
+  // 板块页的分类/排序信息与各自的 TabController
+  // （顶部导航统一在外壳渲染，避免多层玻璃接缝）
+  List<_BoardInfo?> _boardInfos = const [];
   List<TabController?> _boardCtrls = const [];
+  List<TabController?> _sortCtrls = const [];
 
   // 悬浮玻璃导航的实测高度（内容据此让位并从其下方滚过）
   final GlobalKey _headerKey = GlobalKey();
@@ -255,6 +264,7 @@ class _PluginShellPageState extends State<PluginShellPage>
       _errors = List<String?>.filled(nav.length, null);
       _boardInfos = List.filled(nav.length, null);
       _boardCtrls = List<TabController?>.filled(nav.length, null);
+      _sortCtrls = List<TabController?>.filled(nav.length, null);
       if (_nav.isNotEmpty) _loadIndex(start);
       return nav;
     });
@@ -265,6 +275,9 @@ class _PluginShellPageState extends State<PluginShellPage>
     _manager.removeListener(_onManagerChanged);
     _outerTabs?.dispose();
     for (final c in _boardCtrls) {
+      c?.dispose();
+    }
+    for (final c in _sortCtrls) {
       c?.dispose();
     }
     super.dispose();
@@ -293,27 +306,47 @@ class _PluginShellPageState extends State<PluginShellPage>
         _nav[index]['key']?.toString() ?? '',
       );
       if (!mounted || token != _reqToken) return;
-      // 板块页：解析分类信息并（重新）创建外壳托管的分类控制器
-      ({List<Map<String, dynamic>> tabs, String listPage})? info;
+      // 板块页：解析分类/排序信息并重建外壳托管的控制器
+      _BoardInfo? info;
       for (final m in modules) {
         final mm = _asMap2(m);
         if (mm['type'] != 'board') continue;
         final raw = mm['tabs'];
+        final rawSorts = mm['sorts'];
         info = (
           tabs: raw is List
               ? raw.map((e) => _asMap2(e)).toList()
               : <Map<String, dynamic>>[],
           listPage: mm['page']?.toString() ?? 'boardList',
+          sorts: rawSorts is List
+              ? rawSorts.map((e) => _asMap2(e)).toList()
+              : <Map<String, dynamic>>[],
+          sort: mm['sort']?.toString() ?? '',
         );
         break;
       }
       _boardCtrls[index]?.dispose();
-      if (info != null) {
+      _sortCtrls[index]?.dispose();
+      // 行非空才建控制器，空行没有可切换的维度
+      if (info != null && info.tabs.isNotEmpty) {
         final c = TabController(length: info.tabs.length, vsync: this)
           ..addListener(() => _onBoardTabChanged(index));
         _boardCtrls[index] = c;
       } else {
         _boardCtrls[index] = null;
+      }
+      if (info != null && info.sorts.isNotEmpty) {
+        final sc = TabController(length: info.sorts.length, vsync: this);
+        final selSort = info.sort;
+        if (selSort.isNotEmpty) {
+          final i = info.sorts.indexWhere(
+            (s) => s['key']?.toString() == selSort,
+          );
+          if (i > 0) sc.index = i;
+        }
+        _sortCtrls[index] = sc;
+      } else {
+        _sortCtrls[index] = null;
       }
       _boardInfos[index] = info;
       setState(() {
@@ -363,6 +396,16 @@ class _PluginShellPageState extends State<PluginShellPage>
     final c = _boardCtrls[boardIndex];
     if (c != null) {
       c.animateTo(tabIndex);
+      return;
+    }
+    setState(() {});
+  }
+
+  /// 外壳统一渲染的排序胶囊点击
+  void _selectBoardSort(int boardIndex, int sortIndex) {
+    final c = _sortCtrls[boardIndex];
+    if (c != null) {
+      c.animateTo(sortIndex);
       return;
     }
     setState(() {});
@@ -451,13 +494,16 @@ class _PluginShellPageState extends State<PluginShellPage>
     }
   }
 
-  /// 统一玻璃容器内的两行导航（主导航 + 当前板块分类导航），避免分层的亚像素接缝
+  /// 统一玻璃容器内的多行导航（主导航 + 分类 + 排序），避免分层的亚像素接缝
   Widget? _buildCombinedHeader() {
     final showBig = _nav.length > 1;
     final info = _index < _boardInfos.length ? _boardInfos[_index] : null;
     final ctrl = _index < _boardCtrls.length ? _boardCtrls[_index] : null;
     final showSub = info != null && ctrl != null && info.tabs.isNotEmpty;
-    if (!showBig && !showSub) return null;
+    final sctrl = _index < _sortCtrls.length ? _sortCtrls[_index] : null;
+    final sorts = info == null ? const <Map<String, dynamic>>[] : info.sorts;
+    final showSort = sorts.isNotEmpty && sctrl != null;
+    if (!showBig && !showSub && !showSort) return null;
 
     final rows = <Widget>[
       if (showBig)
@@ -479,7 +525,12 @@ class _PluginShellPageState extends State<PluginShellPage>
         ),
       if (showSub)
         Padding(
-          padding: EdgeInsets.fromLTRB(12, showBig ? 2 : 6, 12, 6),
+          padding: EdgeInsets.fromLTRB(
+            12,
+            showBig ? 2 : 6,
+            12,
+            showSort ? 2 : 6,
+          ),
           child: Align(
             alignment: Alignment.center,
             child: _CapsuleBar(
@@ -492,6 +543,22 @@ class _PluginShellPageState extends State<PluginShellPage>
                   : '',
               onChanged: (i) => _selectBoardTab(_index, i),
               controller: ctrl,
+            ),
+          ),
+        ),
+      if (showSort)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+          child: Align(
+            alignment: Alignment.center,
+            child: _CapsuleBar(
+              keys: sorts.map((s) => s['key']?.toString() ?? '').toList(),
+              titles: sorts.map((s) => s['title']?.toString() ?? '').toList(),
+              selected: sctrl.index < sorts.length
+                  ? (sorts[sctrl.index]['key']?.toString() ?? '')
+                  : '',
+              onChanged: (i) => _selectBoardSort(_index, i),
+              controller: sctrl,
             ),
           ),
         ),
@@ -514,15 +581,18 @@ class _PluginShellPageState extends State<PluginShellPage>
     if (data == null) {
       return const Center(child: PolygonRefreshIndicator(size: 24));
     }
+    final info = index < _boardInfos.length ? _boardInfos[index] : null;
     final ctrl = index < _boardCtrls.length ? _boardCtrls[index] : null;
+    final sctrl = index < _sortCtrls.length ? _sortCtrls[index] : null;
     Widget content = _contentOrBoard(
       widget.plugin,
       data,
-      presetController: ctrl,
-      presetTopInset: ctrl != null ? _headerH : null,
+      presetController: info != null ? ctrl : null,
+      presetSortController: info != null ? sctrl : null,
+      presetTopInset: info != null ? _headerH : null,
     );
     // 非板块页（首页模块等）：顶部让出悬浮玻璃导航，避免内容被盖住
-    if (ctrl == null && _headerH > 0) {
+    if (info == null && _headerH > 0) {
       content = Padding(
         padding: EdgeInsets.only(top: _headerH),
         child: content,

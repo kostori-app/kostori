@@ -29,27 +29,34 @@ Widget _siteImage(
 }
 
 /// 若页面内容本身就是 board 模块则直接渲染板块内容。
-/// [presetController] 由外壳下发时走“外壳托管模式”（顶部导航统一在外壳渲染）。
+/// 分类或排序控制器任一由外壳下发即走“外壳托管模式”，顶部导航统一在外壳渲染。
 Widget _contentOrBoard(
   MePagePlugin plugin,
   List<dynamic> modules, {
   TabController? presetController,
+  TabController? presetSortController,
   double? presetTopInset,
   double topPadding = 0,
 }) {
   for (final m in modules) {
     final mm = _asMap2(m);
     if (mm['type'] == 'board') {
-      if (presetController != null) {
+      if (presetController != null || presetSortController != null) {
         final raw = mm['tabs'];
         final tabs = raw is List
             ? raw.map((e) => _asMap2(e)).toList()
+            : <Map<String, dynamic>>[];
+        final rawSorts = mm['sorts'];
+        final sorts = rawSorts is List
+            ? rawSorts.map((e) => _asMap2(e)).toList()
             : <Map<String, dynamic>>[];
         return PluginBoardContent(
           plugin: plugin,
           presetTabs: tabs,
           presetListPage: mm['page']?.toString(),
           presetController: presetController,
+          presetSorts: sorts,
+          presetSortController: sorts.isEmpty ? null : presetSortController,
           presetTopInset: presetTopInset,
         );
       }
@@ -282,6 +289,10 @@ class PluginBoardContent extends StatefulWidget {
   final List<Map<String, dynamic>>? presetTabs;
   final String? presetListPage;
   final TabController? presetController;
+
+  /// 外壳托管模式下的排序行
+  final List<Map<String, dynamic>>? presetSorts;
+  final TabController? presetSortController;
   final double? presetTopInset;
 
   const PluginBoardContent({
@@ -291,6 +302,8 @@ class PluginBoardContent extends StatefulWidget {
     this.presetTabs,
     this.presetListPage,
     this.presetController,
+    this.presetSorts,
+    this.presetSortController,
     this.presetTopInset,
   });
 
@@ -310,7 +323,11 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   String? _error;
   int _reqToken = 0;
 
-  // 分类缓存：tabKey -> (page -> rows)，页码/总数按分类记住（对齐 anime_list）
+  // 排序行（与分类 tab 相互独立，两者可单独存在）
+  List<Map<String, dynamic>> _sorts = [];
+  TabController? _sortsCtrl;
+
+  // 缓存：行键(分类+排序) -> (页码 -> 行数据)，页码/总数按行记住（对齐 anime_list）
   final Map<String, Map<int, List<Map<String, dynamic>>>> _cache = {};
   final Map<String, int> _tabPage = {};
   final Map<String, int> _tabTotal = {};
@@ -328,19 +345,39 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   String _tabKeyOf(int i) =>
       i < _tabs.length ? (_tabs[i]['key']?.toString() ?? '') : '';
 
+  /// 当前排序 key（无排序行时为空）
+  String get _sortKey {
+    final c = _sortsCtrl;
+    if (c == null || c.index < 0 || c.index >= _sorts.length) return '';
+    return _sorts[c.index]['key']?.toString() ?? '';
+  }
+
+  /// 缓存行键用不可见字符分隔，避免分类 key 与排序 key 拼接后互相歧义
+  String _rowKeyOf(String tabKey) => '$tabKey$_sortKey';
+
+  String get _rowKey => _rowKeyOf(_tabKey);
+
+  bool get _hasGroups => _tabs.isNotEmpty || _sorts.isNotEmpty;
+
   String get _modeSettingKey => 'mePluginListMode_${widget.plugin.key}';
 
   @override
   void initState() {
     super.initState();
     _continuous = appdata.settings[_modeSettingKey] == true;
-    if (widget.presetTabs != null && widget.presetController != null) {
+    if (widget.presetTabs != null &&
+        (widget.presetController != null ||
+            widget.presetSortController != null)) {
       _external = true;
       _tabs = widget.presetTabs!;
       _listPage = widget.presetListPage ?? 'boardList';
-      _tabsCtrl = widget.presetController!..addListener(_onTabChanged);
+      _tabsCtrl = widget.presetController;
+      if (_tabsCtrl != null) _tabsCtrl!.addListener(_onTabChanged);
+      _sorts = widget.presetSorts ?? const [];
+      _sortsCtrl = widget.presetSortController;
+      _sortsCtrl?.addListener(_onSortChanged);
       _metaLoaded = true;
-      if (_tabs.isNotEmpty) _go(_tabPage[_tabKey] ?? 1);
+      if (_hasGroups) _go(_tabPage[_rowKey] ?? 1);
       return;
     }
     _loadMeta();
@@ -357,6 +394,14 @@ class _PluginBoardContentState extends State<PluginBoardContent>
         c.dispose();
       }
     }
+    final sc = _sortsCtrl;
+    if (sc != null) {
+      if (_external) {
+        sc.removeListener(_onSortChanged);
+      } else {
+        sc.dispose();
+      }
+    }
     super.dispose();
   }
 
@@ -364,24 +409,40 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     try {
       final modules = widget.metaModules ?? await widget.plugin.page('board');
       if (!mounted) return;
+      var selSort = '';
       for (final m in modules) {
         final mm = _asMap2(m);
         if (mm['type'] != 'board') continue;
         final raw = mm['tabs'];
-        if (raw is List) _tabs = raw.map((e) => _asMap2(e)).toList();
+        _tabs = raw is List ? raw.map((e) => _asMap2(e)).toList() : [];
         _listPage = mm['page']?.toString() ?? 'boardList';
+        final rawSorts = mm['sorts'];
+        _sorts = rawSorts is List
+            ? rawSorts.map((e) => _asMap2(e)).toList()
+            : [];
+        selSort = mm['sort']?.toString() ?? '';
       }
       if (_tabs.isNotEmpty) {
         _tabsCtrl?.dispose();
         _tabsCtrl = TabController(length: _tabs.length, vsync: this)
           ..addListener(_onTabChanged);
       }
+      _sortsCtrl?.dispose();
+      _sortsCtrl = null;
+      if (_sorts.isNotEmpty) {
+        _sortsCtrl = TabController(length: _sorts.length, vsync: this)
+          ..addListener(_onSortChanged);
+        if (selSort.isNotEmpty) {
+          final i = _sorts.indexWhere((s) => s['key']?.toString() == selSort);
+          if (i > 0) _sortsCtrl!.index = i;
+        }
+      }
       setState(() {
         _metaLoaded = true;
         _index = 0;
         _error = null;
       });
-      if (_tabs.isNotEmpty) _go(_tabPage[_tabKey] ?? 1);
+      if (_hasGroups) _go(_tabPage[_rowKey] ?? 1);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -401,22 +462,26 @@ class _PluginBoardContentState extends State<PluginBoardContent>
 
   Future<void> _fetch(String tabKey, int page) async {
     final token = ++_reqToken;
+    final key = _rowKeyOf(tabKey);
+    final sortKey = _sortKey;
     // 立即清空旧内容并进入加载态（anime_list 行为：目标页未就绪时不留旧页）
     setState(() {
       _error = null;
       _page = page;
       // 立刻更新“当前页指针”，让渲染端不再展示上一页内容
-      _tabPage[tabKey] = page;
+      _tabPage[key] = page;
     });
     try {
+      final args = <String, dynamic>{'tab': tabKey, 'page': page};
+      if (sortKey.isNotEmpty) args['sort'] = sortKey;
       final parsed = _parseBoard(
-        await widget.plugin.page(_listPage, {'tab': tabKey, 'page': page}),
+        await widget.plugin.page(_listPage, args),
         page,
       );
       if (!mounted || token != _reqToken) return;
-      (_cache[tabKey] ??= {})[parsed.current] = parsed.rows;
-      _tabPage[tabKey] = parsed.current;
-      _tabTotal[tabKey] = parsed.total;
+      (_cache[key] ??= {})[parsed.current] = parsed.rows;
+      _tabPage[key] = parsed.current;
+      _tabTotal[key] = parsed.total;
       if (_tabKey != tabKey) return;
       setState(() {
         _page = parsed.current;
@@ -460,12 +525,13 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   /// 切到某页：命中缓存直接显示，否则清空并重新拉取（分页模式）
   void _go(int page) {
     if (page < 1) return;
-    final key = _tabKey;
+    final tabKey = _tabKey;
+    final key = _rowKey;
     if (_continuous) {
       // 连续模式只从第 1 页顺序累积
       if (page == 1 && (_cache[key]?[1] == null)) {
         _cache.remove(key);
-        _fetch(key, 1);
+        _fetch(tabKey, 1);
       }
       return;
     }
@@ -479,7 +545,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
       });
       return;
     }
-    _fetch(key, page);
+    _fetch(tabKey, page);
   }
 
   /// 状态切换（PageView 停稳后调用）
@@ -510,26 +576,51 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     _switchTo(c.index);
   }
 
+  void _selectSort(int i) {
+    if (i < 0 || i >= _sorts.length) return;
+    final c = _sortsCtrl;
+    if (c != null) {
+      c.animateTo(i);
+      return;
+    }
+    setState(() {});
+  }
+
+  /// 排序停稳后的同步：分类不变，按新的行键重新进入
+  void _onSortChanged() {
+    final c = _sortsCtrl;
+    if (c == null || !mounted || c.indexIsChanging) return;
+    if (!_hasGroups) {
+      setState(() {});
+      return;
+    }
+    if (_continuous) {
+      _enterCurrentTab();
+    } else {
+      _go(_tabPage[_rowKey] ?? 1);
+    }
+  }
+
   void _enterCurrentTab() {
     if (!_continuous) {
-      final p = _tabPage[_tabKey] ?? 1;
+      final p = _tabPage[_rowKey] ?? 1;
       _go(p);
       return;
     }
-    final pages = _cache[_tabKey];
+    final pages = _cache[_rowKey];
     if (pages == null || pages.isEmpty || pages[1] == null) {
       _fetch(_tabKey, 1);
     } else {
       setState(() {
-        _page = _nextMissing(_tabKey) - 1;
-        _totalPages = _tabTotal[_tabKey] ?? _totalPages;
+        _page = _nextMissing(_rowKey) - 1;
+        _totalPages = _tabTotal[_rowKey] ?? _totalPages;
       });
       _scheduleFetchMore();
     }
   }
 
-  List<Map<String, dynamic>> _mergedOf(String tabKey) {
-    final pages = _cache[tabKey];
+  List<Map<String, dynamic>> _mergedOf(String rowKey) {
+    final pages = _cache[rowKey];
     final out = <Map<String, dynamic>>[];
     var i = 1;
     while (pages != null) {
@@ -541,8 +632,8 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     return out;
   }
 
-  int _nextMissing(String tabKey) {
-    final pages = _cache[tabKey];
+  int _nextMissing(String rowKey) {
+    final pages = _cache[rowKey];
     var i = 1;
     while (pages?[i] != null) {
       i++;
@@ -551,8 +642,8 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   }
 
   bool get _hasMore {
-    final total = _tabTotal[_tabKey];
-    final next = _nextMissing(_tabKey);
+    final total = _tabTotal[_rowKey];
+    final next = _nextMissing(_rowKey);
     return total == null || next <= total;
   }
 
@@ -565,10 +656,12 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   /// 连续模式：滚动到末尾时顺序加载下一页并累积
   Future<void> _fetchMore() async {
     if (!_continuous || _appending || _error != null) return;
-    final key = _tabKey;
+    final tabKey = _tabKey;
+    final key = _rowKey;
+    final sortKey = _sortKey;
     final pages = _cache[key];
     if (pages == null || pages.isEmpty || pages[1] == null) {
-      await _fetch(key, 1);
+      await _fetch(tabKey, 1);
       return;
     }
     final next = _nextMissing(key);
@@ -578,8 +671,10 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     _appending = true;
     setState(() {});
     try {
+      final args = <String, dynamic>{'tab': tabKey, 'page': next};
+      if (sortKey.isNotEmpty) args['sort'] = sortKey;
       final parsed = _parseBoard(
-        await widget.plugin.page(_listPage, {'tab': key, 'page': next}),
+        await widget.plugin.page(_listPage, args),
         next,
       );
       if (!mounted || token != _reqToken) {
@@ -588,7 +683,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
       }
       (_cache[key] ??= {})[parsed.current] = parsed.rows;
       _tabTotal[key] = parsed.total;
-      if (_tabKey == key) {
+      if (_tabKey == tabKey) {
         setState(() {
           _totalPages = parsed.total;
         });
@@ -598,7 +693,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
         _appending = false;
         return;
       }
-      if (_tabKey == key) {
+      if (_tabKey == tabKey) {
         setState(() => _error = '$e');
       }
     } finally {
@@ -624,7 +719,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     if (_scroll.hasClients) _scroll.jumpTo(0);
     if (!_continuous) {
       // 回到分页：从该分类上次停留页展示
-      final p = _tabPage[_tabKey] ?? 1;
+      final p = _tabPage[_rowKey] ?? 1;
       _go(p);
     } else {
       _enterCurrentTab();
@@ -632,50 +727,31 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   }
 
   void _refreshList() {
-    final key = _tabKey;
+    final key = _rowKey;
     _cache.remove(key);
     _tabPage.remove(key);
     if (_scroll.hasClients) _scroll.jumpTo(0);
     if (_continuous) {
-      _fetch(key, 1);
+      _fetch(_tabKey, 1);
     } else {
       _page = 1;
       _go(1);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (!_metaLoaded) {
-      return const Center(child: PolygonRefreshIndicator(size: 24));
-    }
-    final cs = Theme.of(context).colorScheme;
-    if (_tabs.isEmpty) {
-      return Center(
-        child: _error != null
-            ? _PluginRetry(message: _error!, onRetry: _retryMeta)
-            : Text(t.noData, style: TextStyle(color: cs.onSurfaceVariant)),
-      );
-    }
-    // 留白放在滚动内容自身（anime_list 同款）：网格铺满，行可滚到玻璃条下方产生磨砂
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: ExtendedTabBarView(
-            controller: _tabsCtrl,
-            children: [
-              for (var i = 0; i < _tabs.length; i++)
-                HeroMode(enabled: i == _index, child: _categoryPane(i)),
-            ],
-          ),
-        ),
-        if (_tabs.isNotEmpty && !_external)
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            child: _GlassBar(
-              child: Padding(
+  /// 顶部玻璃胶囊条（自管理模式；外壳托管时由外壳统一渲染）
+  Widget _topCapsules() {
+    if (!_hasGroups) return const SizedBox.shrink();
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: 0,
+      child: _GlassBar(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_tabs.isNotEmpty)
+              Padding(
                 padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
                 child: Align(
                   alignment: Alignment.center,
@@ -692,8 +768,64 @@ class _PluginBoardContentState extends State<PluginBoardContent>
                   ),
                 ),
               ),
-            ),
-          ),
+            if (_sorts.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  12,
+                  _tabs.isNotEmpty ? 0 : 2,
+                  12,
+                  6,
+                ),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: _CapsuleBar(
+                    keys: _sorts
+                        .map((s) => s['key']?.toString() ?? '')
+                        .toList(),
+                    titles: _sorts
+                        .map((s) => s['title']?.toString() ?? '')
+                        .toList(),
+                    selected: _sortKey,
+                    onChanged: _selectSort,
+                    controller: _sortsCtrl,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_metaLoaded) {
+      return const Center(child: PolygonRefreshIndicator(size: 24));
+    }
+    final cs = Theme.of(context).colorScheme;
+    if (!_hasGroups) {
+      return Center(
+        child: _error != null
+            ? _PluginRetry(message: _error!, onRetry: _retryMeta)
+            : Text(t.noData, style: TextStyle(color: cs.onSurfaceVariant)),
+      );
+    }
+    // 留白放在滚动内容自身（anime_list 同款）：网格铺满，行可滚到玻璃条下方产生磨砂
+    return Stack(
+      children: [
+        Positioned.fill(
+          // 无分类行时排序行即唯一维度，排序胶囊自带指示块，无需 PageView
+          child: _tabs.isEmpty
+              ? _categoryPane(0)
+              : ExtendedTabBarView(
+                  controller: _tabsCtrl,
+                  children: [
+                    for (var i = 0; i < _tabs.length; i++)
+                      HeroMode(enabled: i == _index, child: _categoryPane(i)),
+                  ],
+                ),
+        ),
+        if (!_external) _topCapsules(),
         if (!_continuous)
           Positioned(
             left: 0,
@@ -741,29 +873,31 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     if (_error != null) return false;
     if (_continuous) {
       // 连续模式：只要还没拿到第 1 页即为加载中
-      return _cache[_tabKey]?[1] == null;
+      return _cache[_rowKey]?[1] == null;
     }
     // 分页：当前页无缓存即视为加载中（清空后第一次 build 进入 loader）
-    return _cache[_tabKey]?[_page] == null;
+    return _cache[_rowKey]?[_page] == null;
   }
 
   /// 分类页内容（每个 tab 一页，状态从各自缓存取）
   Widget _categoryPane(int tabIdx) {
     final cs = Theme.of(context).colorScheme;
-    final key = _tabKeyOf(tabIdx);
-    final active = tabIdx == _index;
+    final key = _rowKeyOf(_tabKeyOf(tabIdx));
+    final active = _tabs.isEmpty || tabIdx == _index;
     final edge = EdgeInsets.fromLTRB(
       8,
       // 外壳托管时顶部导航悬浮，内容按外壳下发的高度让位并从其下方滚过；
-      // 自管理模式仍需让出 ~44px 顶部玻璃胶囊
-      _external ? (widget.presetTopInset ?? 10) : (_tabs.isNotEmpty ? 50 : 8),
+      // 自管理模式按实际行数让出顶部玻璃胶囊（每行 ~42px）
+      _external
+          ? (widget.presetTopInset ?? 10)
+          : 8 + (_tabs.isNotEmpty ? 42 : 0) + (_sorts.isNotEmpty ? 42 : 0),
       8,
       _continuous ? 24 : 66,
     );
 
     List<Map<String, dynamic>> visible;
     if (_continuous) {
-      if (active && _cache[_tabKey]?[1] == null && _error != null) {
+      if (active && _cache[_rowKey]?[1] == null && _error != null) {
         return Padding(
           padding: edge,
           child: _PluginRetry(message: _error!, onRetry: _retryContinuous),
