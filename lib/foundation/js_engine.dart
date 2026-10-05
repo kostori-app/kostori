@@ -323,14 +323,16 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
         data: req["data"],
         options: Options(
           method: req['http_method'],
-          responseType: req["bytes"] == true
+          responseType: req['bytes'] == true
               ? ResponseType.bytes
               : ResponseType.plain,
           headers: headers,
         ),
       );
     } catch (e) {
-      error = e.toString();
+      // 源脚本只会把 error 原样抛出/展示，给它 `DioException [unknown]: null`
+      // 这种原文没有排查价值，统一收敛成「连接失败 + 地址」。
+      error = networkErrorMessage(e);
     }
 
     Map<String, String> headers = {};

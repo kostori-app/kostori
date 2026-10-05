@@ -51,14 +51,12 @@ final Dio _dio = Dio(
 /// 复用项目的 UA（含用户在设置里的覆盖）。
 String get _ua => appdata.implicitData['ua']?.toString() ?? webUA;
 
-/// 把用户/插件给的种子标识规范成磁力链接：
-/// 完整磁力（base32 顺带转 hex）、裸 40 位 hex、裸 32 位 base32。
+/// 把用户/插件给的种子标识规范成磁力链接：完整磁力（base32 顺带转 hex）、
+/// 裸 40 位 hex、裸 32 位 base32。裸 hash 会被包成最小磁力链，
+/// 后续 `TorrentManager._augmentTrackers` 再补 tracker。
 ///
-/// 裸 hash 会被包成最小磁力链；后续 `TorrentManager._augmentTrackers` 再补 tracker。
-///
-/// base32 必须放在 40 位 hex 之后判断：`[A-Za-z2-7]` 与 hex 有重叠，
-/// 反过来会把约 1/7500 的合法 hex 磁力误判成 base32 并改写成错误 infohash，
-/// 导致去重失效、「已添加」标记错乱。
+/// base32 必须在 40 位 hex 之后判断：`[A-Za-z2-7]` 与 hex 字符集有重叠，
+/// 反过来会把约 1/7500 的合法 hex 磁力改写成错误 infohash。
 String normalizeMagnet(String magnet) {
   final raw = magnet.trim();
   if (!raw.contains('xt=urn:btih:')) {

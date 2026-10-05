@@ -791,8 +791,15 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
                     padding: EdgeInsets.fromLTRB(8, 84, 8, bottomPad),
                     itemCount: _rows.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (context, i) =>
-                        _ForumBoardRow(plugin: widget.plugin, item: _rows[i]),
+                    itemBuilder: (context, i) {
+                      final item = _rows[i];
+                      return _useCardItem(item)
+                          ? _GenericPluginCard(
+                              plugin: widget.plugin,
+                              item: item,
+                            )
+                          : _ForumBoardRow(plugin: widget.plugin, item: item);
+                    },
                   )
                 : Padding(
                     padding: EdgeInsets.only(
@@ -882,6 +889,17 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
     }
     return const SizedBox.shrink();
   }
+}
+
+/// 搜索结果条目是否为卡片形状（有封面 / 按钮 / meta 列表 / 副标题）。
+///
+/// 卡片形状的条目按 [\_GenericPluginCard] 渲染，与插件列表页一致；
+/// 其余（论坛帖子形状）沿用 [_ForumBoardRow]。
+bool _useCardItem(Map<String, dynamic> item) {
+  if ((item['cover']?.toString() ?? '').isNotEmpty) return true;
+  if (item['buttons'] is List) return true;
+  if (item['meta'] is List || item['tags'] is List) return true;
+  return item['subtitle'] != null || item['description'] != null;
 }
 
 /// 插件历史：浏览/搜索记录（持久化到 plugin_history.db）

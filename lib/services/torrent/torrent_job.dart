@@ -21,10 +21,9 @@ String? base32ToInfoHashHex(String s) {
   return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 }
 
-/// 可分享的种子识别码：40 位大写 hex infohash（BT 客户端通用格式）。
+/// 种子识别码：40 位大写 hex infohash（兼容裸 hash 与 base32 磁力）。
 ///
-/// 直接粘进别的 BT 客户端的「添加种子」即可下载同一个种子。base32 磁力也会
-/// 转成 hex，保证复制出去的东西哪儿都能用。
+/// base32 也转成 hex，保证复制出去的内容能被其它客户端识别。
 String? parseInfoHash(String magnet) {
   final raw = magnet.trim();
   if (!raw.contains('xt=urn:btih:')) {
@@ -124,8 +123,7 @@ class TorrentJob {
 
   /// 是否处于抓取元数据阶段（进度未知，进度条需用不确定动画）。
   ///
-  /// 仅凭 [hasMetadata] 不足以判断：失败与暂停的条目同样没有元数据，
-  /// 会导致进度条持续动画化。
+  /// 失败与暂停的条目同样没有元数据，仅凭 [hasMetadata] 判定会让进度条持续动画化。
   bool get isFetchingMeta =>
       status == TorrentJobStatus.metadata && !hasMetadata;
 

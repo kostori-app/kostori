@@ -431,7 +431,7 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  // 仅抓取元数据阶段使用不确定动画，其余状态显示确定进度
+                  // 进度未知时用不确定动画，其余状态显示确定进度
                   value: job.isFetchingMeta ? null : job.progress,
                   borderRadius: BorderRadius.circular(4),
                   minHeight: 4,
@@ -636,7 +636,7 @@ class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
       _infoRow(t.torrentUploadLimit, '↑ ${formatSpeed(job.uploadRate)}'),
       _infoRow(t.torrentPeers, '${job.numPeers}/${job.numSeeds}'),
       _infoRow(t.torrentLeechers, '${job.numDownloaders}'),
-      // Tracker / DHT：没有 peer 时只有这两个来源
+      // Tracker / DHT：没有 peer 时仅靠这两者
       _infoRow(t.torrentTrackers, '${trackers.length}'),
       for (final url in trackers.take(6)) _urlRow(url),
       if (trackers.length > 6) _infoRow('  ', '+${trackers.length - 6}…'),

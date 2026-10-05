@@ -147,7 +147,7 @@ mixin class JsUiApi {
     });
   }
 
-  /// 仅展示添加弹层并预填磁力，任务创建与停止策略由用户确认。
+  /// 展示添加弹层并预填磁力，任务创建由用户确认。
   Future<void> _addTorrentDownload(String magnet) {
     return showAddTorrentSheet(App.rootContext, initialMagnet: magnet);
   }

@@ -131,8 +131,7 @@ const List<String> kDefaultTrackers = [
 /// 内置公共 DHT 引导节点。
 ///
 /// 库自带的 [StandaloneDHT] 存在响应解码缺陷，元数据抓取改用 [DhtClient]
-///（BEP 5），引导节点需自行维护：`router.bitcomet.com` / `dht.bitcomet.com`
-/// 已 NXDOMAIN，`router.silotis.us` 仅剩 AAAA 记录，均已移除。
+/// （BEP 5），节点列表需自行剔除已下线的主机。
 const List<String> kDefaultDhtNodes = [
   'udp://dht.transmissionbt.com:6881',
   'udp://router.bittorrent.com:6881',
@@ -506,15 +505,12 @@ class TorrentManager extends Notifier<TorrentState> {
     await init();
     // 支持直接粘裸 infohash（BT 客户端「复制 info hash」得到的即是此格式）
     final normalized = normalizeMagnet(magnet);
-    // 已有同种任务：直接复用。有元数据就直接返回（免重新抓取，离线可用），
-    // 没有则确保后台抓取，由调用方轮询 filesOf。
+    // 同 infohash 的任务直接复用：元数据已在则返回，否则补一次后台抓取。
     final ih = _infoHashOf(normalized);
     if (ih != null) {
       for (final j in _jobs) {
         if (_infoHashOf(j.magnet) != ih) continue;
-        // 元数据已就绪：直接复用（离线可用）
         if (_models.containsKey(j.id)) return j;
-        // 否则确保后台抓取，由调用方轮询 filesOf
         if (_refetching.add(j.id)) unawaited(_refetchMetadata(j));
         return j;
       }

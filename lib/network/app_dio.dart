@@ -592,28 +592,79 @@ class RHttpAdapter implements HttpClientAdapter {
       return _responseBody(options, res);
     }
 
-    try {
-      return await doRequest();
-    } catch (e) {
-      // 选出的最快 IP 失效：清缓存并回退到完整列表（底层依次尝试）
-      final key = fastestIpKey;
-      if (key == null || e is rhttp.RhttpCancelException) rethrow;
-      _fastestIpCache.remove(key);
-      clientSettings = clientSettings.copyWith(
-        dnsSettings: rhttp.DnsSettings.static(
-          overrides: {...overrides, options.uri.host: hostsIps!},
-        ),
-      );
-      return await doRequest();
+    var attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        return await doRequest();
+      } catch (e, s) {
+        // 移动网络下 TLS 握手中断、连接重置属于瞬时故障，重连一次
+        // （可能换到另一个 IP / CDN 节点）通常即可成功。
+        if (attempt < _maxAttempts &&
+            _isReplayable(options, requestStream) &&
+            _isConnectionError(e)) {
+          NetLog.info(
+            'Network',
+            '连接失败，重试 ${attempt + 1}/$_maxAttempts: ${options.method} '
+                '${options.uri} ($e)',
+          );
+          await Future<void>.delayed(Duration(milliseconds: 250 * attempt));
+          continue;
+        }
+        // 选出的最快 IP 失效：清缓存并回退到完整列表（底层依次尝试）
+        final key = fastestIpKey;
+        if (key == null || e is rhttp.RhttpCancelException) {
+          Error.throwWithStackTrace(e, s);
+        }
+        _fastestIpCache.remove(key);
+        // 只回退一次：否则对端持续不可用时会一直循环
+        fastestIpKey = null;
+        clientSettings = clientSettings.copyWith(
+          dnsSettings: rhttp.DnsSettings.static(
+            overrides: {...overrides, options.uri.host: hostsIps!},
+          ),
+        );
+      }
     }
+  }
+
+  /// 连接类错误的最大尝试次数（含首次）。
+  static const int _maxAttempts = 3;
+
+  /// 只重试可安全重放的请求：幂等方法且没有请求体流（流无法重放）。
+  static bool _isReplayable(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+  ) {
+    if (requestStream != null) return false;
+    const idempotent = {'GET', 'HEAD', 'OPTIONS'};
+    return idempotent.contains(options.method.toUpperCase());
+  }
+
+  /// rhttp 抛的是 flutter_rust_bridge 异常，没有稳定类型，只能按文本判定。
+  /// 用户主动取消不算连接故障。
+  static bool _isConnectionError(Object e) {
+    if (e is rhttp.RhttpCancelException) return false;
+    if (e is DioException) {
+      return switch (e.type) {
+        DioExceptionType.connectionError ||
+        DioExceptionType.sendTimeout ||
+        DioExceptionType.receiveTimeout => true,
+        _ => false,
+      };
+    }
+    final text = e.toString();
+    return text.contains('RhttpConnection') ||
+        text.contains('Connection error') ||
+        text.contains('tls handshake') ||
+        text.contains('Connection reset');
   }
 
   /// 把响应体流的错误统一转成 [DioException]。
   ///
-  /// rhttp/reqwest 在响应体解码失败时（压缩编码不支持、连接中途断开等）会抛出
-  /// `AnyhowException("error decoding response body")`；它既不是 [DioException]、
-  /// 也可能没有正常挂到 dio 的错误管线里，表现为裸露的 flutter_rust_bridge 异常。
-  /// 这里包一层，交给统一的错误处理/重试逻辑，并记录请求地址便于排查。
+  /// rhttp/reqwest 在响应体解码失败时（压缩编码不支持、连接中途断开等）抛的是
+  /// `AnyhowException`，既不是 [DioException] 也可能没挂到 dio 的错误管线，
+  /// 会以裸露的 flutter_rust_bridge 异常出现在界面上。
   Stream<Uint8List> _guardBody(
     RequestOptions options,
     Stream<Uint8List> body,
