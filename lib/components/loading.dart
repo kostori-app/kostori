@@ -43,7 +43,7 @@ class NetworkError extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            cfe == null ? message : "Cloudflare verification required",
+            cfe == null ? message : t.cloudflareVerificationRequired,
             textAlign: TextAlign.center,
             maxLines: 3,
           ),

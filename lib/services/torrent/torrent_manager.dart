@@ -285,7 +285,7 @@ class TorrentManager extends Notifier<TorrentState> {
   /// Maximum number of tracker clients allowed for one running task.
   /// Mobile relay connections are more expensive, so keep their fan-out lower.
   static int get activeTrackerLimit =>
-      Platform.isAndroid || Platform.isIOS ? 16 : 32;
+      Platform.isAndroid || Platform.isIOS ? 6 : 32;
 
   /// Public pure helper for tests and callers that need the same engine limit.
   static List<Uri> limitActiveTrackerUris(
@@ -318,6 +318,8 @@ class TorrentManager extends Notifier<TorrentState> {
 
   bool _initialized = false;
   Future<void>? _initializing;
+  Future<void>? _loadingJobs;
+  bool _jobsLoaded = false;
 
   final List<TorrentJob> _jobs = [];
 
@@ -326,6 +328,9 @@ class TorrentManager extends Notifier<TorrentState> {
   final Map<String, TorrentStreamServer> _servers = {};
   final Set<String> _started = {};
   final Set<String> _starting = {};
+
+  /// 记录用户主动暂停的任务，阻止后台恢复流程在同一进程内重新启动。
+  final Set<String> _pausedByUser = {};
   final Set<String> _refetching = {};
   final Set<String> _wantStart = {};
 
@@ -335,6 +340,7 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 正在进行的元数据抓取与其取消信号，用户按「暂停」时立刻中止网络动作。
   final Map<String, Completer<void>> _fetchCancels = {};
   final Map<String, Future<void>> _resumeOperations = {};
+  final Map<String, Future<void>> _prepareOperations = {};
 
   /// 元数据抓取超时。
   ///
@@ -638,31 +644,35 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   Future<void> _initInternal() async {
-    _torrentDir = Directory(p.join(App.dataPath, 'torrent_meta'));
-    if (!await _torrentDir!.exists()) {
-      await _torrentDir!.create(recursive: true);
-    }
-    await _loadJobs();
+    await _ensureJobsLoaded();
+    // Publish the restored list before preparing every engine. The preparation
+    // can involve piece and file state recovery; the first frame must remain
+    // interactive while that work is in progress.
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(const Duration(seconds: 2), (_) => _sync());
+    _initialized = true;
+    _emit();
     for (final job in _jobs) {
       // refetch: false —— 仅恢复本地状态；元数据抓取是网络动作，
       // 进程重启后不自动重试。
       await _prepareEngine(job, start: false, refetch: false);
     }
-    _syncTimer?.cancel();
-    _syncTimer = Timer.periodic(const Duration(seconds: 1), (_) => _sync());
-    _initialized = true;
     _emit();
   }
 
   void _disposeInternal() {
     _initialized = false;
+    _jobsLoaded = false;
+    _loadingJobs = null;
     for (final cancel in _fetchCancels.values) {
       if (!cancel.isCompleted) cancel.complete();
     }
     _fetchCancels.clear();
     _resumeOperations.clear();
+    _prepareOperations.clear();
     _wantStart.clear();
     _starting.clear();
+    _pausedByUser.clear();
     _syncTimer?.cancel();
     _syncTimer = null;
     for (final server in _servers.values) {
@@ -690,6 +700,24 @@ class TorrentManager extends Notifier<TorrentState> {
     } catch (_) {}
   }
 
+  Future<void> _ensureJobsLoaded() {
+    if (_jobsLoaded) return Future<void>.value();
+    final pending = _loadingJobs;
+    if (pending != null) return pending;
+    final future = () async {
+      _torrentDir = Directory(p.join(App.dataPath, 'torrent_meta'));
+      if (!await _torrentDir!.exists()) {
+        await _torrentDir!.create(recursive: true);
+      }
+      await _loadJobs();
+      _jobsLoaded = true;
+    }();
+    _loadingJobs = future;
+    return future.whenComplete(() {
+      if (identical(_loadingJobs, future)) _loadingJobs = null;
+    });
+  }
+
   void _persist() {
     final jsons = _jobs.map((j) => jsonEncode(j.toJson())).toList();
     _writeChain = _writeChain
@@ -702,7 +730,7 @@ class TorrentManager extends Notifier<TorrentState> {
     String magnet, {
     TorrentStopPolicy stopAfter = TorrentStopPolicy.none,
   }) async {
-    await init();
+    await _ensureReadyForOperation();
     // 支持直接粘裸 infohash（BT 客户端「复制 info hash」得到的即是此格式）
     final normalized = normalizeMagnet(magnet);
     // 同 infohash 的任务直接复用：元数据已在则返回，否则补一次后台抓取。
@@ -764,7 +792,7 @@ class TorrentManager extends Notifier<TorrentState> {
     Uint8List bytes, {
     TorrentStopPolicy stopAfter = TorrentStopPolicy.none,
   }) async {
-    await init();
+    await _ensureReadyForOperation();
     final TorrentModel model;
     try {
       // The pinned engine's parseBytes() currently compares the encoded key
@@ -1193,15 +1221,41 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   // ── 引擎准备 ──────────────────────────────────────────────────────────────
+  Future<void> _ensureReadyForOperation() async {
+    await _ensureJobsLoaded();
+    if (_initialized) return;
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(const Duration(seconds: 2), (_) => _sync());
+    _initialized = true;
+    _emit();
+    unawaited(_prepareRestoredJobs());
+  }
+
+  Future<void> _prepareRestoredJobs() async {
+    for (final job in List<TorrentJob>.of(_jobs)) {
+      await _prepareEngine(job, start: false, refetch: false);
+    }
+  }
+
   ///
   /// [refetch] 为 false（重启恢复路径）时保持持久化下来的状态，不自动重抓元数据。
   Future<void> _prepareEngine(
     TorrentJob job, {
     required bool start,
     bool refetch = true,
-  }) => TorrentNetwork.run(
-    () => _prepareEngineDirect(job, start: start, refetch: refetch),
-  );
+  }) {
+    final pending = _prepareOperations[job.id];
+    if (pending != null) return pending;
+    final operation = TorrentNetwork.run(
+      () => _prepareEngineDirect(job, start: start, refetch: refetch),
+    );
+    _prepareOperations[job.id] = operation;
+    return operation.whenComplete(() {
+      if (identical(_prepareOperations[job.id], operation)) {
+        _prepareOperations.remove(job.id);
+      }
+    });
+  }
 
   Future<void> _prepareEngineDirect(
     TorrentJob job, {
@@ -1293,7 +1347,8 @@ class TorrentManager extends Notifier<TorrentState> {
       // 移动端元数据阶段已经由直连 DHT/HTTP tracker 发现节点；清空引导
       // 节点可避免点击继续下载时等待 VPN 接管的 DHT 重试。
       if (Platform.isAndroid) task.dht?.clearBootstrapNodes();
-      if (start) {
+      final shouldStart = start && !_pausedByUser.contains(job.id);
+      if (shouldStart) {
         await task.start();
         if (!_jobs.contains(job)) {
           try {
@@ -1304,7 +1359,12 @@ class TorrentManager extends Notifier<TorrentState> {
         }
         _started.add(job.id);
         _applyEndpoints(task, job, model);
-        job.status = TorrentJobStatus.downloading;
+        if (_pausedByUser.contains(job.id)) {
+          task.pause();
+          job.status = TorrentJobStatus.paused;
+        } else {
+          job.status = TorrentJobStatus.downloading;
+        }
       } else {
         // 加载状态文件，让暂停中的任务也能显示单文件进度
         await task.prepare();
@@ -1831,6 +1891,28 @@ class TorrentManager extends Notifier<TorrentState> {
     return sum;
   }
 
+  /// 从引擎的文件状态直接计算已选字节，避免同步轮询时反复创建 UI 文件模型。
+  int _selectedDoneBytesFromEngine(TorrentJob job) {
+    final engineFiles = _engines[job.id]?.fileManager?.files;
+    if (engineFiles == null) {
+      return selectedDoneBytes(filesOf(job), job.selectedFiles);
+    }
+    if (_isNoneSelected(job.selectedFiles)) return 0;
+    if (job.selectedFiles.isEmpty) {
+      var sum = 0;
+      for (final file in engineFiles) {
+        sum += file.downloadedBytes;
+      }
+      return sum;
+    }
+    final selected = job.selectedFiles.toSet();
+    var sum = 0;
+    for (var index = 0; index < engineFiles.length; index++) {
+      if (selected.contains(index)) sum += engineFiles[index].downloadedBytes;
+    }
+    return sum;
+  }
+
   /// 按「已选文件」重算 [TorrentJob.totalDone] / [totalWanted] / [progress]。
   ///
   /// 三者口径保持一致（都是已选文件），UI 上的 `progress * totalWanted`
@@ -1846,7 +1928,7 @@ class TorrentManager extends Notifier<TorrentState> {
       return;
     }
 
-    final done = selectedDoneBytes(filesOf(job), job.selectedFiles);
+    final done = _selectedDoneBytesFromEngine(job);
     job.totalDone = done;
     job.progress = (done / wanted).clamp(0.0, 1.0).toDouble();
   }
@@ -1875,12 +1957,16 @@ class TorrentManager extends Notifier<TorrentState> {
 
   // ── 操作 ──────────────────────────────────────────────────────────────────
   void pause(TorrentJob job) {
+    _pausedByUser.add(job.id);
     // 中止进行中的元数据抓取，避免其在超时后覆盖 pause 设置的状态
     _cancelFetch(job);
     final engine = _engines[job.id];
     if (engine != null && engine.state == TaskState.running) {
       engine.pause();
     }
+    try {
+      engine?.stopScheduling();
+    } catch (_) {}
     job.downloadRate = 0;
     job.uploadRate = 0;
     job.status = TorrentJobStatus.paused;
@@ -1899,8 +1985,14 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 恢复任务；[isRetry] 为 true 时（用户手动点重试）重置元数据重试预算。
   Future<void> resume(TorrentJob job, {bool isRetry = false}) {
+    _pausedByUser.remove(job.id);
     final pending = _resumeOperations[job.id];
     if (pending != null) return pending;
+    if (job.hasMetadata && job.status == TorrentJobStatus.paused) {
+      // 先反馈用户操作，再等待引擎恢复文件状态和网络连接。
+      job.status = TorrentJobStatus.downloading;
+      _emit();
+    }
     final operation = TorrentNetwork.run(
       () => _resumeDirect(job, isRetry: isRetry),
     );
@@ -1913,7 +2005,9 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   Future<void> _resumeDirect(TorrentJob job, {bool isRetry = false}) async {
+    await _ensureReadyForOperation();
     if (job.status == TorrentJobStatus.completed) return;
+    _pausedByUser.remove(job.id);
     // 库的 start() 非幂等（server socket 已被监听会抛 "Stream was already
     // listened to"），并发 resume 也会重复 start，这里串行化并容错。
     if (!_starting.add(job.id)) return;
@@ -1925,13 +2019,26 @@ class TorrentManager extends Notifier<TorrentState> {
           job.status = TorrentJobStatus.metadata;
         }
       }
-      final engine = _engines[job.id];
+      var engine = _engines[job.id];
       if (engine == null) {
         await _prepareEngine(job, start: true);
-      } else if (engine.state == TaskState.paused &&
+        engine = _engines[job.id];
+      }
+      if (engine == null) {
+        throw StateError('torrent engine is not ready');
+      }
+      if (_pausedByUser.contains(job.id)) {
+        if (engine.state == TaskState.running) engine.pause();
+        job.status = TorrentJobStatus.paused;
+        _persist();
+        _emit();
+        return;
+      }
+      if (engine.state == TaskState.paused &&
           engine.fileManager != null &&
           engine.peersManager != null) {
         engine.resume();
+        _applyLimits(engine);
         job.status = TorrentJobStatus.downloading;
       } else if (engine.state != TaskState.running) {
         // stopped：首次启动或 stop() 之后；start() 非幂等，容错重复启动
@@ -1952,6 +2059,13 @@ class TorrentManager extends Notifier<TorrentState> {
           await _prepareEngine(job, start: true);
           if (_engines[job.id] == null) rethrow;
           _sync();
+          _persist();
+          _emit();
+          return;
+        }
+        if (_pausedByUser.contains(job.id)) {
+          engine.pause();
+          job.status = TorrentJobStatus.paused;
           _persist();
           _emit();
           return;
@@ -2020,6 +2134,7 @@ class TorrentManager extends Notifier<TorrentState> {
     }
     _started.remove(job.id);
     _starting.remove(job.id);
+    _pausedByUser.remove(job.id);
     _wantStart.remove(job.id);
     _refetching.remove(job.id);
     _refetchAttempts.remove(job.id);
@@ -2328,6 +2443,7 @@ class TorrentManager extends Notifier<TorrentState> {
       // start/prepare 尚未结束时引擎暂时为 stopped，不能把仍在启动的任务
       // 改成 paused，否则会让保活通知停止后立即重启。
       if (_starting.contains(job.id) ||
+          _prepareOperations.containsKey(job.id) ||
           job.status == TorrentJobStatus.metadata) {
         continue;
       }
@@ -2335,6 +2451,18 @@ class TorrentManager extends Notifier<TorrentState> {
       final model = _models[job.id];
       void refreshProgress() {
         if (model != null) _refreshProgress(job, model);
+      }
+
+      // 暂停是用户的明确操作。即使某个恢复回调或引擎内部状态晚到，
+      // 轮询也不能把任务重新标记为下载中。
+      if (_pausedByUser.contains(job.id) && engine.state == TaskState.running) {
+        try {
+          engine.pause();
+        } catch (_) {}
+        job.downloadRate = 0;
+        job.uploadRate = 0;
+        job.status = TorrentJobStatus.paused;
+        continue;
       }
 
       // 以引擎实际状态为准：_started 是内存态，可能与引擎不同步，

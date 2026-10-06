@@ -145,45 +145,18 @@ class _DownloadSettingsSheetState extends ConsumerState<_DownloadSettingsSheet>
   }
 
   Widget _downloadDirectoryButton() {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: CapsuleButton(
-        width: double.infinity,
-        alignment: MainAxisAlignment.start,
-        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-        onTap: () async {
-          final dir = await selectDirectory();
-          if (dir != null && dir.isNotEmpty) {
-            appdata.implicitData['downloadDir'] = dir;
-            appdata.writeImplicitData();
-            setState(() {});
-          }
-        },
-        child: Row(
-          children: [
-            const Icon(Icons.folder_outlined),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(t.downloadDir),
-                  const SizedBox(height: 3),
-                  Text(
-                    _downloadDir(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 20),
-          ],
-        ),
-      ),
+    return SettingsActionButton(
+      icon: Icons.folder_outlined,
+      title: t.downloadDir,
+      subtitle: _downloadDir(),
+      onTap: () async {
+        final dir = await selectDirectory();
+        if (dir != null && dir.isNotEmpty) {
+          appdata.implicitData['downloadDir'] = dir;
+          appdata.writeImplicitData();
+          setState(() {});
+        }
+      },
     );
   }
 
@@ -267,75 +240,27 @@ class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
             onChanged: (v) => setState(() => _m.stopSeedAfterComplete = v),
           ),
         ),
-        _settingsButton(
+        SettingsActionButton(
           icon: Icons.dns_outlined,
           title: t.torrentTrackers,
           subtitle: '${_m.trackers.length}',
           onTap: () => showPopUpWidget(context, const _TrackerEditorPage()),
         ),
-        _settingsButton(
+        SettingsActionButton(
           icon: Icons.hub_outlined,
           title: t.torrentDht,
-          subtitle: t.torrentDhtExplain,
-          trailing: Text('${_m.dhtNodes.length}'),
+          subtitle: '${_m.dhtNodes.length}',
           onTap: () => showPopUpWidget(context, const _DhtNodesEditorPage()),
         ),
-        _settingsButton(
+        SettingsActionButton(
           icon: Icons.folder_outlined,
           title: t.torrentDownloadDir,
-          subtitle:
-              '${TorrentManager.torrentDownloadDir}\n${t.torrentDownloadDirDesc}',
+          subtitle: TorrentManager.torrentDownloadDir,
           isLoading: _changingPath,
           onTap: _changingPath ? null : _pickTorrentDirectory,
         ),
         const SizedBox(height: 8),
       ],
-    );
-  }
-
-  Widget _settingsButton({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback? onTap,
-    Widget? trailing,
-    bool isLoading = false,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: CapsuleButton(
-        width: double.infinity,
-        alignment: MainAxisAlignment.start,
-        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-        enabled: onTap != null,
-        isLoading: isLoading,
-        onTap: onTap ?? () {},
-        child: Row(
-          children: [
-            Icon(icon),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-            if (trailing != null) ...[const SizedBox(width: 10), trailing],
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 20),
-          ],
-        ),
-      ),
     );
   }
 
