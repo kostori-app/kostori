@@ -24,8 +24,6 @@ class DownloadForegroundService : Service() {
         private const val CHANNEL_ID = "download"
         private const val NOTIFICATION_ID = 1002
         private const val MAX_VISIBLE = 3
-        private const val ACTION_START = "com.axlmly.kostori.START_DOWNLOAD"
-        private const val ACTION_STOP = "com.axlmly.kostori.STOP_DOWNLOAD"
         private const val ACTION_UPDATE = "com.axlmly.kostori.UPDATE_DOWNLOAD"
         private const val EXTRA_TASKS = "tasks"
         private const val EXTRA_REMAINING = "remaining"
@@ -45,8 +43,19 @@ class DownloadForegroundService : Service() {
             R.id.task_row_1, R.id.task_row_2, R.id.task_row_3,
         )
 
-        fun start(context: Context) {
-            val intent = Intent(context, DownloadForegroundService::class.java).setAction(ACTION_START)
+        fun start(
+            context: Context,
+            tasks: List<Map<String, Any>> = emptyList(),
+            remaining: Int = tasks.size,
+        ) {
+            if (tasks.isEmpty()) {
+                stop(context)
+                return
+            }
+            val intent = Intent(context, DownloadForegroundService::class.java)
+                .setAction(ACTION_UPDATE)
+                .putParcelableArrayListExtra(EXTRA_TASKS, toBundles(tasks))
+                .putExtra(EXTRA_REMAINING, remaining)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -54,12 +63,7 @@ class DownloadForegroundService : Service() {
             }
         }
 
-        fun stop(context: Context) {
-            val intent = Intent(context, DownloadForegroundService::class.java).setAction(ACTION_STOP)
-            context.startService(intent)
-        }
-
-        fun update(context: Context, tasks: List<Map<String, Any>>, remaining: Int = tasks.size) {
+        private fun toBundles(tasks: List<Map<String, Any>>): ArrayList<Bundle> {
             val bundles = ArrayList<Bundle>(tasks.size)
             for (t in tasks) {
                 bundles.add(
@@ -69,6 +73,16 @@ class DownloadForegroundService : Service() {
                     }
                 )
             }
+            return bundles
+        }
+
+        fun stop(context: Context) {
+            // 不要为了停止而新建服务，否则空闲时也会触发一次启动/销毁。
+            context.stopService(Intent(context, DownloadForegroundService::class.java))
+        }
+
+        fun update(context: Context, tasks: List<Map<String, Any>>, remaining: Int = tasks.size) {
+            val bundles = toBundles(tasks)
             val intent = Intent(context, DownloadForegroundService::class.java)
                 .setAction(ACTION_UPDATE)
                 .putParcelableArrayListExtra(EXTRA_TASKS, bundles)
@@ -86,24 +100,32 @@ class DownloadForegroundService : Service() {
      */
     private var isForeground = false
 
+    private data class VisibleTask(
+        val title: String,
+        val percent: Int,
+        val indeterminate: Boolean,
+    )
+
+    private data class NotificationSnapshot(val tasks: List<VisibleTask>, val remaining: Int)
+
+    private var lastNotification: NotificationSnapshot? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        ensureChannel()
         acquireWakeLock()
     }
 
     override fun onDestroy() {
+        removeNotification()
         releaseWakeLock()
         super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_STOP -> {
-                stopSelfInternal()
-                return START_NOT_STICKY
-            }
             ACTION_UPDATE -> {
                 @Suppress("DEPRECATION")
                 val tasks = intent.getParcelableArrayListExtra<Bundle>(EXTRA_TASKS) ?: arrayListOf()
@@ -116,21 +138,26 @@ class DownloadForegroundService : Service() {
                 return START_STICKY
             }
             else -> {
-                showNotification(arrayListOf(), 0)
-                return START_STICKY
+                stopSelfInternal()
+                return START_NOT_STICKY
             }
         }
     }
 
     private fun stopSelfInternal() {
+        removeNotification()
+        stopSelf()
+    }
+
+    private fun removeNotification() {
         isForeground = false
+        lastNotification = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
             @Suppress("DEPRECATION")
             stopForeground(true)
         }
-        stopSelf()
     }
 
     private fun acquireWakeLock() {
@@ -177,21 +204,30 @@ class DownloadForegroundService : Service() {
     }
 
     private fun showNotification(tasks: List<Bundle>, remaining: Int = tasks.size) {
-        ensureChannel()
+        val snapshot = NotificationSnapshot(
+            tasks.take(MAX_VISIBLE).map {
+                val progress = it.getDouble(EXTRA_PROGRESS)
+                VisibleTask(
+                    it.getString(EXTRA_TITLE) ?: "",
+                    (progress * 100).toInt().coerceIn(0, 100),
+                    progress <= 0.0,
+                )
+            },
+            remaining,
+        )
+        // 元数据等待、做种和整数百分比未变化时，不重建 RemoteViews。
+        if (isForeground && snapshot == lastNotification) return
         val rv = RemoteViews(packageName, R.layout.download_notification)
-        val count = tasks.size
-        // Q20：标题显示剩余任务数（未完成总数），而非当前传输中的任务数
+        val count = snapshot.tasks.size
+        // 标题显示剩余任务数，而不是当前正在传输的任务数。
         rv.setTextViewText(R.id.notif_count, "还剩 $remaining 个任务")
 
         for (i in 0 until MAX_VISIBLE) {
             if (i < count) {
-                val t = tasks[i]
-                val title = t.getString(EXTRA_TITLE) ?: ""
-                val progress = t.getDouble(EXTRA_PROGRESS)
-                val percent = (progress * 100).toInt().coerceIn(0, 100)
-                rv.setTextViewText(taskTitleIds[i], title)
-                rv.setTextViewText(taskPercentIds[i], "$percent%")
-                rv.setProgressBar(taskProgressIds[i], 100, percent, progress <= 0.0)
+                val task = snapshot.tasks[i]
+                rv.setTextViewText(taskTitleIds[i], task.title)
+                rv.setTextViewText(taskPercentIds[i], "${task.percent}%")
+                rv.setProgressBar(taskProgressIds[i], 100, task.percent, task.indeterminate)
                 rv.setViewVisibility(taskRowIds[i], View.VISIBLE)
             } else {
                 rv.setViewVisibility(taskRowIds[i], View.GONE)
@@ -217,10 +253,15 @@ class DownloadForegroundService : Service() {
             .setCustomContentView(rv)
             .setCustomBigContentView(rv)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(false)
             .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // Android 14+：dataSync 在 targetSDK 36 被禁止，改用 specialUse
+        if (isForeground) {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.notify(NOTIFICATION_ID, notification)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // Android 14+ 使用已声明的 specialUse 类型进行长时间传输保活。
             startForegroundType(
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
                 notification,
@@ -230,8 +271,7 @@ class DownloadForegroundService : Service() {
         } else {
             startForegroundOnce(notification)
         }
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID, notification)
+        lastNotification = snapshot
     }
 
     /** 首次进入前台才调`startForeground`，重复调用会让通知反复重放入场动画。 */

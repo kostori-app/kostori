@@ -1,9 +1,14 @@
+import 'dart:io';
+
+import 'package:dtorrent_task_v2/dtorrent_task_v2.dart' show TaskState;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
 import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:kostori/services/torrent/torrent_job.dart';
 import 'package:kostori/services/torrent/torrent_manager.dart';
+import 'package:kostori/services/torrent/torrent_network.dart';
+import 'package:kostori/services/torrent/torrent_stream_server.dart';
 
 TorrentFileEntry _file(int i, int size, int done) => TorrentFileEntry(
   index: i,
@@ -15,6 +20,135 @@ TorrentFileEntry _file(int i, int size, int done) => TorrentFileEntry(
 );
 
 void main() {
+  test(
+    'torrent socket override does not recurse through its loopback path',
+    () async {
+      if (Platform.isAndroid) return;
+      final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final accepted = server.first.then((socket) {
+        socket.destroy();
+      });
+      try {
+        final socket = await TorrentNetwork.run(
+          () => Socket.connect(InternetAddress.loopbackIPv4, server.port),
+        ).timeout(const Duration(seconds: 3));
+        socket.destroy();
+        await accepted;
+      } finally {
+        await server.close();
+      }
+    },
+  );
+
+  test(
+    'torrent stream URLs encode file names while preserving path segments',
+    () {
+      expect(
+        TorrentStreamServer.urlForPath(
+          37471,
+          'FC2-OPV/4k688.com@episode.mp4',
+        ).toString(),
+        'http://127.0.0.1:37471/FC2-OPV/4k688.com@episode.mp4',
+      );
+    },
+  );
+
+  test('torrent stream paths still resolve after a local rename', () {
+    expect(
+      TorrentStreamServer.pathMatches(
+        'FC2-PPV-4981932/4k688.com@FC2-PPV-4981932.mp4',
+        '4k688.com@FC2-PPV-4981932.mp4',
+      ),
+      isTrue,
+    );
+    expect(
+      TorrentStreamServer.pathMatches(
+        'FC2-PPV-4981932/FC2-PPV-4981932.mp4',
+        r'D:\Downloads\FC2-PPV-4981932\FC2-PPV-4981932.mp4',
+      ),
+      isTrue,
+    );
+  });
+
+  test('torrent file priorities survive job persistence', () {
+    final job = TorrentJob(
+      id: 'priority-test',
+      magnet: '',
+      torrentPath: '',
+      savePath: '',
+      createdAt: 0,
+      filePriorities: {1: 3, 4: 0},
+    );
+    final restored = TorrentJob.fromJson(job.toJson());
+    expect(restored.filePriorities, {1: 3, 4: 0});
+  });
+
+  group('种子下载通知', () {
+    TorrentJob job(TorrentJobStatus status, {bool hasMetadata = true}) =>
+        TorrentJob(
+          id: 'notification-test',
+          magnet: '',
+          torrentPath: '',
+          savePath: '',
+          createdAt: 0,
+          status: status,
+          hasMetadata: hasMetadata,
+        );
+
+    test('获取元数据不显示下载通知', () {
+      for (final engineState in [null, ...TaskState.values]) {
+        expect(
+          TorrentManager.needsKeepAlive(
+            job(TorrentJobStatus.metadata, hasMetadata: false),
+            engineState,
+          ),
+          isFalse,
+        );
+        expect(
+          TorrentManager.needsKeepAlive(
+            job(TorrentJobStatus.metadata),
+            engineState,
+          ),
+          isFalse,
+        );
+      }
+    });
+
+    test('文件下载和做种只有引擎实际运行时才保留通知', () {
+      for (final status in [
+        TorrentJobStatus.downloading,
+        TorrentJobStatus.completed,
+      ]) {
+        expect(
+          TorrentManager.needsKeepAlive(job(status), TaskState.running),
+          isTrue,
+        );
+        for (final engineState in [null, TaskState.paused, TaskState.stopped]) {
+          expect(
+            TorrentManager.needsKeepAlive(job(status), engineState),
+            isFalse,
+          );
+        }
+        expect(
+          TorrentManager.needsKeepAlive(
+            job(status, hasMetadata: false),
+            TaskState.running,
+          ),
+          isFalse,
+        );
+      }
+    });
+
+    test('暂停和失败任务不保留下载通知', () {
+      for (final status in [TorrentJobStatus.paused, TorrentJobStatus.failed]) {
+        expect(
+          TorrentManager.needsKeepAlive(job(status), TaskState.running),
+          isFalse,
+        );
+      }
+    });
+  });
+
   group('normalizeMagnet', () {
     test('40 位 hex 磁力链接原样返回，不被误判成 base32', () {
       // 前 32 位全部落在 base32 字符集 [A-Za-z2-7] 内，且第 33 位是 base32
@@ -143,9 +277,11 @@ void main() {
       expect(e.toString(), isNot(contains('0:00')));
     });
 
-    test('元数据超时从 180 秒收敛到 45 秒量级', () {
-      // 有 peer 时通常 1~10 秒拿到；180 秒的等待体感就是「卡住」
-      expect(TorrentManager.metadataTimeoutSeconds, lessThanOrEqualTo(60));
+    test('元数据超时按平台给出合理的发现窗口', () {
+      // 桌面端有 peer 时通常 1~10 秒拿到；移动端需要容纳蜂窝网络和 UDP NAT
+      // 的额外建立时间，不能沿用桌面端的短超时。
+      final limit = Platform.isAndroid || Platform.isIOS ? 120 : 60;
+      expect(TorrentManager.metadataTimeoutSeconds, lessThanOrEqualTo(limit));
       expect(
         TorrentManager.maxMetadataAttempts,
         inInclusiveRange(1, 5),
@@ -192,6 +328,16 @@ void main() {
       expect(parseInfoHash('magnet:?xt=urn:btih:${bare.toLowerCase()}'), bare);
       expect(parseInfoHash(bare), bare);
       expect(parseInfoHash('magnet:?dn=x'), isNull);
+    });
+
+    test('磁力参数大小写和 URL 编码不影响识别码解析', () {
+      expect(parseInfoHash('magnet:?XT=URN%3ABTIH%3A$bare&dn=Test'), bare);
+      expect(
+        parseInfoHash(
+          'magnet:?xt=urn:btih:MFRGGZDFMZTWQ2LKNNWG23TPOBYXE43U&dn=Test',
+        ),
+        '6162636465666768696A6B6C6D6E6F7071727374',
+      );
     });
 
     test('识别码能还原成磁力链', () {

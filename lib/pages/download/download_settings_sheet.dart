@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/context.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/services/torrent/torrent_manager.dart';
@@ -137,24 +139,51 @@ class _DownloadSettingsSheetState extends ConsumerState<_DownloadSettingsSheet>
             },
           ),
         ),
-        ListTile(
-          leading: const Icon(Icons.folder_outlined),
-          title: Text(t.downloadDir),
-          subtitle: Text(
-            _downloadDir(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          onTap: () async {
-            final dir = await selectDirectory();
-            if (dir != null && dir.isNotEmpty) {
-              appdata.implicitData['downloadDir'] = dir;
-              appdata.writeImplicitData();
-              setState(() {});
-            }
-          },
-        ),
+        _downloadDirectoryButton(),
       ],
+    );
+  }
+
+  Widget _downloadDirectoryButton() {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: CapsuleButton(
+        width: double.infinity,
+        alignment: MainAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        onTap: () async {
+          final dir = await selectDirectory();
+          if (dir != null && dir.isNotEmpty) {
+            appdata.implicitData['downloadDir'] = dir;
+            appdata.writeImplicitData();
+            setState(() {});
+          }
+        },
+        child: Row(
+          children: [
+            const Icon(Icons.folder_outlined),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t.downloadDir),
+                  const SizedBox(height: 3),
+                  Text(
+                    _downloadDir(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, size: 20),
+          ],
+        ),
+      ),
     );
   }
 
@@ -210,6 +239,8 @@ class _TorrentSettings extends ConsumerStatefulWidget {
 class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
   TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
 
+  bool _changingPath = false;
+
   static const _speeds = [0, 1024, 2048, 5120, 10240, 20480];
   String _speedLabel(int kb) => kb == 0 ? t.torrentUnlimited : '$kb KB/s';
 
@@ -236,33 +267,103 @@ class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
             onChanged: (v) => setState(() => _m.stopSeedAfterComplete = v),
           ),
         ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.dns_outlined),
-          title: Text(t.torrentTrackers),
-          subtitle: Text('${_m.trackers.length}'),
-          trailing: const Icon(Icons.chevron_right),
+        _settingsButton(
+          icon: Icons.dns_outlined,
+          title: t.torrentTrackers,
+          subtitle: '${_m.trackers.length}',
           onTap: () => showPopUpWidget(context, const _TrackerEditorPage()),
         ),
-        ListTile(
-          leading: const Icon(Icons.hub_outlined),
-          title: Text(t.torrentDht),
-          subtitle: Text(
-            t.torrentDhtExplain,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: Text(
-            '${_m.dhtNodes.length}',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
+        _settingsButton(
+          icon: Icons.hub_outlined,
+          title: t.torrentDht,
+          subtitle: t.torrentDhtExplain,
+          trailing: Text('${_m.dhtNodes.length}'),
           onTap: () => showPopUpWidget(context, const _DhtNodesEditorPage()),
+        ),
+        _settingsButton(
+          icon: Icons.folder_outlined,
+          title: t.torrentDownloadDir,
+          subtitle:
+              '${TorrentManager.torrentDownloadDir}\n${t.torrentDownloadDirDesc}',
+          isLoading: _changingPath,
+          onTap: _changingPath ? null : _pickTorrentDirectory,
         ),
         const SizedBox(height: 8),
       ],
     );
+  }
+
+  Widget _settingsButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback? onTap,
+    Widget? trailing,
+    bool isLoading = false,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: CapsuleButton(
+        width: double.infinity,
+        alignment: MainAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        enabled: onTap != null,
+        isLoading: isLoading,
+        onTap: onTap ?? () {},
+        child: Row(
+          children: [
+            Icon(icon),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            if (trailing != null) ...[const SizedBox(width: 10), trailing],
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickTorrentDirectory() async {
+    final dir = await selectDirectory();
+    if (!mounted || dir == null || dir.isEmpty) return;
+    if (TorrentManager.torrentDownloadDir == dir) return;
+    setState(() => _changingPath = true);
+    context.showMessage(message: t.torrentMigrating);
+    try {
+      final result = await _m.setTorrentDownloadDir(dir);
+      if (!mounted) return;
+      context.showMessage(
+        message: result.failed == 0
+            ? t.torrentMigrationDone
+            : t.torrentMigrationPartial,
+        level: result.failed == 0 ? LogLevel.info : LogLevel.warning,
+      );
+    } catch (_) {
+      if (mounted) {
+        context.showMessage(
+          message: t.torrentMigrationPartial,
+          level: LogLevel.warning,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _changingPath = false);
+    }
   }
 
   Widget _capsuleRow(String label, int selected, ValueChanged<int> onSelected) {

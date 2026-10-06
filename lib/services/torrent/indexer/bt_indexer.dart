@@ -59,7 +59,7 @@ String get _ua => appdata.implicitData['ua']?.toString() ?? webUA;
 /// 反过来会把约 1/7500 的合法 hex 磁力改写成错误 infohash。
 String normalizeMagnet(String magnet) {
   final raw = magnet.trim();
-  if (!raw.contains('xt=urn:btih:')) {
+  if (!RegExp(r'xt=urn:btih:', caseSensitive: false).hasMatch(raw)) {
     final bare = _bareInfoHashToMagnet(raw);
     if (bare != null) return bare;
   }
@@ -90,10 +90,7 @@ String? _bareInfoHashToMagnet(String raw) {
 
 /// 从磁力里取 hex infohash（小写），取不到返回 null。
 String? btInfoHashOfMagnet(String magnet) =>
-    RegExp(r'xt=urn:btih:([0-9a-fA-F]{40})')
-        .firstMatch(normalizeMagnet(magnet))
-        ?.group(1)
-        ?.toLowerCase();
+    parseInfoHash(normalizeMagnet(magnet))?.toLowerCase();
 
 /// BT 资源站配置：完全数据驱动（不内置任何站点），由用户导入。
 ///

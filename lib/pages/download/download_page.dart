@@ -471,18 +471,21 @@ class _ActiveTab extends StatelessWidget {
                     ),
                   ),
                 )
-              : ListView(
+              : ListView.builder(
                   padding: const EdgeInsets.only(bottom: 16),
-                  children: [
-                    for (final task in filtered)
-                      _DownloadTile(
+                  itemCount: filtered.length,
+                  itemBuilder: (_, index) {
+                    final task = filtered[index];
+                    return RepaintBoundary(
+                      child: _DownloadTile(
                         index: task.seq > 0
                             ? task.seq
                             : (globalIndex[task.id] ?? 0),
                         task: task,
                         onLongPress: () => onMove(task),
                       ),
-                  ],
+                    );
+                  },
                 ),
         ),
       ],
@@ -1291,7 +1294,7 @@ class _DownloadTile extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(child: child),
-            // 左上角序号徽章：Q16 支持 3 位数（自适应宽度，两位数内圆形，更多变胶囊）
+            // 左上角序号徽章支持三位数，并根据内容自适应宽度。
             Positioned(
               left: 4,
               top: 4,

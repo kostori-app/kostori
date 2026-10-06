@@ -9120,8 +9120,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Fill example'
 	String get torrentSourceExample => 'Fill example';
 
-	/// en: 'Paste magnet link'
-	String get torrentMagnetHint => 'Paste magnet link';
+	/// en: 'Paste a magnet link, or a 40-char info hash'
+	String get torrentMagnetHint => 'Paste a magnet link, or a 40-char info hash';
 
 	/// en: 'Play'
 	String get torrentPlay => 'Play';
@@ -9164,6 +9164,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Save directory'
 	String get torrentSaveDir => 'Save directory';
+
+	/// en: 'Torrent download directory'
+	String get torrentDownloadDir => 'Torrent download directory';
+
+	/// en: 'New torrents use this directory; existing torrents are migrated when it changes'
+	String get torrentDownloadDirDesc => 'New torrents use this directory; existing torrents are migrated when it changes';
+
+	/// en: 'Migrating torrent files…'
+	String get torrentMigrating => 'Migrating torrent files…';
+
+	/// en: 'Torrent download directory updated and existing torrents migrated'
+	String get torrentMigrationDone => 'Torrent download directory updated and existing torrents migrated';
+
+	/// en: 'Torrent download directory updated; some old tasks remain in their original directory'
+	String get torrentMigrationPartial => 'Torrent download directory updated; some old tasks remain in their original directory';
 
 	/// en: 'Download limit'
 	String get torrentDownloadLimit => 'Download limit';
@@ -9308,6 +9323,96 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Stop when download completes'
 	String get torrentStopAfterDownload => 'Stop when download completes';
+
+	/// en: 'VPN is intercepting torrent connections. Add BT/UDP to the VPN direct rules; other app traffic can keep using the proxy.'
+	String get torrentVpnMetadataTimeout => 'VPN is intercepting torrent connections. Add BT/UDP to the VPN direct rules; other app traffic can keep using the proxy.';
+
+	/// en: 'Files'
+	String get torrentFilesTab => 'Files';
+
+	/// en: 'Trackers'
+	String get torrentTrackersTab => 'Trackers';
+
+	/// en: 'Users'
+	String get torrentUsersTab => 'Users';
+
+	/// en: 'HTTP sources'
+	String get torrentHttpSourcesTab => 'HTTP sources';
+
+	/// en: 'No files'
+	String get torrentFilesEmpty => 'No files';
+
+	/// en: 'No connected users'
+	String get torrentUsersEmpty => 'No connected users';
+
+	/// en: 'No HTTP sources'
+	String get torrentHttpSourcesEmpty => 'No HTTP sources';
+
+	/// en: '$count files selected'
+	String torrentSelectedFiles({required Object count}) => '${count} files selected';
+
+	/// en: 'Download'
+	String get torrentDownloadSelected => 'Download';
+
+	/// en: 'Skip download'
+	String get torrentSkipSelected => 'Skip download';
+
+	/// en: 'Set priority'
+	String get torrentPriorityTooltip => 'Set priority';
+
+	/// en: 'Do not download'
+	String get torrentPrioritySkip => 'Do not download';
+
+	/// en: 'Normal'
+	String get torrentPriorityNormal => 'Normal';
+
+	/// en: 'High'
+	String get torrentPriorityHigh => 'High';
+
+	/// en: 'Highest'
+	String get torrentPriorityHighest => 'Highest';
+
+	/// en: 'Select one file to rename it'
+	String get torrentRenameSingleRequired => 'Select one file to rename it';
+
+	/// en: 'Skipped'
+	String get torrentFileSkipped => 'Skipped';
+
+	/// en: 'Partially selected'
+	String get torrentFileMixed => 'Partially selected';
+
+	/// en: 'Pieces'
+	String get torrentPieces => 'Pieces';
+
+	/// en: '$done / $total, $size each'
+	String torrentPieceSummary({required Object done, required Object total, required Object size}) => '${done} / ${total}, ${size} each';
+
+	/// en: 'Transfer'
+	String get torrentTransfer => 'Transfer';
+
+	/// en: 'Total size'
+	String get torrentTotalSize => 'Total size';
+
+	/// en: 'Added'
+	String get torrentAddedAt => 'Added';
+
+	/// en: 'Files'
+	String get torrentFileCount => 'Files';
+
+	/// en: 'Seeds'
+	String get torrentSeeds => 'Seeds';
+
+	/// en: 'Downloaded'
+	String get torrentDownloaded => 'Downloaded';
+
+	/// en: 'Tracker unavailable'
+	String get torrentTrackerUnavailable => 'Tracker unavailable';
+
+	/// en: 'Invalid file name'
+	String get torrentInvalidFileName => 'Invalid file name';
+
+	/// en: 'Rename failed'
+	String get torrentRenameFailed => 'Rename failed';
 
 	/// en: 'Domain Rules'
 	String get domainRules => 'Domain Rules';
@@ -12728,7 +12833,7 @@ extension on Translations {
 			'torrentSourceDateField' => 'Date field',
 			'torrentSourcesEmpty' => 'No BT sources yet. Tap "Import" at the bottom-right, or drop .json files into the directory below',
 			'torrentSourceExample' => 'Fill example',
-			'torrentMagnetHint' => 'Paste magnet link',
+			'torrentMagnetHint' => 'Paste a magnet link, or a 40-char info hash',
 			'torrentPlay' => 'Play',
 			'torrentParse' => 'Parse',
 			'torrentAdd' => 'Add Torrent',
@@ -12743,6 +12848,11 @@ extension on Translations {
 			'torrentStatusCompleted' => 'Completed',
 			'torrentStatusFailed' => 'Failed',
 			'torrentSaveDir' => 'Save directory',
+			'torrentDownloadDir' => 'Torrent download directory',
+			'torrentDownloadDirDesc' => 'New torrents use this directory; existing torrents are migrated when it changes',
+			'torrentMigrating' => 'Migrating torrent files…',
+			'torrentMigrationDone' => 'Torrent download directory updated and existing torrents migrated',
+			'torrentMigrationPartial' => 'Torrent download directory updated; some old tasks remain in their original directory',
 			'torrentDownloadLimit' => 'Download limit',
 			'torrentUploadLimit' => 'Upload limit',
 			'torrentDht' => 'DHT',
@@ -12791,6 +12901,36 @@ extension on Translations {
 			'torrentStopNone' => 'Do not stop',
 			'torrentStopAfterMetadata' => 'Stop after metadata',
 			'torrentStopAfterDownload' => 'Stop when download completes',
+			'torrentVpnMetadataTimeout' => 'VPN is intercepting torrent connections. Add BT/UDP to the VPN direct rules; other app traffic can keep using the proxy.',
+			'torrentFilesTab' => 'Files',
+			'torrentTrackersTab' => 'Trackers',
+			'torrentUsersTab' => 'Users',
+			'torrentHttpSourcesTab' => 'HTTP sources',
+			'torrentFilesEmpty' => 'No files',
+			'torrentUsersEmpty' => 'No connected users',
+			'torrentHttpSourcesEmpty' => 'No HTTP sources',
+			'torrentSelectedFiles' => ({required Object count}) => '${count} files selected',
+			'torrentDownloadSelected' => 'Download',
+			'torrentSkipSelected' => 'Skip download',
+			'torrentPriorityTooltip' => 'Set priority',
+			'torrentPrioritySkip' => 'Do not download',
+			'torrentPriorityNormal' => 'Normal',
+			'torrentPriorityHigh' => 'High',
+			'torrentPriorityHighest' => 'Highest',
+			'torrentRenameSingleRequired' => 'Select one file to rename it',
+			'torrentFileSkipped' => 'Skipped',
+			'torrentFileMixed' => 'Partially selected',
+			'torrentPieces' => 'Pieces',
+			'torrentPieceSummary' => ({required Object done, required Object total, required Object size}) => '${done} / ${total}, ${size} each',
+			'torrentTransfer' => 'Transfer',
+			'torrentTotalSize' => 'Total size',
+			'torrentAddedAt' => 'Added',
+			'torrentFileCount' => 'Files',
+			'torrentSeeds' => 'Seeds',
+			'torrentDownloaded' => 'Downloaded',
+			'torrentTrackerUnavailable' => 'Tracker unavailable',
+			'torrentInvalidFileName' => 'Invalid file name',
+			'torrentRenameFailed' => 'Rename failed',
 			'domainRules' => 'Domain Rules',
 			'domainRulesDesc' => 'One place for per-domain settings: connect it to a specific IP without any lookup, resolve it with your own DNS servers, and/or let it bypass the proxy.',
 			'enableDnsOverridesDesc' => 'When off, every DNS setting is ignored',

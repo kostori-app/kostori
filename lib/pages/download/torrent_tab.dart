@@ -1,16 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:kostori/pages/download/local_player_page.dart';
 import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:kostori/services/torrent/torrent_job.dart';
 import 'package:kostori/services/torrent/torrent_manager.dart';
+import 'package:kostori/pages/download/torrent_detail_sheet.dart';
 import 'package:kostori/utils/io.dart';
 
 /// 添加种子弹窗（供下载页 AppBar 与选中文本菜单调用）。
@@ -53,7 +51,7 @@ Future<void> showAddTorrentSheet(
               ),
               const SizedBox(height: 6),
               Text(
-                '${t.torrentSaveDir}: ${TorrentManager.downloadDir}',
+                '${t.torrentSaveDir}: ${TorrentManager.torrentDownloadDir}',
                 style: TextStyle(
                   fontSize: 11,
                   color: Theme.of(ctx).colorScheme.outline,
@@ -194,12 +192,15 @@ String _jobTitle(TorrentJob job) {
 }
 
 class _TorrentTabState extends ConsumerState<TorrentTab> {
-  TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
+  late final TorrentManager _manager;
+  TorrentManager get _m => _manager;
   String _filter = 'all';
+  final Set<String> _startingJobs = {};
 
   @override
   void initState() {
     super.initState();
+    _manager = ref.read(torrentManagerProvider.notifier);
     _m.init();
   }
 
@@ -228,7 +229,8 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
       // _pauseAll 会连 metadata 状态一起暂停，「全部开始」必须也能把它恢复，
       // 否则被「全部暂停」停掉元数据任务后永远回不来。
       if (j.status == TorrentJobStatus.paused ||
-          j.status == TorrentJobStatus.metadata) {
+          j.status == TorrentJobStatus.metadata ||
+          j.status == TorrentJobStatus.failed) {
         await _m.resume(j, isRetry: j.status == TorrentJobStatus.failed);
       }
     }
@@ -240,6 +242,23 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
           j.status == TorrentJobStatus.metadata) {
         _m.pause(j);
       }
+    }
+  }
+
+  Future<void> _toggleJob(TorrentJob job) async {
+    if (!_startingJobs.add(job.id)) return;
+    setState(() {});
+    try {
+      if (job.status == TorrentJobStatus.downloading || job.isFetchingMeta) {
+        _m.pause(job);
+      } else {
+        await _m.resume(job, isRetry: job.status == TorrentJobStatus.failed);
+      }
+    } catch (error) {
+      if (mounted) context.showMessage(message: '${t.downloadFailed}: $error');
+    } finally {
+      _startingJobs.remove(job.id);
+      if (mounted) setState(() {});
     }
   }
 
@@ -370,7 +389,9 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
 
   Widget _jobCard(TorrentJob job) {
     final cs = Theme.of(context).colorScheme;
-    final paused = job.status == TorrentJobStatus.paused;
+    final canResume =
+        job.status == TorrentJobStatus.paused ||
+        job.status == TorrentJobStatus.failed;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       child: Material(
@@ -466,10 +487,9 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                     if (!job.isFinished)
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        icon: Icon(paused ? Icons.play_arrow : Icons.pause),
-                        tooltip: paused ? t.torrentResume : t.torrentPause,
-                        onPressed: () =>
-                            paused ? _m.resume(job) : _m.pause(job),
+                        icon: Icon(canResume ? Icons.play_arrow : Icons.pause),
+                        tooltip: canResume ? t.torrentResume : t.torrentPause,
+                        onPressed: () => _toggleJob(job),
                       ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
@@ -495,7 +515,7 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _TorrentDetailSheet(job: job),
+      builder: (_) => TorrentDetailSheet(job: job),
     );
   }
 
@@ -507,417 +527,29 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
       title: t.torrentDelete,
       content: Text(t.torrentDeleteConfirm),
       actions: [
-        TextButton(
+        Button.text(
           onPressed: () {
             navigator.pop();
-            _m.remove(job, deleteFiles: false);
+            _removeJob(job, deleteFiles: false);
           },
           child: Text(t.torrentDeleteTaskOnly),
         ),
-        FilledButton(
+        Button.filled(
           onPressed: () {
             navigator.pop();
-            _m.remove(job);
+            _removeJob(job, deleteFiles: true);
           },
           child: Text(t.torrentDeleteWithFiles),
         ),
       ],
     );
   }
-}
 
-/// 种子详情：基本信息 / 内容（可左右滑动切换）
-class _TorrentDetailSheet extends ConsumerStatefulWidget {
-  const _TorrentDetailSheet({required this.job});
-
-  final TorrentJob job;
-
-  @override
-  ConsumerState<_TorrentDetailSheet> createState() =>
-      _TorrentDetailSheetState();
-}
-
-class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
-    with SingleTickerProviderStateMixin {
-  TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
-
-  /// 0 = 基本信息，1 = 内容（可左右滑动切换）
-  late final TabController _tabCtrl = TabController(length: 2, vsync: this);
-
-  List<TorrentFileEntry> _files = const [];
-
-  /// 长按范围选择的起点（第一个长按的文件下标）
-  int? _rangeAnchor;
-
-  @override
-  void initState() {
-    super.initState();
-    _refreshFiles();
-  }
-
-  @override
-  void dispose() {
-    _tabCtrl.dispose();
-    super.dispose();
-  }
-
-  void _refreshFiles() {
-    _files = _m.filesOf(widget.job);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final job = widget.job;
-    ref.watch(torrentManagerProvider);
-    _refreshFiles();
-    return Sheet(
-      title: _jobTitle(job),
-      icon: Icons.stream,
-      initialSize: 0.8,
-      builder: (_, _) => Column(
-        children: [
-          CapsuleTabBar(
-            controller: _tabCtrl,
-            labels: [t.torrentInfo, t.torrentContent],
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabCtrl,
-              children: [
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: _infoSection(job),
-                ),
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: _contentSection(job),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── 基本信息 ──────────────────────────────────────────────────────────────
-  List<Widget> _infoSection(TorrentJob job) {
-    final total = job.totalWanted > 0 ? job.totalWanted : job.totalDone;
-    final done = total > 0 ? (job.progress * total).round().clamp(0, total) : 0;
-    final trackers = _m.trackersOf(job);
-    final dhtNodes = _m.dhtNodes;
-    final infoHash = job.infoHash;
-    return [
-      _infoRow(t.status, _statusLabel(job.status)),
-      // 种子识别码，可在其它 BT 客户端导入同一任务
-      if (infoHash.isNotEmpty) ...[
-        _infoRow(
-          t.torrentInfoHashLabel,
-          infoHash,
-          onCopy: () => _copy(infoHash),
-        ),
-        _infoRow(
-          t.torrentMagnetLinkLabel,
-          magnetFromInfoHash(infoHash),
-          onCopy: () => _copy(magnetFromInfoHash(infoHash)),
-        ),
-      ],
-      _infoRow(
-        t.torrentProgressLabel,
-        job.hasMetadata ? '${(job.progress * 100).toStringAsFixed(1)}%' : '--',
-      ),
-      _infoRow(
-        t.download,
-        job.hasMetadata && total > 0
-            ? '${formatBytesShort(done)} / ${formatBytesShort(total)}'
-            : '--',
-      ),
-      _infoRow(t.torrentDownloadLimit, '↓ ${formatSpeed(job.downloadRate)}'),
-      _infoRow(t.torrentUploadLimit, '↑ ${formatSpeed(job.uploadRate)}'),
-      _infoRow(t.torrentPeers, '${job.numPeers}/${job.numSeeds}'),
-      _infoRow(t.torrentLeechers, '${job.numDownloaders}'),
-      // Tracker / DHT：没有 peer 时仅靠这两者
-      _infoRow(t.torrentTrackers, '${trackers.length}'),
-      for (final url in trackers.take(6)) _urlRow(url),
-      if (trackers.length > 6) _infoRow('  ', '+${trackers.length - 6}…'),
-      _infoRow(t.torrentDht, '${dhtNodes.length}'),
-      for (final node in dhtNodes.take(6)) _urlRow(node),
-      if (dhtNodes.length > 6) _infoRow('  ', '+${dhtNodes.length - 6}…'),
-      _infoRow(t.torrentSavePathLabel, TorrentManager.downloadDir),
-      if (job.error != null && job.error!.isNotEmpty)
-        _infoRow(t.downloadFailed, job.error!),
-    ];
-  }
-
-  // ── 内容：文件列表（大小 + 已下/未下 + 单文件进度） ────────────────────────
-  List<Widget> _contentSection(TorrentJob job) {
-    final cs = Theme.of(context).colorScheme;
-    if (_files.isEmpty) {
-      return [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Text(
-            job.isFetchingMeta ? t.torrentFetchingMeta : t.torrentPickFile,
-            style: TextStyle(color: cs.outline),
-          ),
-        ),
-      ];
-    }
-    final all = {for (final f in _files) f.index};
-    final selected = _selectedIndices(job);
-    return [
-      Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Row(
-          children: [
-            Text(
-              t.torrentSelectFiles,
-              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-            ),
-            const Spacer(),
-            _selectAction(t.selectAll, () => _setSelection(job, all)),
-            _selectAction(t.selectNone, () => _setSelection(job, <int>{})),
-            _selectAction(t.invertSelection, () => _invertSelection(job)),
-          ],
-        ),
-      ),
-      for (final f in _files) _fileTile(job, f, selected.contains(f.index)),
-    ];
-  }
-
-  Widget _selectAction(String label, VoidCallback onTap) => TextButton(
-    style: TextButton.styleFrom(
-      minimumSize: Size.zero,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    ),
-    onPressed: onTap,
-    child: Text(label),
-  );
-
-  /// 当前选中下标集合（空 selectedFiles = 全部；[kTorrentNoFile] = 全不选）
-  Set<int> _selectedIndices(TorrentJob job) {
-    final all = {for (final f in _files) f.index};
-    final sel = job.selectedFiles;
-    if (sel.length == 1 && sel.first == kTorrentNoFile) return <int>{};
-    if (sel.isEmpty) return all;
-    return sel.where(all.contains).toSet();
-  }
-
-  void _setSelection(TorrentJob job, Set<int> set) {
-    final all = {for (final f in _files) f.index};
-    if (set.isEmpty) {
-      _m.setSelectedFiles(job, const [kTorrentNoFile]);
-      return;
-    }
-    if (set.length >= all.length) {
-      _m.setSelectedFiles(job, const []); // 空 = 全部
-      return;
-    }
-    _m.setSelectedFiles(job, set.toList()..sort());
-  }
-
-  void _invertSelection(TorrentJob job) {
-    final all = {for (final f in _files) f.index};
-    _setSelection(job, all.difference(_selectedIndices(job)));
-  }
-
-  void _toggleFile(TorrentJob job, int index) {
-    _rangeAnchor = null;
-    final sel = _selectedIndices(job).toSet();
-    if (!sel.remove(index)) sel.add(index);
-    _setSelection(job, sel);
-  }
-
-  /// 长按起始文件后再长按结束文件 = 选中两者之间整段
-  void _longPressFile(TorrentJob job, int index) {
-    final anchor = _rangeAnchor;
-    if (anchor == null) {
-      _rangeAnchor = index;
-      _setSelection(job, _selectedIndices(job)..add(index));
-      setState(() {});
-      return;
-    }
-    final lo = anchor < index ? anchor : index;
-    final hi = anchor < index ? index : anchor;
-    final sel = _selectedIndices(job).toSet();
-    for (var i = lo; i <= hi; i++) {
-      sel.add(i);
-    }
-    _rangeAnchor = null;
-    _setSelection(job, sel);
-    setState(() {});
-  }
-
-  Widget _fileTile(TorrentJob job, TorrentFileEntry f, bool selected) {
-    final cs = Theme.of(context).colorScheme;
-    final done = f.completed;
-    final pct = (f.progress * 100).clamp(0, 100).toStringAsFixed(0);
-    final statusText = done
-        ? t.torrentFileDone
-        : f.isDownloading
-        ? t.torrentFileDownloading
-        : t.torrentFilePending;
-    final statusColor = done
-        ? cs.primary
-        : f.isDownloading
-        ? cs.tertiary
-        : cs.onSurfaceVariant;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: selected
-            ? cs.primaryContainer.withValues(alpha: 0.45)
-            : cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => _toggleFile(job, f.index),
-          onLongPress: () => _longPressFile(job, f.index),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        f.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(height: 4),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: f.progress,
-                          minHeight: 4,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Text(
-                            '${formatBytesShort(f.downloaded)} / '
-                            '${formatBytesShort(f.size)}  $pct%',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            statusText,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: statusColor,
-                              fontWeight: done || f.isDownloading
-                                  ? FontWeight.w500
-                                  : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (f.isStreamable)
-                  IconButton(
-                    icon: const Icon(Icons.play_circle_outline),
-                    tooltip: t.torrentPlay,
-                    onPressed: () => _play(f.index),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _infoRow(String label, String value, {VoidCallback? onCopy}) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 96,
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-            ),
-          ),
-          Expanded(
-            child: SelectableText(
-              value,
-              maxLines: onCopy == null ? null : 3,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-          if (onCopy != null)
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.copy_rounded, size: 16),
-              tooltip: t.copy,
-              onPressed: onCopy,
-            ),
-        ],
-      ),
-    );
-  }
-
-  void _copy(String value) {
-    Clipboard.setData(ClipboardData(text: value));
-    App.rootContext.showMessage(message: t.copySuccess);
-  }
-
-  /// announce / 引导节点地址：允许换行并选中复制。
-  Widget _urlRow(String url) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(width: 96),
-          Expanded(
-            child: AppSelectableText(
-              url,
-              style: TextStyle(
-                fontSize: 11,
-                height: 1.35,
-                color: cs.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _play(int fileIndex) async {
-    // streamUrl 在引擎未就绪时会抛 StateError（resume 被并发守卫丢弃等），
-    // 这里不接住就会变成未处理异步错误，用户点了没反应也没有任何提示
-    String url;
+  Future<void> _removeJob(TorrentJob job, {required bool deleteFiles}) async {
     try {
-      url = await _m.streamUrl(widget.job, fileIndex);
-    } catch (e) {
-      Log.error('种子播放失败', '$e');
-      if (mounted) {
-        context.showMessage(message: t.torrentPlaybackFailed);
-      }
-      return;
+      await _m.remove(job, deleteFiles: deleteFiles);
+    } catch (_) {
+      if (mounted) context.showMessage(message: t.deleteFailed);
     }
-    if (!mounted) return;
-    context.to(
-      () => LocalPlayerPage(
-        filePath: url,
-        onDispose: () => _m.stopStreams(widget.job),
-      ),
-    );
   }
 }

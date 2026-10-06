@@ -943,20 +943,27 @@ class AnimeListState extends State<AnimeList>
   Widget buildContinuousMode(BuildContext context, AnimeFilter? filter) {
     // 连续模式没有翻页概念，报错时只显示错误与重试，不显示翻页条
     if (_error != null && _data.isEmpty) {
-      return Column(
+      return Stack(
         children: [
-          if (widget.errorLeading != null) widget.errorLeading!,
-          Expanded(
-            child: NetworkError(
-              withAppbar: false,
-              message: _error!,
-              retry: () {
-                setState(() {
-                  _error = null;
-                });
-              },
+          Positioned.fill(
+            child: Column(
+              children: [
+                if (widget.errorLeading != null) widget.errorLeading!,
+                Expanded(
+                  child: NetworkError(
+                    withAppbar: false,
+                    message: _error!,
+                    retry: () {
+                      setState(() {
+                        _error = null;
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
+          ..._overlayChips(context, paging: false, filter: filter),
         ],
       );
     }
@@ -1013,7 +1020,7 @@ class AnimeListState extends State<AnimeList>
                                 child: Text(
                                   cfe == null
                                       ? _error!
-                                      : "Cloudflare verification required",
+                                      : t.cloudflareVerificationRequired,
                                   maxLines: 3,
                                 ),
                               ),
@@ -1067,7 +1074,7 @@ class AnimeListState extends State<AnimeList>
               ),
             ),
           ),
-        if (_error == null && _data.isNotEmpty)
+        if (_data.isNotEmpty)
           ..._overlayChips(context, paging: false, filter: filter),
       ],
     );

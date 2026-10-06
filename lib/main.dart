@@ -165,7 +165,12 @@ class BootGate extends StatelessWidget {
               onRetry: _boot,
             );
           } else if (bootReady.value) {
-            child = const ProviderScope(key: ValueKey("app"), child: MyApp());
+            // 与 init() 共用容器，避免创建两套后台管理器互相覆盖下载通知。
+            child = UncontrolledProviderScope(
+              key: const ValueKey("app"),
+              container: providerContainer,
+              child: const MyApp(),
+            );
           } else {
             child = const BootSplash(key: ValueKey("splash"));
           }

@@ -3120,6 +3120,11 @@ torrentStatusPaused: Paused
 torrentStatusCompleted: Completed
 torrentStatusFailed: Failed
 torrentSaveDir: Save directory
+torrentDownloadDir: Torrent download directory
+torrentDownloadDirDesc: New torrents use this directory; existing torrents are migrated when it changes
+torrentMigrating: Migrating torrent files…
+torrentMigrationDone: Torrent download directory updated and existing torrents migrated
+torrentMigrationPartial: Torrent download directory updated; some old tasks remain in their original directory
 torrentDownloadLimit: Download limit
 torrentUploadLimit: Upload limit
 torrentDht: DHT
@@ -3168,6 +3173,36 @@ torrentStopAfter: Stop condition
 torrentStopNone: Do not stop
 torrentStopAfterMetadata: Stop after metadata
 torrentStopAfterDownload: Stop when download completes
+torrentVpnMetadataTimeout: VPN is intercepting torrent connections. Add BT/UDP to the VPN direct rules; other app traffic can keep using the proxy.
+torrentFilesTab: Files
+torrentTrackersTab: Trackers
+torrentUsersTab: Users
+torrentHttpSourcesTab: HTTP sources
+torrentFilesEmpty: No files
+torrentUsersEmpty: No connected users
+torrentHttpSourcesEmpty: No HTTP sources
+torrentSelectedFiles: '$count files selected'
+torrentDownloadSelected: Download
+torrentSkipSelected: Skip download
+torrentPriorityTooltip: Set priority
+torrentPrioritySkip: Do not download
+torrentPriorityNormal: Normal
+torrentPriorityHigh: High
+torrentPriorityHighest: Highest
+torrentRenameSingleRequired: Select one file to rename it
+torrentFileSkipped: Skipped
+torrentFileMixed: Partially selected
+torrentPieces: Pieces
+torrentPieceSummary: '$done / $total, $size each'
+torrentTransfer: Transfer
+torrentTotalSize: Total size
+torrentAddedAt: Added
+torrentFileCount: Files
+torrentSeeds: Seeds
+torrentDownloaded: Downloaded
+torrentTrackerUnavailable: Tracker unavailable
+torrentInvalidFileName: Invalid file name
+torrentRenameFailed: Rename failed
 
 # ── Domain rules (DNS overrides + no-proxy overrides) ──────────
 domainRules: Domain Rules

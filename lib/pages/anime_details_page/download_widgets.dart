@@ -523,7 +523,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   };
 
   /// 套用文本规则（开关关闭或无规则时原样返回）；
-  /// Q10 单一应用：多条规则按优先级，第一条命中即停
+  /// 多条规则按优先级应用，命中第一条后停止匹配。
   String _applyRules(String input) => (_useRules && _rules.isNotEmpty)
       ? TextRuleStore.applyFirstHit(input, _rules)
       : input;

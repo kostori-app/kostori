@@ -325,6 +325,12 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       _subs.add(
         p.stream.log.listen((e) {
           if (_disposed) return;
+          // media_kit 初始化期间会尝试设置旧版 mpv 没有的 OSC 属性；
+          // 这是无害兼容探测，不应伪装成播放失败或刷屏写入错误日志。
+          if (e.text.contains('property not found') &&
+              e.text.contains('_setProperty(osc, 1)')) {
+            return;
+          }
           playerLog.add(PlayerLogEntry(e));
           if (playerLog.length > _maxPlayerLog) playerLog.removeAt(0);
           if (e.level == 'error' || e.level == 'fatal') {

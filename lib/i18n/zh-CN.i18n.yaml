@@ -3119,6 +3119,11 @@ torrentStatusPaused: 已暂停
 torrentStatusCompleted: 已完成
 torrentStatusFailed: 失败
 torrentSaveDir: 保存目录
+torrentDownloadDir: 种子下载目录
+torrentDownloadDirDesc: 新种子使用此目录，修改时会迁移已有种子
+torrentMigrating: 正在迁移种子文件…
+torrentMigrationDone: 种子下载目录已更新，已有种子已迁移
+torrentMigrationPartial: 种子下载目录已更新，部分旧任务保留在原目录
 torrentDownloadLimit: 下载限速
 torrentUploadLimit: 上传限速
 torrentDht: DHT 网络
@@ -3167,6 +3172,36 @@ torrentStopAfter: 停止条件
 torrentStopNone: 不停止
 torrentStopAfterMetadata: 获取元数据后停止
 torrentStopAfterDownload: 下载完成后停止
+torrentVpnMetadataTimeout: VPN 正在接管种子连接。请在 VPN 的分流规则中将 BT/UDP 设为直连，其他功能仍可保持代理。
+torrentFilesTab: 文件
+torrentTrackersTab: Trackers
+torrentUsersTab: 用户
+torrentHttpSourcesTab: HTTP源
+torrentFilesEmpty: 暂无文件
+torrentUsersEmpty: 暂无已连接用户
+torrentHttpSourcesEmpty: 暂无 HTTP 源
+torrentSelectedFiles: 已选择 ${count} 个文件
+torrentDownloadSelected: 开始下载
+torrentSkipSelected: 跳过下载
+torrentPriorityTooltip: 设置优先级
+torrentPrioritySkip: 不下载
+torrentPriorityNormal: 正常
+torrentPriorityHigh: 高
+torrentPriorityHighest: 最高
+torrentRenameSingleRequired: 请只选择一个文件后重命名
+torrentFileSkipped: 不下载
+torrentFileMixed: 部分选择
+torrentPieces: 区块
+torrentPieceSummary: '${done} / ${total}，每块 ${size}'
+torrentTransfer: 传输
+torrentTotalSize: 总大小
+torrentAddedAt: 添加于
+torrentFileCount: 文件数
+torrentSeeds: 种子
+torrentDownloaded: 已下载
+torrentTrackerUnavailable: Tracker 暂时不可用
+torrentInvalidFileName: 文件名包含无效字符
+torrentRenameFailed: 文件重命名失败
 
 # ── 域名规则（DNS 覆写 + 无代理覆写） ──────────────────────────
 domainRules: 域名规则

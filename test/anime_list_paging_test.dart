@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -28,6 +29,69 @@ Anime _anime(int i) => Anime(
 );
 
 void main() {
+  for (final nextPage in [false, true]) {
+    testWidgets(nextPage ? '滚动加载下一页失败后保留页数和条目数圆片' : '滚动模式首屏加载失败后保留零计数圆片', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final tempPath = Directory.systemTemp
+          .createTempSync('kostori_test_')
+          .path;
+      App.dataPath = tempPath;
+      App.cachePath = tempPath;
+      appdata.settings['animeListDisplayMode'] = 'continuous';
+      appdata.settings['animeDisplayMode'] = 'brief';
+      final failure = Completer<Res<List<Anime>>>();
+      final requested = <int>[];
+      await tester.pumpWidget(
+        ProviderScope(
+          child: TranslationProvider(
+            child: MaterialApp(
+              home: Scaffold(
+                body: AnimeList(
+                  loadPage: (page) async {
+                    requested.add(page);
+                    if (nextPage && page == 1) {
+                      return Res(List.generate(12, _anime));
+                    }
+                    return failure.future;
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      if (nextPage) {
+        final scrollable = tester.state<ScrollableState>(
+          find.byType(Scrollable).first,
+        );
+        scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+        await tester.pump();
+        final chips = tester.widgetList<LoadedInfoChip>(
+          find.byType(LoadedInfoChip),
+        );
+        expect(chips.map((chip) => chip.text), ['1', '12']);
+      }
+      failure.complete(const Res.error('test loading error'));
+      await tester.pumpAndSettle();
+
+      expect(requested, nextPage ? [1, 2] : [1]);
+      expect(find.text('test loading error'), findsOneWidget);
+      final chips = tester.widgetList<LoadedInfoChip>(
+        find.byType(LoadedInfoChip),
+      );
+      expect(
+        chips.map((chip) => chip.text),
+        nextPage ? ['1', '12'] : ['0', '0'],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('空页/重复页后停止继续翻页（不再无限请求）', (tester) async {
     // 视口放大，让每页条目都被构建，触发底部自动加载
     tester.view.physicalSize = const Size(1200, 4000);

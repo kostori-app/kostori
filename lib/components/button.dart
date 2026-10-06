@@ -497,6 +497,7 @@ class CapsuleButton extends StatefulWidget {
     this.color,
     this.fgColor,
     this.width,
+    this.alignment = MainAxisAlignment.center,
     this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
   }) : assert(text != null || child != null || leading != null);
 
@@ -518,6 +519,8 @@ class CapsuleButton extends StatefulWidget {
 
   /// 固定宽度（如 `double.infinity` 做整行按钮，内容居中）
   final double? width;
+
+  final MainAxisAlignment alignment;
 
   final Widget? leading;
   final Widget? trailing;
@@ -561,7 +564,7 @@ class _CapsuleButtonState extends State<CapsuleButton> {
               child: SizedBox(
                 width: widget.width,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: widget.alignment,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (widget.isLoading) ...[

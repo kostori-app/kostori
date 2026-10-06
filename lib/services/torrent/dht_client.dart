@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
+
 typedef DhtPeerCallback = void Function(InternetAddress ip, int port);
 
 class _DhtNode {
@@ -60,6 +62,11 @@ class DhtClient {
   static const int _queriesPerRound = 40;
 
   int _peerCount = 0;
+  int? _udpRelayPort;
+
+  String get debugSummary =>
+      'known=${_known.length} queried=${_queriedAt.length} '
+      'pending=${_pending.length} peers=$_peerCount';
 
   String _key(InternetAddress ip, int port) => '${ip.address}:$port';
 
@@ -68,8 +75,21 @@ class DhtClient {
   Future<void> start() async {
     if (_infoHash.length != 20) return;
     if (_stopped) return;
+    if (Platform.isAndroid) {
+      try {
+        _udpRelayPort = await const MethodChannel('kostori/method_channel')
+            .invokeMethod<int>('startTorrentDirectUdpRelay');
+      } catch (error) {
+        _log('direct UDP relay unavailable: $error');
+      }
+    }
     try {
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      final socket = await RawDatagramSocket.bind(
+        Platform.isAndroid
+            ? InternetAddress.loopbackIPv4
+            : InternetAddress.anyIPv4,
+        0,
+      );
       // bind 期间可能已被 stop()（例如元数据超时先到）：立刻关掉，别泄漏
       if (_stopped) {
         socket.close();
@@ -80,16 +100,21 @@ class DhtClient {
     } catch (e) {
       _log('IPv4 bind failed: $e');
     }
-    try {
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv6, 0);
-      if (_stopped) {
-        socket.close();
-        return;
+    // Windows commonly reports an invalid network-name error when binding
+    // anyIPv6 even though IPv4 UDP works. IPv4 DHT is sufficient for metadata
+    // discovery; avoid logging a misleading socket failure on that platform.
+    if (!Platform.isWindows && !Platform.isAndroid) {
+      try {
+        final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv6, 0);
+        if (_stopped) {
+          socket.close();
+          return;
+        }
+        _socketV6 = socket;
+        _listen(socket);
+      } catch (e) {
+        _log('IPv6 bind failed: $e');
       }
-      _socketV6 = socket;
-      _listen(socket);
-    } catch (e) {
-      _log('IPv6 bind failed: $e');
     }
     if (_stopped) return;
     if (_socketV4 == null && _socketV6 == null) return;
@@ -112,6 +137,9 @@ class DhtClient {
           .timeout(const Duration(seconds: 5));
       for (final ip in ips) {
         if (_stopped) return;
+        if (Platform.isWindows && ip.type == InternetAddressType.IPv6) {
+          continue;
+        }
         _known[_key(ip, port)] ??= _DhtNode(ip, port);
       }
     } catch (e) {
@@ -159,10 +187,6 @@ class DhtClient {
     for (final node in candidates.take(_queriesPerRound)) {
       _query(node);
     }
-    _log(
-      'known=${_known.length} queried=${_queriedAt.length} '
-      'pending=${_pending.length} peers=$_peerCount',
-    );
   }
 
   /// 把超时未响应的节点重新放回候选集合。
@@ -229,6 +253,7 @@ class DhtClient {
 
   void _addNodes(Uint8List? nodes, int stride, int addrLen) {
     if (nodes == null) return;
+    if (Platform.isWindows && addrLen == 16) return;
     for (var o = 0; o + stride <= nodes.length; o += stride) {
       final id = Uint8List.sublistView(nodes, o, o + 20);
       final ip = _addr(Uint8List.sublistView(nodes, o + 20, o + 20 + addrLen));
@@ -304,7 +329,23 @@ class DhtClient {
       'a': {'id': _nodeId, 'info_hash': _infoHash},
     };
     try {
-      socket.send(_encode(packet), node.ip, node.port);
+      final payload = _encode(packet);
+      if (Platform.isAndroid) {
+        if (_udpRelayPort == null || _socketV4 == null) return;
+        final host = utf8.encode(node.ip.address);
+        if (host.length > 65535) return;
+        final framed = <int>[
+          host.length >> 8,
+          host.length & 0xff,
+          ...host,
+          node.port >> 8,
+          node.port & 0xff,
+          ...payload,
+        ];
+        _socketV4!.send(framed, InternetAddress.loopbackIPv4, _udpRelayPort!);
+      } else {
+        socket.send(payload, node.ip, node.port);
+      }
     } catch (e) {
       _log('send failed $nodeKey: $e');
     }

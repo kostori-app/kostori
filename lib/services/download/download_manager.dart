@@ -99,7 +99,9 @@ class DownloadManager extends ChangeNotifier {
   /// 进度通知节流：task.id → 上次 notify 时间
   final Map<String, DateTime> _lastProgressNotify = {};
 
-  /// 全局进度通知节流：把多任务/多来源的通知统一为「200ms 内至多一次」。
+  /// 全局进度通知节流：把多任务/多来源的通知统一为半秒一次。
+  static const _progressNotifyInterval = Duration(milliseconds: 500);
+
   DateTime? _lastProgressNotifyAll;
   Timer? _progressNotifyTimer;
 
@@ -824,17 +826,17 @@ class DownloadManager extends ChangeNotifier {
     });
   }
 
-  /// 全局限流进度通知：200ms 窗口内至多 notifyListeners 一次，避免多任务
-  /// 并发的通知频率叠加、高频重建 UI。
+  /// 全局限流进度通知：半秒内至多 notifyListeners 一次，避免多任务
+  /// 并发时频繁重建 UI。
   void _notifyProgress() {
     final now = DateTime.now();
     final last = _lastProgressNotifyAll;
-    if (last == null || now.difference(last).inMilliseconds >= 200) {
+    if (last == null || now.difference(last) >= _progressNotifyInterval) {
       _lastProgressNotifyAll = now;
       notifyListeners();
       return;
     }
-    _progressNotifyTimer ??= Timer(const Duration(milliseconds: 200), () {
+    _progressNotifyTimer ??= Timer(_progressNotifyInterval, () {
       _progressNotifyTimer = null;
       _lastProgressNotifyAll = DateTime.now();
       notifyListeners();
@@ -846,10 +848,11 @@ class DownloadManager extends ChangeNotifier {
   void _updateDownloadProgress(DownloadTask task) {
     _ensureSpeedTick();
     final now = DateTime.now();
-    // 快路径：距上次通知不足 250ms 直接返回（字段已在调用处更新），省去每个
-    // 数据块的采样/保活/通知开销。
+    // 快路径：距上次通知不足半秒直接返回（字段已在调用处更新），省去每个
+    // 数据块的采样、保活和通知开销。
     final lastNotify = _lastProgressNotify[task.id];
-    if (lastNotify != null && now.difference(lastNotify).inMilliseconds < 250) {
+    if (lastNotify != null &&
+        now.difference(lastNotify) < _progressNotifyInterval) {
       return;
     }
     _lastProgressNotify[task.id] = now;
@@ -1389,8 +1392,7 @@ class DownloadManager extends ChangeNotifier {
       // 完整列出每个失败分片的编号与原因，便于定位（不省略、不截断）
       throw Exception('部分分片下载失败（${errors.length} 个）：\n${errors.join('\n')}');
     }
-    // Q12 防御：无报错但计数对不上（如下完前被暂停又未正确取消），
-    // 绝不拿缺片去合并，否则得到缺尾的视频还显示成功
+    // 下载计数不一致时拒绝合并，避免生成缺片的视频并显示成功。
     if (completed != segUrls.length) {
       throw Exception('分片计数异常（$completed/${segUrls.length}），请重试');
     }
@@ -1577,14 +1579,7 @@ class DownloadManager extends ChangeNotifier {
       App.rootContext.showMessage(message: t.downloadFailed);
       return;
     }
-    final segPaths =
-        Directory(segDir)
-            .listSync()
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.ts') && f.lengthSync() > 0)
-            .map((f) => f.path)
-            .toList()
-          ..sort();
+    final segPaths = await Isolate.run(_segmentPathsRunner(segDir));
     if (segPaths.isEmpty) {
       App.rootContext.showMessage(message: t.downloadFailed);
       return;
@@ -2446,6 +2441,9 @@ int Function() _segDirBytesRunner(String dir) =>
 int Function() _filesTotalBytesRunner(List<String> paths) =>
     () => _filesTotalBytesSync(paths);
 
+List<String> Function() _segmentPathsRunner(String dir) =>
+    () => _segmentPathsSync(dir);
+
 /// 生成 [_cleanupOrphanSegmentsSync] 的 isolate 入口。
 void Function() _cleanupOrphanSegmentsRunner(
   String rootPath,
@@ -2477,6 +2475,20 @@ int _filesTotalBytesSync(List<String> paths) {
     } catch (_) {}
   }
   return total;
+}
+
+List<String> _segmentPathsSync(String dir) {
+  try {
+    return Directory(dir)
+        .listSync()
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.ts') && file.lengthSync() > 0)
+        .map((file) => file.path)
+        .toList()
+      ..sort();
+  } catch (_) {
+    return const [];
+  }
 }
 
 /// 清理非保留任务目录里的 segments 分片与 video.mp4 半成品（后台 isolate 执行）。

@@ -26,7 +26,38 @@ String? base32ToInfoHashHex(String s) {
 /// base32 也转成 hex，保证复制出去的内容能被其它客户端识别。
 String? parseInfoHash(String magnet) {
   final raw = magnet.trim();
-  if (!raw.contains('xt=urn:btih:')) {
+  final uri = Uri.tryParse(raw);
+  if (uri != null && uri.scheme.toLowerCase() == 'magnet') {
+    for (final entry in uri.queryParametersAll.entries) {
+      if (entry.key.toLowerCase() != 'xt') continue;
+      for (final value in entry.value) {
+        final lower = value.toLowerCase();
+        const prefix = 'urn:btih:';
+        if (!lower.startsWith(prefix)) continue;
+        final hash = value.substring(prefix.length);
+        if (RegExp(r'^[0-9a-fA-F]{40}$').hasMatch(hash)) {
+          return hash.toUpperCase();
+        }
+        if (RegExp(r'^[A-Z2-7]{32}$', caseSensitive: false).hasMatch(hash)) {
+          return base32ToInfoHashHex(hash)?.toUpperCase();
+        }
+      }
+    }
+  }
+
+  // Keep a permissive fallback for magnets with malformed non-essential query
+  // parameters, which Uri.parse may reject even though xt itself is usable.
+  final xt = RegExp(
+    r'xt=urn:btih:([0-9a-z]{40}|[a-z2-7]{32})(?:&|$)',
+    caseSensitive: false,
+  ).firstMatch(raw);
+  if (xt != null) {
+    final hash = xt.group(1)!;
+    if (hash.length == 40) return hash.toUpperCase();
+    return base32ToInfoHashHex(hash)?.toUpperCase();
+  }
+
+  if (!raw.toLowerCase().contains('xt=urn:btih:')) {
     final bare = raw.toUpperCase();
     if (RegExp(r'^[0-9A-F]{40}$').hasMatch(bare)) return bare;
     if (RegExp(r'^[A-Z2-7]{32}$').hasMatch(bare)) {
@@ -34,15 +65,7 @@ String? parseInfoHash(String magnet) {
     }
     return null;
   }
-  final hex = RegExp(r'xt=urn:btih:([0-9a-fA-F]{40})(?![0-9a-fA-F])')
-      .firstMatch(raw)
-      ?.group(1);
-  if (hex != null) return hex.toUpperCase();
-  final b32 = RegExp(
-    r'xt=urn:btih:([A-Z2-7]{32})(?![A-Z2-7])',
-    caseSensitive: false,
-  ).firstMatch(raw)?.group(1);
-  return b32 == null ? null : base32ToInfoHashHex(b32)?.toUpperCase();
+  return null;
 }
 
 /// 由识别码拼出最小磁力链（[normalizeMagnet] 的逆向补全）。
@@ -93,6 +116,10 @@ class TorrentJob {
   /// 是否已确定过文件选择（首次拿到元数据时给出默认选择，此后尊重用户设置）
   bool selectionInitialized;
 
+  /// 用户为文件设置的优先级：0=不下载，1=高，2=正常，3=最高。
+  /// 使用整数保存，避免让持久化模型依赖引擎的 enum 实现。
+  Map<int, int> filePriorities;
+
   /// 添加后的停止策略
   TorrentStopPolicy stopAfter;
 
@@ -116,6 +143,7 @@ class TorrentJob {
     this.error,
     this.selectedFiles = const [],
     this.selectionInitialized = true,
+    this.filePriorities = const {},
     this.stopAfter = TorrentStopPolicy.none,
   });
 
@@ -145,6 +173,9 @@ class TorrentJob {
     'savePath': savePath,
     'selectedFiles': selectedFiles,
     'selectionInitialized': selectionInitialized,
+    'filePriorities': {
+      for (final entry in filePriorities.entries) '${entry.key}': entry.value,
+    },
     'stopAfter': stopAfter.name,
   };
 
@@ -154,6 +185,17 @@ class TorrentJob {
             ?.map((e) => (e as num).toInt())
             .toList() ??
         const <int>[];
+    final priorities = <int, int>{};
+    final rawPriorities = j['filePriorities'];
+    if (rawPriorities is Map) {
+      for (final entry in rawPriorities.entries) {
+        final index = int.tryParse('${entry.key}');
+        final value = (entry.value as num?)?.toInt();
+        if (index != null && value != null && value >= 0 && value <= 3) {
+          priorities[index] = value;
+        }
+      }
+    }
     return TorrentJob(
       id: j['id'] as String,
       magnet: j['magnet'] as String? ?? '',
@@ -175,6 +217,7 @@ class TorrentJob {
       selectionInitialized:
           (j['selectionInitialized'] as bool?) ??
           !(selected.length == 1 && selected.first == -1),
+      filePriorities: priorities,
       stopAfter: TorrentStopPolicy.values.firstWhere(
         (e) => e.name == j['stopAfter'],
         orElse: () => TorrentStopPolicy.none,
@@ -191,6 +234,7 @@ class TorrentFileEntry {
   final int size;
   final int downloaded;
   final bool isStreamable;
+  final String? localPath;
 
   const TorrentFileEntry({
     required this.index,
@@ -199,6 +243,7 @@ class TorrentFileEntry {
     required this.size,
     required this.downloaded,
     required this.isStreamable,
+    this.localPath,
   });
 
   double get progress =>

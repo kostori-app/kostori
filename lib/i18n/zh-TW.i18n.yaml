@@ -3121,6 +3121,11 @@ torrentStatusPaused: 已暫停
 torrentStatusCompleted: 已完成
 torrentStatusFailed: 失敗
 torrentSaveDir: 保存目錄
+torrentDownloadDir: 種子下載目錄
+torrentDownloadDirDesc: 新種子使用此目錄，變更時會遷移現有種子
+torrentMigrating: 正在遷移種子檔案…
+torrentMigrationDone: 種子下載目錄已更新，現有種子已遷移
+torrentMigrationPartial: 種子下載目錄已更新，部分舊任務保留在原目錄
 torrentDownloadLimit: 下載限速
 torrentUploadLimit: 上傳限速
 torrentDht: DHT 網路
@@ -3169,6 +3174,36 @@ torrentStopAfter: 停止條件
 torrentStopNone: 不停止
 torrentStopAfterMetadata: 取得中介資料後停止
 torrentStopAfterDownload: 下載完成後停止
+torrentVpnMetadataTimeout: VPN 正在接管種子連線。請在 VPN 分流規則中將 BT/UDP 設為直連，其他功能仍可保持代理。
+torrentFilesTab: 檔案
+torrentTrackersTab: Trackers
+torrentUsersTab: 使用者
+torrentHttpSourcesTab: HTTP 源
+torrentFilesEmpty: 暫無檔案
+torrentUsersEmpty: 暫無已連線使用者
+torrentHttpSourcesEmpty: 暫無 HTTP 源
+torrentSelectedFiles: 已選擇 ${count} 個檔案
+torrentDownloadSelected: 開始下載
+torrentSkipSelected: 跳過下載
+torrentPriorityTooltip: 設定優先級
+torrentPrioritySkip: 不下載
+torrentPriorityNormal: 正常
+torrentPriorityHigh: 高
+torrentPriorityHighest: 最高
+torrentRenameSingleRequired: 請只選擇一個檔案後重新命名
+torrentFileSkipped: 不下載
+torrentFileMixed: 部分選擇
+torrentPieces: 區塊
+torrentPieceSummary: '${done} / ${total}，每塊 ${size}'
+torrentTransfer: 傳輸
+torrentTotalSize: 總大小
+torrentAddedAt: 加入於
+torrentFileCount: 檔案數
+torrentSeeds: 種子
+torrentDownloaded: 已下載
+torrentTrackerUnavailable: Tracker 暫時不可用
+torrentInvalidFileName: 檔名包含無效字元
+torrentRenameFailed: 檔案重新命名失敗
 
 # ── 網域規則（DNS 覆寫 + 無代理覆寫） ──────────────────────────
 domainRules: 網域規則

@@ -6,6 +6,9 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.Network
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -33,12 +36,25 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.FileOutputStream
+import java.io.DataInputStream
+import java.io.OutputStream
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.Timer
 import java.util.TimerTask
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 
 class MainActivity : AudioServiceFragmentActivity() {
+    @Volatile private var torrentRelay: ServerSocket? = null
+    @Volatile private var torrentUdpRelay: DatagramSocket? = null
+    @Volatile private var torrentRelayAccepting = false
+    @Volatile private var torrentUdpRelayRunning = false
+    private val torrentRelayWorkers = Executors.newCachedThreadPool()
     var listening = false
     var volumeListen = VolumeListen()
     private val CHANNEL = "kostori/network_speed"
@@ -159,6 +175,55 @@ class MainActivity : AudioServiceFragmentActivity() {
         ).setMethodCallHandler { call, res ->
             when (call.method) {
                 "getProxy" -> res.success(getProxy())
+                "isVpnActive" -> {
+                    val connectivity = getSystemService(ConnectivityManager::class.java)
+                    res.success(connectivity.allNetworks.any { network ->
+                        connectivity.getNetworkCapabilities(network)
+                            ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+                    })
+                }
+                "startTorrentDirectRelay" -> {
+                    try {
+                        val relay = torrentRelay ?: synchronized(this) {
+                            torrentRelay ?: ServerSocket(0, 64, java.net.InetAddress.getByName("127.0.0.1"))
+                                .also { torrentRelay = it }
+                        }
+                        if (relay.localPort > 0) {
+                            if (!torrentRelayAccepting) synchronized(this) {
+                                if (!torrentRelayAccepting) {
+                                    torrentRelayAccepting = true
+                                    torrentRelayWorkers.execute { acceptTorrentRelay(relay) }
+                                }
+                            }
+                            res.success(relay.localPort)
+                        } else {
+                            res.error("TORRENT_RELAY", "Unable to bind local relay", null)
+                        }
+                    } catch (error: Exception) {
+                        res.error("TORRENT_RELAY", error.message, null)
+                    }
+                }
+                "startTorrentDirectUdpRelay" -> {
+                    try {
+                        val relay = torrentUdpRelay ?: synchronized(this) {
+                            torrentUdpRelay ?: DatagramSocket(0, java.net.InetAddress.getByName("127.0.0.1"))
+                                .also { torrentUdpRelay = it }
+                        }
+                        if (relay.localPort > 0) {
+                            if (!torrentUdpRelayRunning) synchronized(this) {
+                                if (!torrentUdpRelayRunning) {
+                                    torrentUdpRelayRunning = true
+                                    torrentRelayWorkers.execute { relayTorrentUdp(relay) }
+                                }
+                            }
+                            res.success(relay.localPort)
+                        } else {
+                            res.error("TORRENT_UDP_RELAY", "Unable to bind local relay", null)
+                        }
+                    } catch (error: Exception) {
+                        res.error("TORRENT_UDP_RELAY", error.message, null)
+                    }
+                }
                 "openWithMime" -> {
                     val path = call.argument<String>("url") ?: ""
                     if (path.isNotEmpty()) {
@@ -189,7 +254,9 @@ class MainActivity : AudioServiceFragmentActivity() {
                 }
 
                 "startDownloadForeground" -> {
-                    DownloadForegroundService.start(applicationContext)
+                    val rawTasks = call.argument<List<Map<String, Any>>>("tasks") ?: emptyList()
+                    val remaining = (call.argument<Number>("remaining")?.toInt()) ?: rawTasks.size
+                    DownloadForegroundService.start(applicationContext, rawTasks, remaining)
                     res.success(null)
                 }
 
@@ -284,7 +351,7 @@ class MainActivity : AudioServiceFragmentActivity() {
         val storageChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "kostori/storage")
         storageChannel.setMethodCallHandler { call, res ->
             if (call.method == "getStorageInfo") {
-                // Q9：下载目录所在分区总量 + 剩余（一次往返，避免两次 StatFs）
+                // 返回下载目录所在分区的总容量和可用空间。
                 try {
                     val rawPath = call.argument<String>("path")
                     var dir = if (rawPath.isNullOrEmpty()) filesDir else File(rawPath)
@@ -329,6 +396,134 @@ class MainActivity : AudioServiceFragmentActivity() {
             }
         }
 
+    }
+
+    private fun acceptTorrentRelay(server: ServerSocket) {
+        while (!server.isClosed) {
+            try {
+                val local = server.accept()
+                torrentRelayWorkers.execute { relayTorrentSocket(local) }
+            } catch (_: Exception) {
+                if (server.isClosed) return
+            }
+        }
+    }
+
+    private fun relayTorrentSocket(local: Socket) {
+        var upstream: Socket? = null
+        try {
+            local.soTimeout = 15_000
+            val input = DataInputStream(local.getInputStream())
+            val hostLength = input.readUnsignedShort()
+            if (hostLength == 0) return
+            val hostBytes = ByteArray(hostLength)
+            input.readFully(hostBytes)
+            val host = hostBytes.toString(Charsets.UTF_8)
+            val port = input.readUnsignedShort()
+            if (port == 0) return
+            val physical = directTorrentNetwork()
+            val remote = if (physical != null) physical.socketFactory.createSocket() else Socket()
+            if (physical != null) physical.bindSocket(remote)
+            remote.connect(InetSocketAddress(host, port), 10_000)
+            remote.soTimeout = 0
+            upstream = remote
+            local.soTimeout = 0
+            val downstream = remote
+            val a = torrentRelayWorkers.submit {
+                copyStream(input, downstream.getOutputStream())
+            }
+            val b = torrentRelayWorkers.submit {
+                copyStream(downstream.getInputStream(), local.getOutputStream())
+            }
+            try { a.get() } finally { downstream.close(); local.close(); b.cancel(true) }
+        } catch (_: Exception) {
+            try { local.close() } catch (_: Exception) { }
+            try { upstream?.close() } catch (_: Exception) { }
+        }
+    }
+
+    private fun copySocket(source: Socket, destination: Socket) {
+        try {
+            source.getInputStream().copyTo(destination.getOutputStream(), 64 * 1024)
+            destination.shutdownOutput()
+        } catch (_: Exception) { }
+    }
+
+    private fun copyStream(source: java.io.InputStream, destination: OutputStream) {
+        try {
+            source.copyTo(destination, 64 * 1024)
+            destination.flush()
+        } catch (_: Exception) { }
+    }
+
+    private fun relayTorrentUdp(server: DatagramSocket) {
+        val buffer = ByteArray(65_535)
+        while (!server.isClosed) {
+            try {
+                val request = DatagramPacket(buffer, buffer.size)
+                server.receive(request)
+                val bytes = request.data.copyOfRange(0, request.length)
+                if (bytes.size < 4) continue
+                val hostLength = ((bytes[0].toInt() and 0xff) shl 8) or
+                    (bytes[1].toInt() and 0xff)
+                if (hostLength <= 0 || bytes.size < hostLength + 4) continue
+                val host = bytes.copyOfRange(2, 2 + hostLength).toString(Charsets.UTF_8)
+                val portOffset = 2 + hostLength
+                val port = ((bytes[portOffset].toInt() and 0xff) shl 8) or
+                    (bytes[portOffset + 1].toInt() and 0xff)
+                val payloadOffset = portOffset + 2
+                if (port <= 0 || payloadOffset >= bytes.size) continue
+                val physical = directTorrentNetwork() ?: continue
+                val upstream = DatagramSocket()
+                physical.bindSocket(upstream)
+                upstream.soTimeout = 3_000
+                upstream.send(DatagramPacket(
+                    bytes,
+                    payloadOffset,
+                    bytes.size - payloadOffset,
+                    InetSocketAddress(host, port),
+                ))
+                try {
+                    while (true) {
+                        val response = DatagramPacket(buffer, buffer.size)
+                        upstream.receive(response)
+                        server.send(DatagramPacket(
+                            response.data,
+                            response.length,
+                            request.address,
+                            request.port,
+                        ))
+                    }
+                } catch (_: java.net.SocketTimeoutException) {
+                    upstream.close()
+                }
+            } catch (_: Exception) {
+                if (server.isClosed) return
+            }
+        }
+    }
+
+    private fun directTorrentNetwork(): Network? {
+        val connectivity = getSystemService(ConnectivityManager::class.java)
+        val candidates = connectivity.allNetworks.mapNotNull { network ->
+            val capabilities = connectivity.getNetworkCapabilities(network) ?: return@mapNotNull null
+            if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return@mapNotNull null
+            val rank = when {
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> 0
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> 1
+                else -> 2
+            }
+            Triple(rank, network, capabilities)
+        }.sortedBy { it.first }
+        return candidates.firstOrNull()?.second
+    }
+
+    override fun onDestroy() {
+        try { torrentRelay?.close() } catch (_: Exception) { }
+        try { torrentUdpRelay?.close() } catch (_: Exception) { }
+        torrentRelayWorkers.shutdownNow()
+        super.onDestroy()
     }
 
     private fun getProxy(): String {
