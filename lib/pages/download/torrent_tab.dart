@@ -378,9 +378,11 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
           ),
         ),
         Expanded(
-          child: ListView(
+          child: ListView.builder(
             padding: const EdgeInsets.only(top: 4, bottom: 16),
-            children: [for (final job in jobs) _jobCard(job)],
+            itemCount: jobs.length,
+            itemBuilder: (context, index) =>
+                RepaintBoundary(child: _jobCard(jobs[index])),
           ),
         ),
       ],

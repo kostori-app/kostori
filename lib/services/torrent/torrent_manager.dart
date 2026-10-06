@@ -236,11 +236,63 @@ List<Uri> _mobileMetadataTrackers(Iterable<Uri> trackers) {
   return selected.take(maxTrackers).toList(growable: false);
 }
 
+/// Limit the tracker clients created by the download engine.
+///
+/// The complete tracker list remains available to the UI, but starting one
+/// client for every URL in a large torrent can create hundreds of sockets and
+/// retry timers on a phone. Keep a small sample from each protocol and then
+/// fill the remaining slots in the original order so private/custom trackers
+/// near the front of the list keep their priority.
+List<Uri> _activeTorrentTrackers(Iterable<Uri> trackers, {required int limit}) {
+  if (limit <= 0) return const [];
+  final groups = <String, List<Uri>>{
+    'https': [],
+    'wss': [],
+    'http': [],
+    'ws': [],
+    'udp': [],
+  };
+  final all = <Uri>[];
+  final seen = <String>{};
+  for (final tracker in trackers) {
+    if (!seen.add(tracker.toString())) continue;
+    all.add(tracker);
+    (groups[tracker.scheme.toLowerCase()] ??= []).add(tracker);
+  }
+  if (all.length <= limit) return all;
+
+  final selected = <Uri>[];
+  final selectedKeys = <String>{};
+  final perScheme = (limit ~/ groups.length).clamp(1, limit).toInt();
+  for (final scheme in const ['https', 'wss', 'http', 'ws', 'udp']) {
+    for (final tracker in groups[scheme]!.take(perScheme)) {
+      if (selected.length >= limit) break;
+      if (selectedKeys.add(tracker.toString())) selected.add(tracker);
+    }
+  }
+  for (final tracker in all) {
+    if (selected.length >= limit) break;
+    if (selectedKeys.add(tracker.toString())) selected.add(tracker);
+  }
+  return selected;
+}
+
 /// 种子任务管理器（基于纯 Dart 的 dtorrent_task_v2，Riverpod Notifier）。
 ///
 /// 引擎实例只在需要时创建/启动；重启后只加载已持久化的 `.torrent`，
 /// 不会自动下载，等用户手动开始。
 class TorrentManager extends Notifier<TorrentState> {
+  /// Maximum number of tracker clients allowed for one running task.
+  /// Mobile relay connections are more expensive, so keep their fan-out lower.
+  static int get activeTrackerLimit =>
+      Platform.isAndroid || Platform.isIOS ? 16 : 32;
+
+  /// Public pure helper for tests and callers that need the same engine limit.
+  static List<Uri> limitActiveTrackerUris(
+    Iterable<Uri> trackers, {
+    int? limit,
+  }) => _activeTorrentTrackers(trackers, limit: limit ?? activeTrackerLimit);
+
   @override
   TorrentState build() {
     ref.onDispose(_disposeInternal);
@@ -404,9 +456,10 @@ class TorrentManager extends Notifier<TorrentState> {
       final engine = _engines[job.id];
       final model = _models[job.id];
       if (engine == null || model == null) continue;
-      for (final tr in _parseTrackers(
+      final configured = _parseTrackers(
         _readList(appdata.implicitData, kTorrentTrackers).split('\n'),
-      )) {
+      );
+      for (final tr in limitActiveTrackerUris(configured)) {
         try {
           engine.startAnnounceUrl(tr, model.infoHashBuffer);
         } catch (_) {}
@@ -1215,8 +1268,13 @@ class TorrentManager extends Notifier<TorrentState> {
       await _migrateSingleFileLayout(job, model);
       if (!_jobs.contains(job)) return;
 
+      // Keep the complete announce list in [_models] for the tracker tab, but
+      // hand the engine a bounded list. TorrentTask starts every URL in its
+      // model before [_applyEndpoints] runs, so limiting only the latter still
+      // allows a large torrent to create hundreds of clients on startup.
+      final engineModel = _modelForEngine(model);
       final task = TorrentTask.newTask(
-        model,
+        engineModel,
         _engineSavePath(job, model),
         true,
         (magnet != null && magnet.webSeeds.isNotEmpty) ? magnet.webSeeds : null,
@@ -1416,6 +1474,31 @@ class TorrentManager extends Notifier<TorrentState> {
       path.replaceAll('\\', '/'),
     );
     return cleaned.isEmpty ? 'file' : cleaned;
+  }
+
+  TorrentModel _modelForEngine(TorrentModel model) {
+    final announces = limitActiveTrackerUris(model.announces);
+    if (announces.length == model.announces.length &&
+        announces.every((uri) => model.announces.contains(uri))) {
+      return model;
+    }
+    return TorrentModel(
+      name: model.name,
+      files: model.files,
+      infoHashBuffer: model.infoHashBuffer,
+      pieceLength: model.pieceLength,
+      pieces: model.pieces,
+      announces: announces,
+      nodes: model.nodes,
+      length: model.length,
+      version: model.version,
+      metaVersion: model.metaVersion,
+      fileTree: model.fileTree,
+      pieceLayers: model.pieceLayers,
+      rootHash: model.rootHash,
+      infoDictBytes: model.infoDictBytes,
+      rawData: model.rawData,
+    );
   }
 
   /// 逐个净化种子内的文件路径，返回新模型（不修改原模型）。
@@ -1663,7 +1746,10 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 应用 Tracker / DHT 节点 / 限速 到任务。
   void _applyEndpoints(TorrentTask task, TorrentJob job, TorrentModel model) {
-    for (final tr in _parseTrackers(trackersOf(job))) {
+    final trackersForTask = limitActiveTrackerUris(
+      _parseTrackers(trackersOf(job)),
+    );
+    for (final tr in trackersForTask) {
       try {
         task.startAnnounceUrl(tr, model.infoHashBuffer);
       } catch (_) {}
@@ -1678,9 +1764,9 @@ class TorrentManager extends Notifier<TorrentState> {
     _applyLimits(task);
   }
 
-  /// 任务实际会 announce 的地址（去重、保序）：模型 announce → 磁力 `tr`
-  /// → 用户 tracker → 内置公共。UI 与 [_applyEndpoints] 共用该集合，
-  /// 保证展示与实际 announce 一致。
+  /// 任务可用的 announce 地址（去重、保序）：模型 announce → 磁力 `tr`
+  /// → 用户 tracker → 内置公共。UI 保留完整列表；引擎通过
+  /// [limitActiveTrackerUris] 限制实际同时运行的 tracker 数量。
   List<String> trackersOf(TorrentJob job) {
     final model = _models[job.id];
     final out = <String>[];

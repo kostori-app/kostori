@@ -184,6 +184,45 @@ void main() {
     });
   });
 
+  group('tracker fan-out limit', () {
+    test('keeps protocol diversity while removing duplicates', () {
+      final trackers = [
+        Uri.parse('https://private.example/announce'),
+        Uri.parse('https://private.example/announce'),
+        Uri.parse('http://public.example/announce'),
+        Uri.parse('udp://udp.example:6969/announce'),
+        Uri.parse('ws://web.example/announce'),
+        Uri.parse('https://later.example/announce'),
+      ];
+
+      final selected = TorrentManager.limitActiveTrackerUris(
+        trackers,
+        limit: 4,
+      );
+
+      expect(selected, hasLength(4));
+      expect(selected.map((uri) => uri.scheme).toSet(), {
+        'https',
+        'http',
+        'udp',
+        'ws',
+      });
+      expect(selected.toSet(), hasLength(selected.length));
+    });
+
+    test('returns all unique trackers below the limit', () {
+      final selected = TorrentManager.limitActiveTrackerUris([
+        Uri.parse('udp://one.example:1/announce'),
+        Uri.parse('udp://one.example:1/announce'),
+        Uri.parse('udp://two.example:2/announce'),
+      ], limit: 8);
+      expect(selected.map((uri) => uri.toString()), [
+        'udp://one.example:1/announce',
+        'udp://two.example:2/announce',
+      ]);
+    });
+  });
+
   group('进度按已选文件统计', () {
     // 12 集的整季包，只勾了第 1 集 —— 默认选择就是这个场景
     late List<TorrentFileEntry> files;
