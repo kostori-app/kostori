@@ -28,7 +28,7 @@ class TorrentFileList extends StatefulWidget {
   final void Function(int index) onPlay;
   final Future<Object?> Function(int index, String name) onRename;
   final void Function(Set<int> indices, FilePriority priority) onSetPriority;
-  final Future<void> Function(Set<int> indices) onDeleteFiles;
+  final Future<bool> Function(Set<int> indices) onDeleteFiles;
 
   @override
   State<TorrentFileList> createState() => _TorrentFileListState();
@@ -405,8 +405,10 @@ class _TorrentFileListState extends State<TorrentFileList>
         text: t.torrentDeleteFiles,
         icon: Icons.delete_outline,
         onClick: () async {
-          await widget.onDeleteFiles(Set.of(_selection.selected));
-          if (mounted) setState(_selection.clear);
+          final deleted = await widget.onDeleteFiles(
+            Set.of(_selection.selected),
+          );
+          if (mounted && deleted) setState(_selection.clear);
         },
       ),
     ]);

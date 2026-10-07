@@ -586,8 +586,8 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
     }
   }
 
-  Future<void> _deleteFiles(Set<int> indices) async {
-    if (indices.isEmpty) return;
+  Future<bool> _deleteFiles(Set<int> indices) async {
+    if (indices.isEmpty) return false;
     final confirmed = await ContentDialog.show<bool>(
       context: context,
       title: t.torrentDeleteFiles,
@@ -600,12 +600,14 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
         ),
       ],
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) return false;
     try {
       await _manager.deleteFiles(_job, indices);
+      return true;
     } catch (error) {
       Log.error('种子内容删除失败', '$error');
       if (mounted) context.showMessage(message: t.deleteFailed);
+      return false;
     }
   }
 

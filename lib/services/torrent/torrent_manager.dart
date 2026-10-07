@@ -355,6 +355,7 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 已完成任务切换到只上传模式后，避免每次轮询重复写入优先级。
   final Set<String> _downloadBlockedAfterCompletion = {};
+  final Set<String> _fileMutations = {};
   final Set<String> _refetching = {};
   final Set<String> _wantStart = {};
 
@@ -782,6 +783,7 @@ class TorrentManager extends Notifier<TorrentState> {
     _starting.clear();
     _pausedByUser.clear();
     _downloadBlockedAfterCompletion.clear();
+    _fileMutations.clear();
     _syncTimer?.cancel();
     _syncTimer = null;
     for (final server in _servers.values) {
@@ -1669,6 +1671,83 @@ class TorrentManager extends Notifier<TorrentState> {
     return cleaned.isEmpty ? 'file' : cleaned;
   }
 
+  static String _sanitizeTorrentFileSegment(String segment) {
+    if (segment.isEmpty || segment == '.' || segment == '..') {
+      throw const FormatException('torrent file tree contains an unsafe path');
+    }
+    if (segment.contains('/') || segment.contains('\\')) {
+      throw const FormatException(
+        'torrent file tree contains a path separator',
+      );
+    }
+    return DownloadManager.sanitizeFileName(segment, fallback: 'file');
+  }
+
+  static bool _sameStringList(List<String>? a, List<String>? b) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null || a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  static List<String>? _sanitizeSymlinkPath(List<String>? target) {
+    if (target == null) return null;
+    final result = <String>[];
+    for (final segment in target) {
+      if (segment.isEmpty ||
+          segment == '.' ||
+          segment == '..' ||
+          segment.contains('/') ||
+          segment.contains('\\') ||
+          segment.contains(':')) {
+        throw const FormatException(
+          'torrent contains an unsafe symlink target',
+        );
+      }
+      result.add(DownloadManager.sanitizeFileName(segment, fallback: 'link'));
+    }
+    return result.isEmpty ? null : result;
+  }
+
+  static ({Map<String, FileTreeEntry> tree, bool changed}) _sanitizeFileTree(
+    Map<String, FileTreeEntry> tree,
+  ) {
+    final result = <String, FileTreeEntry>{};
+    var changed = false;
+    for (final entry in tree.entries) {
+      final key = _sanitizeTorrentFileSegment(entry.key);
+      if (result.containsKey(key)) {
+        throw const FormatException(
+          'torrent file tree contains duplicate paths after sanitization',
+        );
+      }
+      if (key != entry.key) changed = true;
+
+      final value = entry.value;
+      final children = value.children;
+      if (children != null) {
+        final nested = _sanitizeFileTree(children);
+        changed = changed || nested.changed;
+        result[key] = FileTreeEntry.directory(nested.tree);
+        continue;
+      }
+
+      final symlinkPath = _sanitizeSymlinkPath(value.symlinkPath);
+      if (!_sameStringList(symlinkPath, value.symlinkPath)) {
+        changed = true;
+      }
+      result[key] = FileTreeEntry(
+        length: value.length,
+        piecesRoot: value.piecesRoot,
+        attributes: value.attributes,
+        symlinkPath: symlinkPath,
+      );
+    }
+    return (tree: result, changed: changed);
+  }
+
   TorrentModel _modelForEngine(TorrentModel model) {
     final announces = limitActiveTrackerUris(model.announces);
     if (announces.length == model.announces.length &&
@@ -1698,8 +1777,15 @@ class TorrentManager extends Notifier<TorrentState> {
   TorrentModel _sanitizeModelPaths(TorrentModel model) {
     var changed = false;
     final files = <TorrentFileModel>[];
+    final seenPaths = <String>{};
     for (final f in model.files) {
       final safe = _sanitizeTorrentFilePath(f.path);
+      final key = Platform.isWindows ? safe.toLowerCase() : safe;
+      if (!seenPaths.add(key)) {
+        throw const FormatException(
+          'torrent contains duplicate paths after sanitization',
+        );
+      }
       if (safe == f.path) {
         files.add(f);
       } else {
@@ -1710,12 +1796,31 @@ class TorrentManager extends Notifier<TorrentState> {
             length: f.length,
             offset: f.offset,
             attributes: f.attributes,
-            symlinkPath: f.symlinkPath,
+            symlinkPath: _sanitizeSymlinkPath(f.symlinkPath),
             isPaddingFile: f.isPaddingFile,
           ),
         );
       }
     }
+    for (var i = 0; i < files.length; i++) {
+      final file = files[i];
+      final symlinkPath = _sanitizeSymlinkPath(file.symlinkPath);
+      if (!_sameStringList(symlinkPath, file.symlinkPath)) {
+        changed = true;
+        files[i] = TorrentFileModel(
+          path: file.path,
+          length: file.length,
+          offset: file.offset,
+          attributes: file.attributes,
+          symlinkPath: symlinkPath,
+          isPaddingFile: file.isPaddingFile,
+        );
+      }
+    }
+    final treeResult = model.fileTree == null
+        ? null
+        : _sanitizeFileTree(model.fileTree!);
+    changed = changed || (treeResult?.changed ?? false);
     if (!changed) return model;
 
     final safeName = _sanitizeName(model.name);
@@ -1731,7 +1836,7 @@ class TorrentManager extends Notifier<TorrentState> {
       length: model.length,
       version: model.version,
       metaVersion: model.metaVersion,
-      fileTree: model.fileTree,
+      fileTree: treeResult?.tree ?? model.fileTree,
       pieceLayers: model.pieceLayers,
       rootHash: model.rootHash,
       infoDictBytes: model.infoDictBytes,
@@ -2408,63 +2513,94 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 删除选中的内容文件，并使对应 pieces 重新进入可下载状态。
   /// 删除后文件默认标记为 skip，避免用户只是清理磁盘却立刻被重新下载。
   Future<void> deleteFiles(TorrentJob job, Iterable<int> indices) async {
-    final task = _engines[job.id];
-    final model = _models[job.id];
-    final fileManager = task?.fileManager;
-    if (task == null || model == null || fileManager == null) {
-      throw StateError('torrent files are not ready');
+    if (!_fileMutations.add(job.id)) {
+      throw StateError('torrent file operation already in progress');
     }
-    final valid = indices
-        .where((index) => index >= 0 && index < fileManager.files.length)
-        .toSet();
-    if (valid.isEmpty) return;
-
-    await stopStreams(job);
-    final wasRunning = task.state == TaskState.running;
-    if (wasRunning) task.pause();
-    final pieces = <int>{
-      for (final index in valid)
-        for (final piece in fileManager.files[index].pieces) piece.index,
-    };
-    for (final index in valid) {
-      await fileManager.files[index].delete();
-      job.filePriorities[index] = FilePriority.skip.index;
-    }
-    for (final pieceIndex in pieces) {
-      final piece = task.pieceManager?[pieceIndex];
-      if (piece == null) continue;
-      for (var subIndex = 0; subIndex < piece.subPiecesCount; subIndex++) {
-        piece.pushSubPieceBack(subIndex);
+    var wasRunning = false;
+    TorrentTask? task;
+    try {
+      task = _engines[job.id];
+      final model = _models[job.id];
+      final fileManager = task?.fileManager;
+      if (task == null || model == null || fileManager == null) {
+        throw StateError('torrent files are not ready');
       }
-      await fileManager.updateBitfield(pieceIndex, false);
-    }
+      final valid = indices
+          .where((index) => index >= 0 && index < fileManager.files.length)
+          .toSet();
+      if (valid.isEmpty) return;
 
-    final all = {for (var i = 0; i < model.files.length; i++) i};
-    final selected = job.selectedFiles.isEmpty
-        ? all
-        : _isNoneSelected(job.selectedFiles)
-        ? <int>{}
-        : job.selectedFiles.toSet();
-    selected.removeAll(valid);
-    job.selectedFiles = selected.length == all.length
-        ? <int>[]
-        : selected.isEmpty
-        ? <int>[kTorrentNoFile]
-        : (selected.toList()..sort());
-    job.selectionInitialized = true;
-    job.totalWanted = _wantedBytes(job, model);
-    _downloadBlockedAfterCompletion.remove(job.id);
-    _applySelection(task, job, model);
-    if (_isNoneSelected(job.selectedFiles)) {
-      job.status = TorrentJobStatus.paused;
-      job.downloadRate = 0;
-      job.uploadRate = 0;
-    } else if (wasRunning) {
-      task.resume();
-      job.status = TorrentJobStatus.downloading;
+      await stopStreams(job);
+      wasRunning = task.state == TaskState.running;
+      if (wasRunning) task.pause();
+      final pieces = <int>{
+        for (final index in valid)
+          for (final piece in fileManager.files[index].pieces) piece.index,
+      };
+      for (final index in valid) {
+        final path = fileManager.files[index].filePath;
+        await fileManager.files[index].delete();
+        // DownloadFile.delete() only knows about its lazily opened handle.
+        // A restored task may have no handle even though the file is present.
+        await _deleteTorrentFile(path);
+        if (await FileSystemEntity.type(path, followLinks: false) !=
+            FileSystemEntityType.notFound) {
+          throw FileSystemException('torrent file was not deleted', path);
+        }
+      }
+      for (final pieceIndex in pieces) {
+        final piece = task.pieceManager?[pieceIndex];
+        if (piece == null) continue;
+        for (var subIndex = 0; subIndex < piece.subPiecesCount; subIndex++) {
+          piece.pushSubPieceBack(subIndex);
+        }
+        await fileManager.updateBitfield(pieceIndex, false);
+      }
+
+      for (final file in fileManager.files) {
+        file.recalculateDownloadedBytes();
+      }
+      for (final index in valid) {
+        job.filePriorities[index] = FilePriority.skip.index;
+      }
+
+      final all = {for (var i = 0; i < model.files.length; i++) i};
+      final selected = job.selectedFiles.isEmpty
+          ? all
+          : _isNoneSelected(job.selectedFiles)
+          ? <int>{}
+          : job.selectedFiles.toSet();
+      selected.removeAll(valid);
+      job.selectedFiles = selected.length == all.length
+          ? <int>[]
+          : selected.isEmpty
+          ? <int>[kTorrentNoFile]
+          : (selected.toList()..sort());
+      job.selectionInitialized = true;
+      job.totalWanted = _wantedBytes(job, model);
+      _downloadBlockedAfterCompletion.remove(job.id);
+      _applySelection(task, job, model);
+      _refreshProgress(job, model);
+      if (_isNoneSelected(job.selectedFiles)) {
+        job.status = TorrentJobStatus.paused;
+        job.downloadRate = 0;
+        job.uploadRate = 0;
+      } else if (wasRunning) {
+        task.resume();
+        job.status = TorrentJobStatus.downloading;
+      }
+      _persist();
+      _emit();
+    } catch (_) {
+      if (wasRunning && !_pausedByUser.contains(job.id)) {
+        try {
+          task?.resume();
+        } catch (_) {}
+      }
+      rethrow;
+    } finally {
+      _fileMutations.remove(job.id);
     }
-    _persist();
-    _emit();
   }
 
   /// 设置选中文件的优先级，并同步任务选择状态与状态文件。
@@ -2712,6 +2848,9 @@ class TorrentManager extends Notifier<TorrentState> {
       }
       final noneSelected = _isNoneSelected(job.selectedFiles);
       final model = _models[job.id];
+      if (_downloadBlockedAfterCompletion.contains(job.id)) {
+        _clearBlockedPeerSuggestions(engine);
+      }
       void refreshProgress() {
         if (model != null) _refreshProgress(job, model);
       }
@@ -2818,8 +2957,15 @@ class TorrentManager extends Notifier<TorrentState> {
         for (var index = 0; index < model.files.length; index++)
           index: FilePriority.skip,
       });
+      _clearBlockedPeerSuggestions(engine);
     } catch (_) {
       _downloadBlockedAfterCompletion.remove(job.id);
+    }
+  }
+
+  void _clearBlockedPeerSuggestions(TorrentTask engine) {
+    for (final peer in engine.activePeers ?? const <Peer>[]) {
+      if (!peer.isDisposed) peer.remoteSuggestPieces.clear();
     }
   }
 
