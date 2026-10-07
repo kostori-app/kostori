@@ -63,7 +63,7 @@ Widget _contentOrBoard(
       return PluginBoardContent(plugin: plugin, metaModules: modules);
     }
     if (mm['type'] == 'cardPage') {
-      return PluginCardPage(plugin: plugin, module: mm);
+      return PluginCardPage(plugin: plugin, module: mm, topPadding: topPadding);
     }
   }
   return _PluginModulesList(

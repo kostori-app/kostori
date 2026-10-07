@@ -1,38 +1,8 @@
 part of 'me_page_plugins.dart';
 
-// ═══════════════════════════════════════════════════════════
-// 通用布局：分组卡片 / 选择器（类月份表）/ 详情页
-//
-// 模块协议（均由插件 JS 下发）：
-//
-// 1) 分组卡片列表
-//    { type:'groupPage', groups:[
-//        { header:{type:'groupHeader', title, subtitle}, items:[<card>, ...] },
-//        ...
-//    ]}
-//
-// 2) 选择器页（类似月份表，可快捷切换多组数据）
-//    { type:'selector', page:'preview',        // 切换时重新请求的 page 名
-//      selectors:[ {key:'genre', options:[{key,title}], selected:'k'},
-//                  {key:'month', options:[{key,title}], selected:'k'} ],
-//      groups:[...] }
-//    切换时调用 plugin.page(page, {genre:..., month:...})，期望返回同样结构的 selector 模块。
-//    也兼容单选择器写法：options:[...] + selected（键名为 selection）。
-//
-// 3) 详情页
-//    { type:'detailPage', title?, sections:[
-//        { type:'imageText', title?, text?, image?, showTitle?:true },
-//        { type:'gallery', title?, images:[url,...] },
-//        { type:'cards', title?, cards:[<card>, ...] },
-//    ]}
-//
-// <card> 字段：cover / title / subtitle / description / tags[] / meta[] /
-//              rating / ratingMax / badge / page / params / url
-//              buttons:[{ label, images?|image?|url?|text?|page?+params?,
-//                         sheet?:true }]
-//   sheet:true 时调用 plugin.page(page,params)，收集其中图片用底部弹层展示，
-//   不跳转新页面（适合“预览图”这类按需解析的轻量动作）。
-// ═══════════════════════════════════════════════════════════
+// 插件页面模块支持 groupPage、selector 和 detailPage。
+// detailPage 的 sections 支持 imageText、gallery 和 cards；cards 可声明分页，
+// 或使用 variant:'tags' 渲染可点击的标签组。卡片字段由插件动态提供。
 
 /// 从模块列表里收集图片地址（detailPage 的 gallery/imageText、顶层 gallery）。
 List<String> _imagesFromModules(List<dynamic> modules) {
@@ -360,9 +330,9 @@ class _GenericPluginCard extends StatelessWidget {
   }
 
   Widget _cardButton(BuildContext context, Map<String, dynamic> btn) {
-    final label = btn['label']?.toString() ?? '...';
-    return SizedBox(
-      width: 76,
+    final label = btn['label']?.toString() ?? Translations.of(context).open;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 96, maxWidth: 180),
       child: FilledButton.tonal(
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -944,6 +914,14 @@ class _ImageTextSectionState extends State<_ImageTextSection> {
     final title = section['title']?.toString() ?? '';
     final text = section['text']?.toString() ?? '';
     final image = section['image']?.toString() ?? '';
+    final buttons = section['buttons'] is List
+        ? (section['buttons'] as List)
+              .map(_asMap2)
+              .where(
+                (e) => e.isNotEmpty && (e['url']?.toString() ?? '').isNotEmpty,
+              )
+              .toList()
+        : const <Map<String, dynamic>>[];
     final showTitle = section['showTitle'] != false;
     final tag = 'plugin_imagetext_${plugin.key}_${identityHashCode(section)}';
     return _PluginCard(
@@ -973,7 +951,6 @@ class _ImageTextSectionState extends State<_ImageTextSection> {
                         .colorScheme
                         .surfaceContainerHighest,
                     alignment: Alignment.center,
-                    // 完整显示且尽量放大
                     child: _siteImage(
                       image,
                       plugin: plugin,
@@ -986,16 +963,34 @@ class _ImageTextSectionState extends State<_ImageTextSection> {
             ),
           if (image.isNotEmpty && text.isNotEmpty) const SizedBox(height: 8),
           if (text.isNotEmpty)
-            // 可选中复制
-            AppSelectableText(
-              text,
-              style: const TextStyle(fontSize: 13, height: 1.5),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AppSelectableText(
+                text,
+                style: const TextStyle(fontSize: 13, height: 1.5),
+                selectionWidthStyle: ui.BoxWidthStyle.tight,
+                textWidthBasis: TextWidthBasis.longestLine,
+              ),
             ),
           if (text.isNotEmpty)
             TranslationOutput(
               controller: _tc,
               padding: const EdgeInsets.only(top: 8),
             ),
+          if (buttons.isNotEmpty) ...[
+            if (text.isNotEmpty) const SizedBox(height: 10),
+            CapsuleButtonBar(
+              children: [
+                for (final button in buttons)
+                  CapsuleButton(
+                    text:
+                        button['label']?.toString() ??
+                        Translations.of(context).open,
+                    onTap: () => launchUrlString(button['url'].toString()),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -1072,22 +1067,98 @@ class _GallerySection extends StatelessWidget {
 }
 
 /// 卡片组件（复用通用详细卡片），点击进入其详情页
-class _CardsSection extends StatelessWidget {
+class _CardsSection extends StatefulWidget {
   const _CardsSection({required this.plugin, required this.section});
 
   final MePagePlugin plugin;
   final Map<String, dynamic> section;
 
   @override
+  State<_CardsSection> createState() => _CardsSectionState();
+}
+
+class _CardsSectionState extends State<_CardsSection> {
+  late Map<String, dynamic> _section;
+  final Map<int, Map<String, dynamic>> _pageCache = {};
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _section = widget.section;
+    _pageCache[_numberFrom(widget.section, 'pageNum')] = _section;
+  }
+
+  int _numberFrom(
+    Map<String, dynamic> section,
+    String key, [
+    int fallback = 1,
+  ]) {
+    final value = section[key];
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  int _number(String key, [int fallback = 1]) {
+    return _numberFrom(_section, key, fallback);
+  }
+
+  Future<void> _loadPage(int page) async {
+    if (_loading || page < 1 || page > _number('totalPages')) return;
+    final pageName = _section['page']?.toString() ?? '';
+    if (pageName.isEmpty) return;
+    final cached = _pageCache[page];
+    if (cached != null) {
+      setState(() => _section = cached);
+      return;
+    }
+    final rawParams = _asMap2(_section['params']);
+    rawParams['page'] = page;
+    setState(() => _loading = true);
+    try {
+      final modules = await widget.plugin.page(pageName, rawParams);
+      Map<String, dynamic>? next;
+      for (final module in modules) {
+        final pageModule = _asMap2(module);
+        if (pageModule['type'] != 'detailPage') continue;
+        final sections = pageModule['sections'];
+        if (sections is! List) continue;
+        for (final value in sections) {
+          final candidate = _asMap2(value);
+          if (candidate['type'] == 'cards' &&
+              candidate['title']?.toString() == _section['title']?.toString()) {
+            next = candidate;
+            break;
+          }
+        }
+      }
+      if (!mounted) return;
+      final selected = next;
+      if (selected != null) {
+        _pageCache[page] = selected;
+        setState(() => _section = selected);
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final title = section['title']?.toString() ?? '';
-    final cards = section['cards'] is List
-        ? (section['cards'] as List)
+    final title = _section['title']?.toString() ?? '';
+    if (_section['variant']?.toString() == 'tags') {
+      return _buildTagSection(context, title);
+    }
+    final cards = _section['cards'] is List
+        ? (_section['cards'] as List)
               .map(_asMap2)
               .where((e) => e.isNotEmpty)
               .toList()
         : const <Map<String, dynamic>>[];
-    if (cards.isEmpty) return const SizedBox.shrink();
+    final page = _number('pageNum');
+    final totalPages = _number('totalPages');
+    if (cards.isEmpty && !_loading) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1099,11 +1170,157 @@ class _CardsSection extends StatelessWidget {
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
           ),
+        if (_loading && cards.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: PolygonRefreshIndicator(size: 24)),
+          ),
         for (final c in cards) ...[
-          _GenericPluginCard(plugin: plugin, item: c),
+          _GenericPluginCard(plugin: widget.plugin, item: c),
           const SizedBox(height: 12),
         ],
+        if (totalPages > 1)
+          _ForumPager(
+            page: page,
+            totalPages: totalPages,
+            busy: _loading,
+            onJump: _loadPage,
+          ),
       ],
+    );
+  }
+
+  Widget _buildTagSection(BuildContext context, String title) {
+    final raw = _section['items'] is List
+        ? _section['items'] as List
+        : const [];
+    final items = raw.map(_asMap2).where((e) => e.isNotEmpty).toList();
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            child: Text(
+              title,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+          ),
+        CapsuleChipGroup(
+          children: [
+            for (final item in items)
+              CapsuleChip(
+                text: item['title']?.toString() ?? '',
+                isSelected: false,
+                onTap: () {
+                  final href = item['url']?.toString() ?? '';
+                  final page = item['page']?.toString() ?? '';
+                  if (page.isNotEmpty && href.isNotEmpty) {
+                    final params = _asMap2(item['params']);
+                    params['url'] = href;
+                    params['title'] ??= item['title']?.toString() ?? '';
+                    _pushPluginPage(context, widget.plugin, page, params);
+                  } else if (href.isNotEmpty) {
+                    launchUrlString(href);
+                  }
+                },
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// 渲染插件声明的 `layout: 'poster'` 卡片列表。
+class _GenericPluginPosterCard extends StatelessWidget {
+  const _GenericPluginPosterCard({required this.plugin, required this.item});
+
+  final MePagePlugin plugin;
+  final Map<String, dynamic> item;
+
+  String _str(String key) => item[key]?.toString() ?? '';
+
+  void _open(BuildContext context) {
+    final page = item['page']?.toString() ?? 'detail';
+    final params = item['params'] is Map
+        ? _asMap2(item['params'])
+        : <String, dynamic>{};
+    if (item['url'] != null) params['url'] = item['url'].toString();
+    final title = _str('title');
+    if (title.isNotEmpty) params['title'] ??= title;
+    _pushPluginPage(context, plugin, page, params, item: item);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cover = _str('cover');
+    final title = _str('title');
+    final meta = item['meta'] is List
+        ? (item['meta'] as List)
+              .map((e) => e.toString())
+              .where((e) => e.isNotEmpty)
+              .take(2)
+              .join(' · ')
+        : '';
+    final id = item['url']?.toString() ?? title;
+    final heroTag = 'plugin_poster_${plugin.key}_${id.hashCode}';
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => _open(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: cover.isEmpty
+                  ? Container(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
+                      child: Icon(
+                        Icons.image_outlined,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : KostoriHero(
+                      tag: heroTag,
+                      child: _siteImage(
+                        cover,
+                        plugin: plugin,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+          if (meta.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              meta,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1112,12 +1329,18 @@ class _CardsSection extends StatelessWidget {
 /// 模块协议：
 /// { type:'cardPage', page:'new', pageNum:1, totalPages:10,
 ///   selectors:[{key,options,selected,arrows}], datePicker:true, dateKey:'date',
-///   items:[<card>], groups:[{header,items:[<card>]}] }
+///   items:[<card>], groups:[{header,items:[<card>]}], layout:'poster' }
 class PluginCardPage extends StatefulWidget {
-  const PluginCardPage({super.key, required this.plugin, required this.module});
+  const PluginCardPage({
+    super.key,
+    required this.plugin,
+    required this.module,
+    this.topPadding = 0,
+  });
 
   final MePagePlugin plugin;
   final Map<String, dynamic> module;
+  final double topPadding;
 
   @override
   State<PluginCardPage> createState() => _PluginCardPageState();
@@ -1126,6 +1349,7 @@ class PluginCardPage extends StatefulWidget {
 class _PluginCardPageState extends State<PluginCardPage> {
   late Map<String, dynamic> _module;
   late List<_SelectorState> _sels;
+  final Map<String, Map<String, dynamic>> _pageCache = {};
   bool _loading = false;
 
   @override
@@ -1133,20 +1357,43 @@ class _PluginCardPageState extends State<PluginCardPage> {
     super.initState();
     _module = widget.module;
     _sels = _selParseSelectors(_module);
+    _pageCache[_cacheKey(_pageNum)] = _module;
   }
+
+  String _cacheKey(int page) =>
+      '$page|${_sels.map((s) => '${s.key}=${s.selected}').join('&')}';
 
   int get _pageNum => (_module['pageNum'] as num?)?.toInt() ?? 1;
 
   int get _totalPages => (_module['totalPages'] as num?)?.toInt() ?? 1;
 
+  bool get _posterLayout => _module['layout']?.toString() == 'poster';
+
+  int _gridColumns(double width) {
+    final requested = (_module['gridMaxColumns'] as num?)?.toInt() ?? 5;
+    final minWidth = (_module['gridMinItemWidth'] as num?)?.toDouble() ?? 160;
+    final available = (width / minWidth).floor();
+    return available.clamp(2, requested).toInt();
+  }
+
   String get _fetchPage => _module['page']?.toString() ?? '';
 
   Future<void> _fetch({int? page}) async {
     if (_fetchPage.isEmpty) return;
+    final targetPage = page ?? 1;
     final params = <String, dynamic>{
       for (final s in _sels) s.key: s.selected,
       if (page != null) 'page': page,
     };
+    final cached = _pageCache[_cacheKey(targetPage)];
+    if (cached != null) {
+      setState(() {
+        _module = cached;
+        final ns = _selParseSelectors(cached);
+        if (ns.isNotEmpty) _sels = ns;
+      });
+      return;
+    }
     setState(() => _loading = true);
     try {
       final modules = await widget.plugin.page(_fetchPage, params);
@@ -1164,6 +1411,7 @@ class _PluginCardPageState extends State<PluginCardPage> {
           _module = mod;
           final ns = _selParseSelectors(mod);
           if (ns.isNotEmpty) _sels = ns;
+          _pageCache[_cacheKey(targetPage)] = mod;
         }
       });
     } catch (_) {
@@ -1209,7 +1457,12 @@ class _PluginCardPageState extends State<PluginCardPage> {
       children: [
         Positioned.fill(
           child: ListView(
-            padding: EdgeInsets.fromLTRB(12, 12, 12, totalPages > 1 ? 84 : 24),
+            padding: EdgeInsets.fromLTRB(
+              12,
+              12 + widget.topPadding,
+              12,
+              totalPages > 1 ? 84 : 24,
+            ),
             children: [
               for (var i = 0; i < _sels.length; i++) _selectorBar(context, i),
               if (_loading)
@@ -1219,6 +1472,24 @@ class _PluginCardPageState extends State<PluginCardPage> {
                 )
               else if (groups.isNotEmpty)
                 _PluginGroupList(plugin: widget.plugin, groups: groups)
+              else if (items.isNotEmpty && _posterLayout)
+                LayoutBuilder(
+                  builder: (context, constraints) => GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: items.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: _gridColumns(constraints.maxWidth),
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.68,
+                    ),
+                    itemBuilder: (context, index) => _GenericPluginPosterCard(
+                      plugin: widget.plugin,
+                      item: items[index],
+                    ),
+                  ),
+                )
               else if (items.isNotEmpty)
                 for (final it in items) ...[
                   _GenericPluginCard(plugin: widget.plugin, item: it),
