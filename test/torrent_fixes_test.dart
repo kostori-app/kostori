@@ -97,6 +97,20 @@ void main() {
     expect(restored.filePriorities, {1: 3, 4: 0});
   });
 
+  test('peer transfer score ignores invalid and idle rates', () {
+    expect(
+      TorrentManager.peerTransferScore(downloadRate: 12, uploadRate: 3),
+      15,
+    );
+    expect(
+      TorrentManager.peerTransferScore(
+        downloadRate: double.nan,
+        uploadRate: -1,
+      ),
+      0,
+    );
+  });
+
   group('种子下载通知', () {
     TorrentJob job(TorrentJobStatus status, {bool hasMetadata = true}) =>
         TorrentJob(

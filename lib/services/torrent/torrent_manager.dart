@@ -284,6 +284,27 @@ class TorrentManager extends Notifier<TorrentState> {
   static int get activeTrackerLimit =>
       Platform.isAndroid || Platform.isIOS ? 6 : 32;
 
+  /// Maximum number of connected peers retained per running task.
+  ///
+  /// The engine's hard-coded limit is 50 and counts idle sockets too. A lower
+  /// app-level cap keeps mobile downloads responsive when several tasks run at
+  /// once; low-activity peers are released when the cap is exceeded.
+  static int get activePeerLimit =>
+      Platform.isAndroid || Platform.isIOS ? 12 : 24;
+
+  /// Combines recent download and upload rates for peer admission decisions.
+  /// Rates are in KiB/s and invalid values are treated as idle.
+  static double peerTransferScore({
+    required double downloadRate,
+    required double uploadRate,
+  }) {
+    final download = downloadRate.isFinite && downloadRate > 0
+        ? downloadRate
+        : 0.0;
+    final upload = uploadRate.isFinite && uploadRate > 0 ? uploadRate : 0.0;
+    return download + upload;
+  }
+
   /// Public pure helper for tests and callers that need the same engine limit.
   static List<Uri> limitActiveTrackerUris(
     Iterable<Uri> trackers, {
@@ -324,6 +345,8 @@ class TorrentManager extends Notifier<TorrentState> {
   final Map<String, TorrentModel> _models = {};
   final Map<String, TorrentStreamServer> _servers = {};
   final Map<String, DateTime> _uploadSamples = {};
+  final Map<String, ({DateTime at, int uploaded})> _peerUploadSamples = {};
+  final Set<String> _peerTrimPending = {};
   final Set<String> _started = {};
   final Set<String> _starting = {};
 
@@ -762,6 +785,8 @@ class TorrentManager extends Notifier<TorrentState> {
     }
     _servers.clear();
     _uploadSamples.clear();
+    _peerUploadSamples.clear();
+    _peerTrimPending.clear();
     for (final engine in _engines.values) {
       try {
         unawaited(engine.dispose());
@@ -2673,6 +2698,9 @@ class TorrentManager extends Notifier<TorrentState> {
       } else {
         job.status = TorrentJobStatus.downloading;
       }
+      if (engine.state == TaskState.running) {
+        _trimActivePeers(job, engine, now);
+      }
     }
     _syncKeepAlive();
     final sig = _syncSignature();
@@ -2683,6 +2711,64 @@ class TorrentManager extends Notifier<TorrentState> {
     if (++_persistTick >= 5) {
       _persistTick = 0;
       _persist();
+    }
+  }
+
+  void _trimActivePeers(TorrentJob job, TorrentTask engine, DateTime now) {
+    final peers = engine.activePeers
+        ?.where((peer) => !peer.isDisposed)
+        .toList();
+    if (peers == null || peers.isEmpty) return;
+
+    final scored = <({Peer peer, double score, String key})>[];
+    final liveKeys = <String>{};
+    for (final peer in peers) {
+      final key = '${job.id}:${peer.id}';
+      liveKeys.add(key);
+      final previous = _peerUploadSamples[key];
+      final uploaded = peer.uploaded;
+      var uploadRate = 0.0;
+      if (previous != null) {
+        final elapsed = now.difference(previous.at).inMilliseconds;
+        final delta = uploaded - previous.uploaded;
+        if (elapsed > 0 && delta > 0) {
+          uploadRate = delta * 1000 / elapsed / 1024;
+        }
+      }
+      _peerUploadSamples[key] = (at: now, uploaded: uploaded);
+      scored.add((
+        peer: peer,
+        score: peerTransferScore(
+          downloadRate: peer.currentDownloadSpeed,
+          uploadRate: uploadRate,
+        ),
+        key: key,
+      ));
+    }
+
+    _peerUploadSamples.removeWhere(
+      (key, _) => key.startsWith('${job.id}:') && !liveKeys.contains(key),
+    );
+    _peerTrimPending.removeWhere(
+      (key) => key.startsWith('${job.id}:') && !liveKeys.contains(key),
+    );
+
+    final overflow = scored.length - activePeerLimit;
+    if (overflow <= 0) return;
+    scored.sort((a, b) {
+      final byActivity = a.score.compareTo(b.score);
+      if (byActivity != 0) return byActivity;
+      return a.key.compareTo(b.key);
+    });
+    for (final candidate in scored.take(overflow)) {
+      if (!_peerTrimPending.add(candidate.key)) continue;
+      // BadException tells the engine not to reconnect the intentionally
+      // released peer, otherwise the connection cap would churn forever.
+      unawaited(
+        candidate.peer
+            .dispose(BadException('peer connection limit'))
+            .catchError((_) {}),
+      );
     }
   }
 
