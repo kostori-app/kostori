@@ -1146,9 +1146,7 @@ class TorrentManager extends Notifier<TorrentState> {
                 for (final peer in peers) {
                   addPeer(peer, PeerSource.tracker);
                 }
-              } catch (error, stack) {
-                Log.info('元数据 HTTP tracker', '$tracker: $error\n$stack');
-              }
+              } catch (_) {}
               await waitForTrackerRetry(delay);
               if (finished) return;
               final nextSeconds = (delay.inSeconds * 2).clamp(
@@ -2015,7 +2013,12 @@ class TorrentManager extends Notifier<TorrentState> {
 
   Future<void> _resumeDirect(TorrentJob job, {bool isRetry = false}) async {
     await _ensureReadyForOperation();
-    if (job.status == TorrentJobStatus.completed) return;
+    // 已完成任务仍可能在应用重启后等待 fileManager 恢复。播放请求需要
+    // 继续准备引擎；只有引擎已经存在时才可以直接返回。
+    if (job.status == TorrentJobStatus.completed &&
+        _engines.containsKey(job.id)) {
+      return;
+    }
     _pausedByUser.remove(job.id);
     // 库的 start() 非幂等（server socket 已被监听会抛 "Stream was already
     // listened to"），并发 resume 也会重复 start，这里串行化并容错。
@@ -2407,7 +2410,12 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 开始/复用本地串流服务，返回某文件的播放 URL。
   Future<String> streamUrl(TorrentJob job, int fileIndex) async {
     _ensureFileSelected(job, fileIndex);
-    await resume(job);
+    if (job.status == TorrentJobStatus.completed) {
+      await _ensureReadyForOperation();
+      await _prepareEngine(job, start: false, refetch: false);
+    } else {
+      await resume(job);
+    }
     // 等引擎的 fileManager 就绪
     for (var i = 0; i < 50 && _engines[job.id]?.fileManager == null; i++) {
       await Future.delayed(const Duration(milliseconds: 100));
@@ -2416,15 +2424,27 @@ class TorrentManager extends Notifier<TorrentState> {
     if (engine == null || engine.fileManager == null) {
       throw StateError('torrent engine not ready');
     }
+    final entries = filesOf(job);
+    if (fileIndex < 0 || fileIndex >= entries.length) {
+      throw StateError('invalid file index');
+    }
+    // 已完整落盘的文件不需要再经过本地 HTTP Range 服务。直接返回真实
+    // 磁盘路径可以绕过旧播放地址、重命名后的路径匹配和播放器的 HEAD 探测。
+    final localFile = engine.fileManager!.files[fileIndex];
+    final piecesComplete =
+        localFile.pieces.isNotEmpty &&
+        localFile.pieces.every((piece) => piece.isCompletelyWritten);
+    final local = File(localFile.filePath);
+    if ((localFile.completed || piecesComplete) &&
+        await local.exists() &&
+        await local.length() >= localFile.length) {
+      return localFile.filePath;
+    }
     var server = _servers[job.id];
     if (server == null || !server.running) {
       server = TorrentStreamServer(engine);
       await server.start();
       _servers[job.id] = server;
-    }
-    final entries = filesOf(job);
-    if (fileIndex < 0 || fileIndex >= entries.length) {
-      throw StateError('invalid file index');
     }
     return server.urlFor(entries[fileIndex]).toString();
   }
@@ -2501,25 +2521,26 @@ class TorrentManager extends Notifier<TorrentState> {
         if (engine.fileManager != null) {
           refreshProgress();
         }
-        if (!noneSelected && job.progress >= 0.999) {
+        if (!noneSelected && job.progress >= 1.0) {
           job.status = TorrentJobStatus.completed;
           job.error = null;
           job.totalDone = job.totalWanted;
-        } else if (job.status != TorrentJobStatus.completed &&
-            job.status != TorrentJobStatus.failed) {
+        } else if (job.status != TorrentJobStatus.failed) {
           job.status = TorrentJobStatus.paused;
         }
         continue;
       }
-      job.downloadRate = engine.currentDownloadSpeed.round();
-      job.uploadRate = engine.uploadSpeed.round();
+      // dtorrent_task_v2 reports both values in KiB/s; the shared formatter
+      // and persisted job fields use bytes/s.
+      job.downloadRate = (engine.currentDownloadSpeed * 1024).round();
+      job.uploadRate = (engine.uploadSpeed * 1024).round();
       job.numPeers = engine.connectedPeersNumber;
       job.numSeeds = engine.seederNumber;
       job.numDownloaders = engine.trackerDownloaders ?? 0;
       refreshProgress();
       if (engine.state == TaskState.paused) {
         job.status = TorrentJobStatus.paused;
-      } else if (!noneSelected && job.progress >= 0.999) {
+      } else if (!noneSelected && job.progress >= 1.0) {
         job.status = TorrentJobStatus.completed;
         job.error = null;
         job.totalDone = job.totalWanted;

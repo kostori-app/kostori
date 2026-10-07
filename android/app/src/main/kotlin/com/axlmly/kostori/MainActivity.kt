@@ -36,11 +36,14 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.FileOutputStream
+import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.HttpURLConnection
+import java.net.URL
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.util.concurrent.Executors
@@ -201,6 +204,51 @@ class MainActivity : AudioServiceFragmentActivity() {
                         }
                     } catch (error: Exception) {
                         res.error("TORRENT_RELAY", error.message, null)
+                    }
+                }
+                "announceTorrentHttpTracker" -> {
+                    val rawUrl = call.argument<String>("url")
+                    if (rawUrl.isNullOrBlank()) {
+                        res.error("TORRENT_TRACKER", "url is empty", null)
+                    } else {
+                        torrentRelayWorkers.execute {
+                            try {
+                                val url = URL(rawUrl)
+                                if (url.protocol != "http" && url.protocol != "https") {
+                                    throw IllegalArgumentException("unsupported tracker protocol")
+                                }
+                                val physical = directTorrentNetwork()
+                                    ?: throw java.io.IOException("no physical network available")
+                                val connection = physical.openConnection(url) as HttpURLConnection
+                                connection.connectTimeout = 12_000
+                                connection.readTimeout = 12_000
+                                connection.instanceFollowRedirects = false
+                                connection.setRequestProperty("User-Agent", "Kostori/1.0")
+                                connection.requestMethod = "GET"
+                                val status = connection.responseCode
+                                if (status != HttpURLConnection.HTTP_OK) {
+                                    throw java.io.IOException("HTTP $status")
+                                }
+                                val output = ByteArrayOutputStream()
+                                connection.inputStream.use { input ->
+                                    val buffer = ByteArray(8192)
+                                    while (true) {
+                                        val count = input.read(buffer)
+                                        if (count < 0) break
+                                        output.write(buffer, 0, count)
+                                        if (output.size() > 1024 * 1024) {
+                                            throw java.io.IOException("tracker response too large")
+                                        }
+                                    }
+                                }
+                                connection.disconnect()
+                                runOnUiThread { res.success(output.toByteArray()) }
+                            } catch (error: Exception) {
+                                runOnUiThread {
+                                    res.error("TORRENT_TRACKER", error.message, null)
+                                }
+                            }
+                        }
                     }
                 }
                 "startTorrentDirectUdpRelay" -> {

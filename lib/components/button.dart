@@ -624,37 +624,43 @@ class SettingsActionButton extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: CapsuleButton(
+      child: SizedBox(
         width: double.infinity,
-        alignment: MainAxisAlignment.start,
-        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-        enabled: onTap != null,
-        isLoading: isLoading,
-        onTap: onTap ?? () {},
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Icon(icon),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                  ),
-                ],
+        child: CapsuleButton(
+          width: double.infinity,
+          alignment: MainAxisAlignment.start,
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+          enabled: onTap != null,
+          isLoading: isLoading,
+          onTap: onTap ?? () {},
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Icon(icon),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            if (trailing != null) ...[const SizedBox(width: 10), trailing!],
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, size: 20),
-          ],
+              if (trailing != null) ...[const SizedBox(width: 10), trailing!],
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right, size: 20),
+            ],
+          ),
         ),
       ),
     );

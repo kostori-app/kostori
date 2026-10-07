@@ -13,6 +13,7 @@ class TorrentFileList extends StatefulWidget {
     super.key,
     required this.files,
     required this.wanted,
+    required this.priorities,
     required this.emptyMessage,
     required this.onPlay,
     required this.onRename,
@@ -21,6 +22,7 @@ class TorrentFileList extends StatefulWidget {
 
   final List<TorrentFileEntry> files;
   final Set<int> wanted;
+  final Map<int, int> priorities;
   final String emptyMessage;
   final void Function(int index) onPlay;
   final Future<Object?> Function(int index, String name) onRename;
@@ -183,6 +185,10 @@ class _TorrentFileListState extends State<TorrentFileList>
         : progress >= 1
         ? t.torrentFileDone
         : t.torrentFileDownloading;
+    final priority = node.file == null
+        ? null
+        : _priorityLabel(node.file!.index);
+    final statusText = priority == null ? status : '$priority · $status';
     return Padding(
       padding: EdgeInsets.only(left: (depth * 14.0).clamp(0, 42), bottom: 8),
       child: Material(
@@ -253,10 +259,12 @@ class _TorrentFileListState extends State<TorrentFileList>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '$status · ${formatBytesShort(node.downloaded)} / ${formatBytesShort(node.size)} · ${(progress * 100).toStringAsFixed(1)}%',
+                        '$statusText · ${formatBytesShort(node.downloaded)} / ${formatBytesShort(node.size)} · ${(progress * 100).toStringAsFixed(1)}%',
                         style: TextStyle(
                           fontSize: 11,
-                          color: cs.onSurfaceVariant,
+                          color: priority == null
+                              ? cs.onSurfaceVariant
+                              : cs.primary,
                         ),
                       ),
                     ],
@@ -268,6 +276,18 @@ class _TorrentFileListState extends State<TorrentFileList>
         ),
       ),
     );
+  }
+
+  String? _priorityLabel(int index) {
+    final raw = widget.priorities[index];
+    if (raw == null) return null;
+    final priority = FilePriority.values[raw.clamp(0, 3)];
+    return switch (priority) {
+      FilePriority.skip => t.torrentPrioritySkip,
+      FilePriority.low => t.torrentPriorityNormal,
+      FilePriority.normal => t.torrentPriorityHigh,
+      FilePriority.high => t.torrentPriorityHighest,
+    };
   }
 
   Widget _toolbar(List<int> order) {

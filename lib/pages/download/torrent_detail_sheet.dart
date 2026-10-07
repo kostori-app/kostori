@@ -110,6 +110,7 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
                 TorrentFileList(
                   files: files,
                   wanted: wanted,
+                  priorities: _job.filePriorities,
                   emptyMessage: _job.isFetchingMeta
                       ? t.torrentFetchingMeta
                       : t.torrentFilesEmpty,
@@ -161,24 +162,22 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
     final pieces = model?.pieces?.length ?? 0;
     final cs = Theme.of(context).colorScheme;
     final isCompleted =
-        _job.status == TorrentJobStatus.completed ||
-        (!_job.isFetchingMeta &&
-            _job.totalWanted > 0 &&
-            _job.progress >= 0.999);
+        !_job.isFetchingMeta && _job.totalWanted > 0 && _job.progress >= 1.0;
     final displayedDone = isCompleted ? _job.totalWanted : _job.totalDone;
+    final displayedProgress = isCompleted ? 1.0 : _job.progress;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         Text(_job.name, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
         Text(
-          '${formatBytesShort(_job.totalDone)} / ${formatBytesShort(_job.totalWanted)} · '
-          '${(_job.progress * 100).toStringAsFixed(1)}%',
+          '${formatBytesShort(displayedDone)} / ${formatBytesShort(_job.totalWanted)} · '
+          '${(displayedProgress * 100).toStringAsFixed(1)}%',
           style: TextStyle(color: cs.onSurfaceVariant),
         ),
         const SizedBox(height: 10),
         LinearProgressIndicator(
-          value: _job.isFetchingMeta ? 0 : _job.progress,
+          value: _job.isFetchingMeta ? 0 : displayedProgress,
           minHeight: 4,
         ),
         const SizedBox(height: 10),

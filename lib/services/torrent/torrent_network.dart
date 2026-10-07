@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 /// HTTP tracker、Web seed 和引擎异步回调统一直连，不继承应用/环境代理。
 /// 系统 VPN 的路由策略由 VPN 应用控制，DIRECT 无法绕过它。
 abstract final class TorrentNetwork {
+  static const methodChannel = MethodChannel('kostori/method_channel');
+
   static T run<T>(T Function() body) => IOOverrides.runZoned(
     () => HttpOverrides.runWithHttpOverrides(body, _DirectHttpOverrides()),
     socketConnect: (host, port, {sourceAddress, sourcePort = 0, timeout}) =>
@@ -16,12 +18,25 @@ abstract final class TorrentNetwork {
 
   static HttpClient createHttpClient() => run(HttpClient.new);
 
+  /// Android VPNs intercept Dart sockets even when HttpClient requests DIRECT.
+  /// The platform side opens this request on the selected physical Network.
+  static Future<Uint8List?> announceHttp(Uri uri) async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final bytes = await methodChannel.invokeMethod<Uint8List>(
+        'announceTorrentHttpTracker',
+        {'url': uri.toString()},
+      );
+      return bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<bool> isVpnActive() async {
     if (!Platform.isAndroid) return false;
     try {
-      return await const MethodChannel('kostori/method_channel')
-              .invokeMethod<bool>('isVpnActive') ??
-          false;
+      return await methodChannel.invokeMethod<bool>('isVpnActive') ?? false;
     } catch (_) {
       return false;
     }

@@ -260,7 +260,8 @@ class TorrentStreamServer {
             file.pieces.isNotEmpty &&
             file.pieces.every((piece) => piece.isCompletelyWritten);
         if ((file.downloadedBytes >= total || piecesComplete) &&
-            await local.exists()) {
+            await local.exists() &&
+            await local.length() >= total) {
           stream = local.openRead(start, end + 1);
         }
         stream ??= file.createStream(start, end + 1);

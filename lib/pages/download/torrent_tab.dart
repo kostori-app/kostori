@@ -174,6 +174,7 @@ String _statusLabel(TorrentJobStatus s) {
 
 /// 下载进度文本：已下载 / 总大小 + 百分比。
 String _progressText(TorrentJob job) {
+  if (job.isFinished) return '100.0%';
   final total = job.totalWanted > 0 ? job.totalWanted : job.totalDone;
   if (total <= 0) return '${(job.progress * 100).toStringAsFixed(1)}%';
   final done = (job.progress * total).round().clamp(0, total);
@@ -420,6 +421,8 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                       child: Icon(
                         job.isFinished
                             ? Icons.check_circle_outline
+                            : job.isFetchingMeta
+                            ? Icons.downloading_outlined
                             : Icons.stream,
                         color: cs.onSecondaryContainer,
                       ),

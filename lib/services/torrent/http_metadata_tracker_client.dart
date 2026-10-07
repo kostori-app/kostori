@@ -28,9 +28,6 @@ class HttpMetadataTrackerClient {
         peerId.codeUnits.any((byte) => byte > 255)) {
       throw ArgumentError('info_hash and peer_id must both be 20 bytes');
     }
-    final client = TorrentNetwork.createHttpClient()
-      ..connectionTimeout = timeout;
-    _clients.add(client);
     try {
       // 原始 20 字节分别转义，不能先转成 UTF-8 或再次编码百分号。
       String encodeBytes(Iterable<int> bytes) => bytes
@@ -50,17 +47,38 @@ class HttpMetadataTrackerClient {
           'event=started',
         ].join('&'),
       );
-      // 覆盖 DNS、连接、响应头和整个响应体；只给响应头设超时会无限等正文。
-      final peers = await _readResponse(client, uri).timeout(timeout);
-      if (_closed) return const [];
-      onLog?.call('${tracker.host}: peers=${peers.length}');
+      // Android 的 VPN 会接管 Dart 的 DIRECT socket；让原生层把请求
+      // 绑定到物理网络。其它平台继续使用不继承系统代理的 HttpClient。
+      final nativeResponse = await TorrentNetwork.announceHttp(uri)
+          .timeout(timeout);
+      final peers = nativeResponse != null
+          ? _decodeResponse(nativeResponse)
+          : Platform.isAndroid && await TorrentNetwork.isVpnActive()
+          ? const <CompactAddress>[]
+          : await _announceDart(uri);
+      if (_closed) {
+        return const [];
+      }
+      if (peers.isNotEmpty) {
+        onLog?.call('${tracker.host}: peers=${peers.length}');
+      }
       return peers;
-    } catch (error) {
-      if (!_closed) onLog?.call('${tracker.host}: $error');
+    } catch (_) {
+      // Tracker 拒绝、连接重置和超时都是常见的单点失败，不逐条刷日志。
       return const [];
+    }
+  }
+
+  Future<List<CompactAddress>> _announceDart(Uri uri) async {
+    final dartClient = TorrentNetwork.createHttpClient()
+      ..connectionTimeout = timeout;
+    _clients.add(dartClient);
+    try {
+      // 覆盖 DNS、连接、响应头和整个响应体；只给响应头设超时会无限等正文。
+      return await _readResponse(dartClient, uri).timeout(timeout);
     } finally {
-      _clients.remove(client);
-      client.close(force: true);
+      _clients.remove(dartClient);
+      dartClient.close(force: true);
     }
   }
 
@@ -78,7 +96,11 @@ class HttpMetadataTrackerClient {
         throw const FormatException('tracker response too large');
       }
     }
-    final value = _decodeTrackerBencode(_BencodeCursor(builder.takeBytes()));
+    return _decodeResponse(builder.takeBytes());
+  }
+
+  List<CompactAddress> _decodeResponse(Uint8List bytes) {
+    final value = _decodeTrackerBencode(_BencodeCursor(bytes));
     if (value is! Map) throw const FormatException('invalid tracker response');
     final failure = value['failure reason'];
     if (failure != null) {
