@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dtorrent_task_v2/dtorrent_task_v2.dart' show TaskState;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
@@ -239,18 +240,28 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
 
   void _pauseAll() {
     for (final j in _m.jobs) {
+      final engineRunning = _m.engineOf(j)?.state == TaskState.running;
       if (j.status == TorrentJobStatus.downloading ||
-          j.status == TorrentJobStatus.metadata) {
+          j.status == TorrentJobStatus.metadata ||
+          (j.status == TorrentJobStatus.completed && engineRunning)) {
         _m.pause(j);
       }
     }
+  }
+
+  bool _isRunning(TorrentJob job) {
+    if (job.isFetchingMeta || job.status == TorrentJobStatus.downloading) {
+      return true;
+    }
+    return job.status == TorrentJobStatus.completed &&
+        _m.engineOf(job)?.state == TaskState.running;
   }
 
   Future<void> _toggleJob(TorrentJob job) async {
     if (!_startingJobs.add(job.id)) return;
     setState(() {});
     try {
-      if (job.status == TorrentJobStatus.downloading || job.isFetchingMeta) {
+      if (_isRunning(job)) {
         _m.pause(job);
       } else {
         await _m.resume(job, isRetry: job.status == TorrentJobStatus.failed);
@@ -392,9 +403,7 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
 
   Widget _jobCard(TorrentJob job) {
     final cs = Theme.of(context).colorScheme;
-    final canResume =
-        job.status == TorrentJobStatus.paused ||
-        job.status == TorrentJobStatus.failed;
+    final running = _isRunning(job);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       child: Material(
@@ -489,13 +498,12 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                 Row(
                   children: [
                     const Spacer(),
-                    if (!job.isFinished)
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: Icon(canResume ? Icons.play_arrow : Icons.pause),
-                        tooltip: canResume ? t.torrentResume : t.torrentPause,
-                        onPressed: () => _toggleJob(job),
-                      ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(running ? Icons.pause : Icons.play_arrow),
+                      tooltip: running ? t.torrentPause : t.torrentResume,
+                      onPressed: () => _toggleJob(job),
+                    ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.delete_outline),

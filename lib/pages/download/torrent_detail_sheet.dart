@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:dtorrent_task_v2/dtorrent_task_v2.dart' show TaskState;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,16 +70,8 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
         mainAxisSize: MainAxisSize.min,
         children: [
           Button.icon(
-            icon: Icon(
-              _job.status == TorrentJobStatus.downloading || _job.isFetchingMeta
-                  ? Icons.pause
-                  : Icons.play_arrow,
-            ),
-            tooltip:
-                _job.status == TorrentJobStatus.downloading ||
-                    _job.isFetchingMeta
-                ? t.torrentPause
-                : t.torrentResume,
+            icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow),
+            tooltip: _isRunning ? t.torrentPause : t.torrentResume,
             isLoading: _runBusy,
             onPressed: _toggleRun,
           ),
@@ -131,10 +124,17 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
     );
   }
 
+  bool get _isRunning {
+    if (_job.isFetchingMeta || _job.status == TorrentJobStatus.downloading) {
+      return true;
+    }
+    return _job.status == TorrentJobStatus.completed &&
+        _manager.engineOf(_job)?.state == TaskState.running;
+  }
+
   Future<void> _toggleRun() async {
     if (_runBusy) return;
-    final running =
-        _job.status == TorrentJobStatus.downloading || _job.isFetchingMeta;
+    final running = _isRunning;
     setState(() => _runBusy = true);
     try {
       if (running) {
