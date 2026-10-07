@@ -30,6 +30,8 @@ const String kTorrentTrackerUrl = 'torrentTrackerUrl';
 const String kTorrentDownloadLimit = 'torrentDownloadLimit';
 const String kTorrentUploadLimit = 'torrentUploadLimit';
 const String kTorrentStopSeed = 'torrentStopSeed';
+const String kTorrentSeedRatioLimit = 'torrentSeedRatioLimit';
+const String kTorrentSeedTimeLimit = 'torrentSeedTimeLimit';
 const String kTorrentCustomNodes = 'torrentCustomNodes';
 const String kTorrentDownloadDir = 'torrentDownloadDir';
 
@@ -321,6 +323,7 @@ class TorrentManager extends Notifier<TorrentState> {
   final Map<String, TorrentTask> _engines = {};
   final Map<String, TorrentModel> _models = {};
   final Map<String, TorrentStreamServer> _servers = {};
+  final Map<String, DateTime> _uploadSamples = {};
   final Set<String> _started = {};
   final Set<String> _starting = {};
 
@@ -535,9 +538,94 @@ class TorrentManager extends Notifier<TorrentState> {
       (appdata.implicitData[kTorrentStopSeed] as bool?) ?? false;
 
   set stopSeedAfterComplete(bool v) {
+    if (stopSeedAfterComplete == v) return;
     appdata.implicitData[kTorrentStopSeed] = v;
     appdata.writeImplicitData();
+    if (v) _stopCompletedSeeding();
+    _syncKeepAlive(force: true);
+    _persist();
     _emit();
+  }
+
+  /// 分享率上限（0 表示不限）。
+  double get seedRatioLimit =>
+      ((appdata.implicitData[kTorrentSeedRatioLimit] as num?)?.toDouble() ?? 0)
+          .clamp(0, 1000)
+          .toDouble();
+
+  set seedRatioLimit(double value) {
+    final next = value.clamp(0, 1000).toDouble();
+    appdata.implicitData[kTorrentSeedRatioLimit] = next;
+    appdata.writeImplicitData();
+    _applySeedLimitsToAll();
+    _emit();
+  }
+
+  /// 做种时长上限，单位分钟（0 表示不限）。
+  int get seedTimeLimitMinutes =>
+      ((appdata.implicitData[kTorrentSeedTimeLimit] as num?)?.toInt() ?? 0)
+          .clamp(0, 365 * 24 * 60);
+
+  set seedTimeLimitMinutes(int value) {
+    final next = value.clamp(0, 365 * 24 * 60);
+    appdata.implicitData[kTorrentSeedTimeLimit] = next;
+    appdata.writeImplicitData();
+    _applySeedLimitsToAll();
+    _emit();
+  }
+
+  bool _seedLimitReached(TorrentJob job) {
+    if (!job.isFinished && job.progress < 1.0) return false;
+    final ratioLimit = seedRatioLimit;
+    if (ratioLimit > 0 && job.totalWanted > 0) {
+      if (job.uploadedBytes / job.totalWanted >= ratioLimit) return true;
+    }
+    final timeLimit = seedTimeLimitMinutes;
+    if (timeLimit > 0 && job.seedingStartedAt != null) {
+      final elapsed =
+          DateTime.now().millisecondsSinceEpoch - job.seedingStartedAt!;
+      if (elapsed >= timeLimit * Duration.millisecondsPerMinute) return true;
+    }
+    return false;
+  }
+
+  void _applySeedLimitsToAll() {
+    var changed = false;
+    for (final job in _jobs) {
+      final engine = _engines[job.id];
+      if (engine == null || engine.state != TaskState.running) continue;
+      if (!_seedLimitReached(job)) continue;
+      try {
+        engine.pause();
+        job.downloadRate = 0;
+        job.uploadRate = 0;
+        job.status = TorrentJobStatus.paused;
+        changed = true;
+      } catch (_) {}
+    }
+    if (changed) {
+      _syncKeepAlive(force: true);
+      _persist();
+    }
+  }
+
+  void _stopCompletedSeeding() {
+    var changed = false;
+    for (final job in _jobs) {
+      final engine = _engines[job.id];
+      if (engine == null || engine.state != TaskState.running) continue;
+      if (job.status != TorrentJobStatus.completed && job.progress < 1.0) {
+        continue;
+      }
+      try {
+        engine.pause();
+        job.downloadRate = 0;
+        job.uploadRate = 0;
+        job.status = TorrentJobStatus.paused;
+        changed = true;
+      } catch (_) {}
+    }
+    if (changed) _syncKeepAlive(force: true);
   }
 
   /// 自定义 DHT 引导节点。`host:port` 会被补成 `udp://host:port`，
@@ -673,6 +761,7 @@ class TorrentManager extends Notifier<TorrentState> {
       unawaited(server.stop());
     }
     _servers.clear();
+    _uploadSamples.clear();
     for (final engine in _engines.values) {
       try {
         unawaited(engine.dispose());
@@ -2013,6 +2102,23 @@ class TorrentManager extends Notifier<TorrentState> {
 
   Future<void> _resumeDirect(TorrentJob job, {bool isRetry = false}) async {
     await _ensureReadyForOperation();
+    if (stopSeedAfterComplete &&
+        (job.status == TorrentJobStatus.completed || job.progress >= 1.0)) {
+      job.status = TorrentJobStatus.paused;
+      job.downloadRate = 0;
+      job.uploadRate = 0;
+      _persist();
+      _emit();
+      return;
+    }
+    if (_seedLimitReached(job)) {
+      job.status = TorrentJobStatus.paused;
+      job.downloadRate = 0;
+      job.uploadRate = 0;
+      _persist();
+      _emit();
+      return;
+    }
     // 已完成任务仍可能在应用重启后等待 fileManager 恢复。播放请求需要
     // 继续准备引擎；只有引擎已经存在时才可以直接返回。
     if (job.status == TorrentJobStatus.completed &&
@@ -2393,6 +2499,21 @@ class TorrentManager extends Notifier<TorrentState> {
     _emit();
   }
 
+  /// 修改任务显示名称，不改变种子内部路径或已下载文件。
+  bool renameJob(TorrentJob job, String name) {
+    final next = name.trim();
+    if (next.isEmpty ||
+        next.length > 200 ||
+        next.contains(RegExp(r'[\x00-\x1f]'))) {
+      return false;
+    }
+    if (job.name == next) return true;
+    job.name = next;
+    _persist();
+    _emit();
+    return true;
+  }
+
   TorrentTask? engineOf(TorrentJob job) => _engines[job.id];
   TorrentModel? modelOf(TorrentJob job) => _models[job.id];
 
@@ -2530,6 +2651,16 @@ class TorrentManager extends Notifier<TorrentState> {
         }
         continue;
       }
+      final now = DateTime.now();
+      final previousUploadSample = _uploadSamples[job.id];
+      if (previousUploadSample != null) {
+        final elapsed = now.difference(previousUploadSample).inMilliseconds;
+        if (elapsed > 0 && elapsed <= 10000) {
+          job.uploadedBytes += (engine.uploadSpeed * 1024 * elapsed / 1000)
+              .round();
+        }
+      }
+      _uploadSamples[job.id] = now;
       // dtorrent_task_v2 reports both values in KiB/s; the shared formatter
       // and persisted job fields use bytes/s.
       job.downloadRate = (engine.currentDownloadSpeed * 1024).round();
@@ -2541,12 +2672,14 @@ class TorrentManager extends Notifier<TorrentState> {
       if (engine.state == TaskState.paused) {
         job.status = TorrentJobStatus.paused;
       } else if (!noneSelected && job.progress >= 1.0) {
+        job.seedingStartedAt ??= now.millisecondsSinceEpoch;
         job.status = TorrentJobStatus.completed;
         job.error = null;
         job.totalDone = job.totalWanted;
         // 完成后的做种/停止策略
         if (job.stopAfter == TorrentStopPolicy.afterDownload ||
-            stopSeedAfterComplete) {
+            stopSeedAfterComplete ||
+            _seedLimitReached(job)) {
           try {
             engine.pause();
           } catch (_) {}

@@ -99,6 +99,12 @@ class TorrentJob {
   /// 需要下载的总字节（选中文件的总量）
   int totalWanted;
 
+  /// 累计上传字节，用于分享率做种限制。
+  int uploadedBytes;
+
+  /// 开始做种的时间戳（毫秒）。
+  int? seedingStartedAt;
+
   bool hasMetadata;
 
   final int createdAt;
@@ -139,6 +145,8 @@ class TorrentJob {
     this.numDownloaders = 0,
     this.totalDone = 0,
     this.totalWanted = 0,
+    this.uploadedBytes = 0,
+    this.seedingStartedAt,
     this.hasMetadata = false,
     this.error,
     this.selectedFiles = const [],
@@ -167,6 +175,8 @@ class TorrentJob {
     'hasMetadata': hasMetadata,
     'totalDone': totalDone,
     'totalWanted': totalWanted,
+    'uploadedBytes': uploadedBytes,
+    'seedingStartedAt': seedingStartedAt,
     'createdAt': createdAt,
     'error': error,
     'torrentPath': torrentPath,
@@ -211,6 +221,8 @@ class TorrentJob {
       hasMetadata: (j['hasMetadata'] as bool?) ?? false,
       totalDone: (j['totalDone'] as num?)?.toInt() ?? 0,
       totalWanted: (j['totalWanted'] as num?)?.toInt() ?? 0,
+      uploadedBytes: (j['uploadedBytes'] as num?)?.toInt() ?? 0,
+      seedingStartedAt: (j['seedingStartedAt'] as num?)?.toInt(),
       error: j['error'] as String?,
       selectedFiles: selected,
       // 旧任务没有该字段：除「全不选」哨兵（-1）外都视为已初始化，尊重已有选择

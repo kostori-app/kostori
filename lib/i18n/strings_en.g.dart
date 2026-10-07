@@ -9201,6 +9201,33 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Stop seeding when finished'
 	String get torrentStopSeed => 'Stop seeding when finished';
 
+	/// en: 'Seeding ratio limit'
+	String get torrentSeedRatioLimit => 'Seeding ratio limit';
+
+	/// en: 'For example, 1.0 stops after uploading one torrent size; 0 means unlimited'
+	String get torrentSeedRatioLimitHint => 'For example, 1.0 stops after uploading one torrent size; 0 means unlimited';
+
+	/// en: 'Seeding time limit'
+	String get torrentSeedTimeLimit => 'Seeding time limit';
+
+	/// en: 'In minutes; 0 means unlimited'
+	String get torrentSeedTimeLimitHint => 'In minutes; 0 means unlimited';
+
+	/// en: 'min'
+	String get torrentMinutes => 'min';
+
+	/// en: 'Torrent task name'
+	String get torrentTaskName => 'Torrent task name';
+
+	/// en: 'Changes the task display name only; file paths are unchanged'
+	String get torrentTaskNameHint => 'Changes the task display name only; file paths are unchanged';
+
+	/// en: 'Name cannot be empty'
+	String get torrentTaskNameEmpty => 'Name cannot be empty';
+
+	/// en: 'Name contains unsupported characters'
+	String get torrentTaskNameInvalid => 'Name contains unsupported characters';
+
 	/// en: 'Select files'
 	String get torrentSelectFiles => 'Select files';
 
@@ -12860,6 +12887,15 @@ extension on Translations {
 			'torrentUpnp' => 'UPnP/NAT-PMP',
 			'torrentEncrypt' => 'Force encryption',
 			'torrentStopSeed' => 'Stop seeding when finished',
+			'torrentSeedRatioLimit' => 'Seeding ratio limit',
+			'torrentSeedRatioLimitHint' => 'For example, 1.0 stops after uploading one torrent size; 0 means unlimited',
+			'torrentSeedTimeLimit' => 'Seeding time limit',
+			'torrentSeedTimeLimitHint' => 'In minutes; 0 means unlimited',
+			'torrentMinutes' => 'min',
+			'torrentTaskName' => 'Torrent task name',
+			'torrentTaskNameHint' => 'Changes the task display name only; file paths are unchanged',
+			'torrentTaskNameEmpty' => 'Name cannot be empty',
+			'torrentTaskNameInvalid' => 'Name contains unsupported characters',
 			'torrentSelectFiles' => 'Select files',
 			'torrentApplySelection' => 'Apply selection',
 			'torrentDelete' => 'Delete',

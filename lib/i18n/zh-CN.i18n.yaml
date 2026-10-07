@@ -3131,6 +3131,15 @@ torrentLsd: 局域网发现(LSD)
 torrentUpnp: UPnP/NAT-PMP
 torrentEncrypt: 强制加密连接
 torrentStopSeed: 完成后停止做种
+torrentSeedRatioLimit: 做种分享率上限
+torrentSeedRatioLimitHint: 例如 1.0 表示上传达到一个种子大小后停止，0 表示不限
+torrentSeedTimeLimit: 做种时长上限
+torrentSeedTimeLimitHint: 单位：分钟，0 表示不限
+torrentMinutes: 分钟
+torrentTaskName: 种子任务名称
+torrentTaskNameHint: 仅修改任务显示名称，不会修改文件路径
+torrentTaskNameEmpty: 名称不能为空
+torrentTaskNameInvalid: 名称包含不可用字符
 torrentSelectFiles: 选择文件
 torrentApplySelection: 应用选择
 torrentDelete: 删除

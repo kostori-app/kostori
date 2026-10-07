@@ -241,6 +241,22 @@ class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
           ),
         ),
         SettingsActionButton(
+          icon: Icons.percent_outlined,
+          title: t.torrentSeedRatioLimit,
+          subtitle: _m.seedRatioLimit <= 0
+              ? t.torrentUnlimited
+              : _m.seedRatioLimit.toStringAsFixed(2),
+          onTap: () => _editSeedRatio(context),
+        ),
+        SettingsActionButton(
+          icon: Icons.timer_outlined,
+          title: t.torrentSeedTimeLimit,
+          subtitle: _m.seedTimeLimitMinutes <= 0
+              ? t.torrentUnlimited
+              : '${_m.seedTimeLimitMinutes} ${t.torrentMinutes}',
+          onTap: () => _editSeedTime(context),
+        ),
+        SettingsActionButton(
           icon: Icons.dns_outlined,
           title: t.torrentTrackers,
           subtitle: '${_m.trackers.length}',
@@ -289,6 +305,76 @@ class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
     } finally {
       if (mounted) setState(() => _changingPath = false);
     }
+  }
+
+  Future<void> _editSeedRatio(BuildContext context) async {
+    final ctrl = TextEditingController(
+      text: _m.seedRatioLimit <= 0 ? '' : _m.seedRatioLimit.toString(),
+    );
+    final value = await showDialog<double>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.torrentSeedRatioLimit,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: t.torrentSeedRatioLimit,
+            hintText: t.torrentSeedRatioLimitHint,
+          ),
+        ),
+        actions: [
+          Button.text(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(t.cancel),
+          ),
+          Button.filled(
+            onPressed: () => Navigator.pop(ctx, double.tryParse(ctrl.text)),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (value == null || value.isNaN || value.isNegative) return;
+    setState(() => _m.seedRatioLimit = value);
+  }
+
+  Future<void> _editSeedTime(BuildContext context) async {
+    final ctrl = TextEditingController(
+      text: _m.seedTimeLimitMinutes <= 0
+          ? ''
+          : _m.seedTimeLimitMinutes.toString(),
+    );
+    final value = await showDialog<int>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.torrentSeedTimeLimit,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: t.torrentSeedTimeLimit,
+            hintText: t.torrentSeedTimeLimitHint,
+          ),
+        ),
+        actions: [
+          Button.text(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(t.cancel),
+          ),
+          Button.filled(
+            onPressed: () => Navigator.pop(ctx, int.tryParse(ctrl.text)),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (value == null || value < 0) return;
+    setState(() => _m.seedTimeLimitMinutes = value);
   }
 
   Widget _capsuleRow(String label, int selected, ValueChanged<int> onSelected) {

@@ -579,5 +579,16 @@ void main() {
       final job = TorrentJob.fromJson(makeJob().toJson());
       expect(job.numDownloaders, 0);
     });
+
+    test('做种限制字段和任务名称会持久化', () {
+      final job = makeJob()
+        ..name = '自定义任务名'
+        ..uploadedBytes = 123456
+        ..seedingStartedAt = 987654321;
+      final restored = TorrentJob.fromJson(job.toJson());
+      expect(restored.name, '自定义任务名');
+      expect(restored.uploadedBytes, 123456);
+      expect(restored.seedingStartedAt, 987654321);
+    });
   });
 }
