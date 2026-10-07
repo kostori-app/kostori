@@ -9234,6 +9234,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Task and files'
 	String get torrentDeleteWithFiles => 'Task and files';
 
+	/// en: 'Delete downloaded files'
+	String get torrentDeleteFiles => 'Delete downloaded files';
+
+	/// en: 'Delete the selected downloaded files? They will be marked as not downloaded.'
+	String get torrentDeleteFilesConfirm => 'Delete the selected downloaded files? They will be marked as not downloaded.';
+
 	/// en: 'No torrent tasks'
 	String get torrentEmpty => 'No torrent tasks';
 
@@ -12898,6 +12904,8 @@ extension on Translations {
 			'torrentDeleteConfirm' => 'Also delete the downloaded files?',
 			'torrentDeleteTaskOnly' => 'Task only',
 			'torrentDeleteWithFiles' => 'Task and files',
+			'torrentDeleteFiles' => 'Delete downloaded files',
+			'torrentDeleteFilesConfirm' => 'Delete the selected downloaded files? They will be marked as not downloaded.',
 			'torrentEmpty' => 'No torrent tasks',
 			'torrentTab' => 'Torrents',
 			'torrentUnlimited' => 'Unlimited',

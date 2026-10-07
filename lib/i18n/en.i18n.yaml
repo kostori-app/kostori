@@ -3143,6 +3143,8 @@ torrentDelete: Delete
 torrentDeleteConfirm: Also delete the downloaded files?
 torrentDeleteTaskOnly: Task only
 torrentDeleteWithFiles: Task and files
+torrentDeleteFiles: Delete downloaded files
+torrentDeleteFilesConfirm: Delete the selected downloaded files? They will be marked as not downloaded.
 torrentEmpty: No torrent tasks
 torrentTab: Torrents
 torrentUnlimited: Unlimited

@@ -352,6 +352,9 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 记录用户主动暂停的任务，阻止后台恢复流程在同一进程内重新启动。
   final Set<String> _pausedByUser = {};
+
+  /// 已完成任务切换到只上传模式后，避免每次轮询重复写入优先级。
+  final Set<String> _downloadBlockedAfterCompletion = {};
   final Set<String> _refetching = {};
   final Set<String> _wantStart = {};
 
@@ -778,6 +781,7 @@ class TorrentManager extends Notifier<TorrentState> {
     _wantStart.clear();
     _starting.clear();
     _pausedByUser.clear();
+    _downloadBlockedAfterCompletion.clear();
     _syncTimer?.cancel();
     _syncTimer = null;
     for (final server in _servers.values) {
@@ -1427,6 +1431,7 @@ class TorrentManager extends Notifier<TorrentState> {
       // 解析成功：清空重试预算
       _refetchAttempts.remove(job.id);
       _models[job.id] = model;
+      final metadataWasKnown = job.hasMetadata;
       job.hasMetadata = true;
       // 元数据重新加载成功后，清掉此前抓取失败留下的错误；否则已经
       // 完成的任务打开概览仍会显示旧的“获取元数据超时”红字。
@@ -1442,6 +1447,11 @@ class TorrentManager extends Notifier<TorrentState> {
 
       await _migrateSingleFileLayout(job, model);
       if (!_jobs.contains(job)) return;
+
+      // 首次拿到元数据时，即使这次准备是由用户在重启后手动触发的，
+      // 也必须先暂停。只有用户再次点击开始，才清除这个待处理策略。
+      final pauseAfterMetadata =
+          job.stopAfter == TorrentStopPolicy.afterMetadata && !metadataWasKnown;
 
       // Keep the complete announce list in [_models] for the tracker tab, but
       // hand the engine a bounded list. TorrentTask starts every URL in its
@@ -1468,7 +1478,8 @@ class TorrentManager extends Notifier<TorrentState> {
       // 移动端元数据阶段已经由直连 DHT/HTTP tracker 发现节点；清空引导
       // 节点可避免点击继续下载时等待 VPN 接管的 DHT 重试。
       if (Platform.isAndroid) task.dht?.clearBootstrapNodes();
-      final shouldStart = start && !_pausedByUser.contains(job.id);
+      final shouldStart =
+          start && !_pausedByUser.contains(job.id) && !pauseAfterMetadata;
       if (shouldStart) {
         await task.start();
         if (!_jobs.contains(job)) {
@@ -1501,6 +1512,7 @@ class TorrentManager extends Notifier<TorrentState> {
       // 必须在 start/prepare 之后：此时 fileManager/pieceManager 才就绪，
       // 否则 setFilePriority / applySelectedFiles 会被静默忽略
       _applySelection(task, job, model);
+      if (pauseAfterMetadata) _persist();
     } catch (e) {
       if (createdTask != null && identical(_engines[job.id], createdTask)) {
         _engines.remove(job.id);
@@ -2127,6 +2139,12 @@ class TorrentManager extends Notifier<TorrentState> {
 
   Future<void> _resumeDirect(TorrentJob job, {bool isRetry = false}) async {
     await _ensureReadyForOperation();
+    // 任务首次取得元数据后会按策略暂停；这次 resume 是用户明确的继续
+    // 操作，因此清除待处理标记，避免下一次恢复再次拦截启动。
+    if (job.hasMetadata && job.stopAfter == TorrentStopPolicy.afterMetadata) {
+      job.stopAfter = TorrentStopPolicy.none;
+      _persist();
+    }
     if (stopSeedAfterComplete &&
         (job.status == TorrentJobStatus.completed || job.progress >= 1.0)) {
       job.status = TorrentJobStatus.paused;
@@ -2374,6 +2392,7 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   void setSelectedFiles(TorrentJob job, List<int> indices) {
+    _downloadBlockedAfterCompletion.remove(job.id);
     job.selectedFiles = List<int>.from(indices);
     job.selectionInitialized = true;
     final engine = _engines[job.id];
@@ -2382,6 +2401,68 @@ class TorrentManager extends Notifier<TorrentState> {
       _applySelection(engine, job, model);
     }
     if (model != null) job.totalWanted = _wantedBytes(job, model);
+    _persist();
+    _emit();
+  }
+
+  /// 删除选中的内容文件，并使对应 pieces 重新进入可下载状态。
+  /// 删除后文件默认标记为 skip，避免用户只是清理磁盘却立刻被重新下载。
+  Future<void> deleteFiles(TorrentJob job, Iterable<int> indices) async {
+    final task = _engines[job.id];
+    final model = _models[job.id];
+    final fileManager = task?.fileManager;
+    if (task == null || model == null || fileManager == null) {
+      throw StateError('torrent files are not ready');
+    }
+    final valid = indices
+        .where((index) => index >= 0 && index < fileManager.files.length)
+        .toSet();
+    if (valid.isEmpty) return;
+
+    await stopStreams(job);
+    final wasRunning = task.state == TaskState.running;
+    if (wasRunning) task.pause();
+    final pieces = <int>{
+      for (final index in valid)
+        for (final piece in fileManager.files[index].pieces) piece.index,
+    };
+    for (final index in valid) {
+      await fileManager.files[index].delete();
+      job.filePriorities[index] = FilePriority.skip.index;
+    }
+    for (final pieceIndex in pieces) {
+      final piece = task.pieceManager?[pieceIndex];
+      if (piece == null) continue;
+      for (var subIndex = 0; subIndex < piece.subPiecesCount; subIndex++) {
+        piece.pushSubPieceBack(subIndex);
+      }
+      await fileManager.updateBitfield(pieceIndex, false);
+    }
+
+    final all = {for (var i = 0; i < model.files.length; i++) i};
+    final selected = job.selectedFiles.isEmpty
+        ? all
+        : _isNoneSelected(job.selectedFiles)
+        ? <int>{}
+        : job.selectedFiles.toSet();
+    selected.removeAll(valid);
+    job.selectedFiles = selected.length == all.length
+        ? <int>[]
+        : selected.isEmpty
+        ? <int>[kTorrentNoFile]
+        : (selected.toList()..sort());
+    job.selectionInitialized = true;
+    job.totalWanted = _wantedBytes(job, model);
+    _downloadBlockedAfterCompletion.remove(job.id);
+    _applySelection(task, job, model);
+    if (_isNoneSelected(job.selectedFiles)) {
+      job.status = TorrentJobStatus.paused;
+      job.downloadRate = 0;
+      job.uploadRate = 0;
+    } else if (wasRunning) {
+      task.resume();
+      job.status = TorrentJobStatus.downloading;
+    }
     _persist();
     _emit();
   }
@@ -2401,6 +2482,9 @@ class TorrentManager extends Notifier<TorrentState> {
         )
         .toSet();
     if (valid.isEmpty) return;
+    if (priority != FilePriority.skip) {
+      _downloadBlockedAfterCompletion.remove(job.id);
+    }
     for (final index in valid) {
       job.filePriorities[index] = priority.index;
     }
@@ -2702,6 +2786,11 @@ class TorrentManager extends Notifier<TorrentState> {
       } else {
         job.status = TorrentJobStatus.downloading;
       }
+      if (job.progress < 1.0 || job.status != TorrentJobStatus.completed) {
+        _downloadBlockedAfterCompletion.remove(job.id);
+      } else if (engine.state == TaskState.running) {
+        _blockCompletedDownloads(job, engine, model);
+      }
       if (engine.state == TaskState.running) {
         _trimActivePeers(job, engine, now);
       }
@@ -2715,6 +2804,22 @@ class TorrentManager extends Notifier<TorrentState> {
     if (++_persistTick >= 5) {
       _persistTick = 0;
       _persist();
+    }
+  }
+
+  void _blockCompletedDownloads(
+    TorrentJob job,
+    TorrentTask engine,
+    TorrentModel? model,
+  ) {
+    if (model == null || !_downloadBlockedAfterCompletion.add(job.id)) return;
+    try {
+      engine.setFilePriorities({
+        for (var index = 0; index < model.files.length; index++)
+          index: FilePriority.skip,
+      });
+    } catch (_) {
+      _downloadBlockedAfterCompletion.remove(job.id);
     }
   }
 

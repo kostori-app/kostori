@@ -112,6 +112,7 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
                   onSetPriority: (indices, priority) {
                     _manager.setFilePriority(_job, indices, priority);
                   },
+                  onDeleteFiles: _deleteFiles,
                 ),
                 _trackers(),
                 _users(),
@@ -582,6 +583,29 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
     } catch (error) {
       Log.error('种子文件改名失败', '$error');
       return t.torrentRenameFailed;
+    }
+  }
+
+  Future<void> _deleteFiles(Set<int> indices) async {
+    if (indices.isEmpty) return;
+    final confirmed = await ContentDialog.show<bool>(
+      context: context,
+      title: t.torrentDeleteFiles,
+      content: Text(t.torrentDeleteFilesConfirm),
+      actions: [
+        Button.text(onPressed: () => context.pop(false), child: Text(t.cancel)),
+        Button.filled(
+          onPressed: () => context.pop(true),
+          child: Text(t.confirm),
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _manager.deleteFiles(_job, indices);
+    } catch (error) {
+      Log.error('种子内容删除失败', '$error');
+      if (mounted) context.showMessage(message: t.deleteFailed);
     }
   }
 

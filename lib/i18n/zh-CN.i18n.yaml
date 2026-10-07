@@ -3142,6 +3142,8 @@ torrentDelete: 删除
 torrentDeleteConfirm: 是否同时删除已下载的文件？
 torrentDeleteTaskOnly: 仅删除任务
 torrentDeleteWithFiles: 删除任务和文件
+torrentDeleteFiles: 删除已下载内容
+torrentDeleteFilesConfirm: 是否删除选中的已下载内容？删除后会标记为不下载。
 torrentEmpty: 暂无种子任务
 torrentTab: 种子
 torrentUnlimited: 不限

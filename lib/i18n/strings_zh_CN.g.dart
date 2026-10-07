@@ -3104,6 +3104,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentDeleteConfirm => '是否同时删除已下载的文件？';
 	@override String get torrentDeleteTaskOnly => '仅删除任务';
 	@override String get torrentDeleteWithFiles => '删除任务和文件';
+	@override String get torrentDeleteFiles => '删除已下载内容';
+	@override String get torrentDeleteFilesConfirm => '是否删除选中的已下载内容？删除后会标记为不下载。';
 	@override String get torrentEmpty => '暂无种子任务';
 	@override String get torrentTab => '种子';
 	@override String get torrentUnlimited => '不限';
@@ -6431,6 +6433,8 @@ extension on TranslationsZhCn {
 			'torrentDeleteConfirm' => '是否同时删除已下载的文件？',
 			'torrentDeleteTaskOnly' => '仅删除任务',
 			'torrentDeleteWithFiles' => '删除任务和文件',
+			'torrentDeleteFiles' => '删除已下载内容',
+			'torrentDeleteFilesConfirm' => '是否删除选中的已下载内容？删除后会标记为不下载。',
 			'torrentEmpty' => '暂无种子任务',
 			'torrentTab' => '种子',
 			'torrentUnlimited' => '不限',

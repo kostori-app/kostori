@@ -3103,6 +3103,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentDeleteConfirm => '是否同時刪除已下載的檔案？';
 	@override String get torrentDeleteTaskOnly => '僅刪除任務';
 	@override String get torrentDeleteWithFiles => '刪除任務和檔案';
+	@override String get torrentDeleteFiles => '刪除已下載內容';
+	@override String get torrentDeleteFilesConfirm => '是否刪除選中的已下載內容？刪除後會標記為不下載。';
 	@override String get torrentEmpty => '尚無種子任務';
 	@override String get torrentTab => '種子';
 	@override String get torrentUnlimited => '不限';
@@ -6429,6 +6431,8 @@ extension on TranslationsZhTw {
 			'torrentDeleteConfirm' => '是否同時刪除已下載的檔案？',
 			'torrentDeleteTaskOnly' => '僅刪除任務',
 			'torrentDeleteWithFiles' => '刪除任務和檔案',
+			'torrentDeleteFiles' => '刪除已下載內容',
+			'torrentDeleteFilesConfirm' => '是否刪除選中的已下載內容？刪除後會標記為不下載。',
 			'torrentEmpty' => '尚無種子任務',
 			'torrentTab' => '種子',
 			'torrentUnlimited' => '不限',
