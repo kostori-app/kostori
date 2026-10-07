@@ -240,6 +240,9 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
                     '${formatBytesShort(displayedDone)}',
         ),
         _info(t.upload, formatSpeed(_job.uploadRate)),
+        _info(t.torrentUploadedTotal, formatBytesShort(_job.uploadedBytes)),
+        _info(t.torrentSeedRatio, _seedRatio),
+        _info(t.torrentSeedDuration, _seedDuration),
         _info(t.torrentPeers, '${_job.numPeers}'),
         _info(t.torrentSeeds, '${_job.numSeeds}'),
         _info(t.torrentLeechers, '${_job.numDownloaders}'),
@@ -247,6 +250,24 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
         _info(t.torrentDht, '${_manager.dhtNodes.length}'),
       ],
     );
+  }
+
+  String get _seedRatio {
+    if (_job.seedingStartedAt == null || _job.totalWanted <= 0) return '--';
+    return (_job.uploadedBytes / _job.totalWanted).toStringAsFixed(2);
+  }
+
+  String get _seedDuration {
+    final startedAt = _job.seedingStartedAt;
+    if (startedAt == null) return '--';
+    final duration = DateTime.now().difference(
+      DateTime.fromMillisecondsSinceEpoch(startedAt),
+    );
+    String pad(int value) => value.toString().padLeft(2, '0');
+    final hours = pad(duration.inHours);
+    final minutes = pad(duration.inMinutes % 60);
+    final seconds = pad(duration.inSeconds % 60);
+    return '$hours:$minutes:$seconds';
   }
 
   Widget _heading(String title) => Padding(

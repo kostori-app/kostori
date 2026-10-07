@@ -3165,6 +3165,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentTotalSize => '总大小';
 	@override String get torrentAddedAt => '添加于';
 	@override String get torrentFileCount => '文件数';
+	@override String get torrentUploadedTotal => '累计上传';
+	@override String get torrentSeedRatio => '做种率';
+	@override String get torrentSeedDuration => '做种时长';
 	@override String get torrentSeeds => '种子';
 	@override String get torrentDownloaded => '已下载';
 	@override String get torrentTrackerUnavailable => 'Tracker 暂时不可用';
@@ -6489,6 +6492,9 @@ extension on TranslationsZhCn {
 			'torrentTotalSize' => '总大小',
 			'torrentAddedAt' => '添加于',
 			'torrentFileCount' => '文件数',
+			'torrentUploadedTotal' => '累计上传',
+			'torrentSeedRatio' => '做种率',
+			'torrentSeedDuration' => '做种时长',
 			'torrentSeeds' => '种子',
 			'torrentDownloaded' => '已下载',
 			'torrentTrackerUnavailable' => 'Tracker 暂时不可用',

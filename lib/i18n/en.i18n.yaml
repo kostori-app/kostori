@@ -3204,6 +3204,9 @@ torrentTransfer: Transfer
 torrentTotalSize: Total size
 torrentAddedAt: Added
 torrentFileCount: Files
+torrentUploadedTotal: Uploaded total
+torrentSeedRatio: Seeding ratio
+torrentSeedDuration: Seeding time
 torrentSeeds: Seeds
 torrentDownloaded: Downloaded
 torrentTrackerUnavailable: Tracker unavailable

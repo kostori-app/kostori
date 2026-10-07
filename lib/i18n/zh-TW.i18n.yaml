@@ -3205,6 +3205,9 @@ torrentTransfer: 傳輸
 torrentTotalSize: 總大小
 torrentAddedAt: 加入於
 torrentFileCount: 檔案數
+torrentUploadedTotal: 累計上傳
+torrentSeedRatio: 做種率
+torrentSeedDuration: 做種時長
 torrentSeeds: 種子
 torrentDownloaded: 已下載
 torrentTrackerUnavailable: Tracker 暫時不可用

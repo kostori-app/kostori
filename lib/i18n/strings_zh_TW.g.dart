@@ -3164,6 +3164,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentTotalSize => '總大小';
 	@override String get torrentAddedAt => '加入於';
 	@override String get torrentFileCount => '檔案數';
+	@override String get torrentUploadedTotal => '累計上傳';
+	@override String get torrentSeedRatio => '做種率';
+	@override String get torrentSeedDuration => '做種時長';
 	@override String get torrentSeeds => '種子';
 	@override String get torrentDownloaded => '已下載';
 	@override String get torrentTrackerUnavailable => 'Tracker 暫時不可用';
@@ -6487,6 +6490,9 @@ extension on TranslationsZhTw {
 			'torrentTotalSize' => '總大小',
 			'torrentAddedAt' => '加入於',
 			'torrentFileCount' => '檔案數',
+			'torrentUploadedTotal' => '累計上傳',
+			'torrentSeedRatio' => '做種率',
+			'torrentSeedDuration' => '做種時長',
 			'torrentSeeds' => '種子',
 			'torrentDownloaded' => '已下載',
 			'torrentTrackerUnavailable' => 'Tracker 暫時不可用',

@@ -3203,6 +3203,9 @@ torrentTransfer: 传输
 torrentTotalSize: 总大小
 torrentAddedAt: 添加于
 torrentFileCount: 文件数
+torrentUploadedTotal: 累计上传
+torrentSeedRatio: 做种率
+torrentSeedDuration: 做种时长
 torrentSeeds: 种子
 torrentDownloaded: 已下载
 torrentTrackerUnavailable: Tracker 暂时不可用
