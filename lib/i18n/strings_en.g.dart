@@ -9216,18 +9216,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'min'
 	String get torrentMinutes => 'min';
 
-	/// en: 'Torrent task name'
-	String get torrentTaskName => 'Torrent task name';
-
-	/// en: 'Changes the task display name only; file paths are unchanged'
-	String get torrentTaskNameHint => 'Changes the task display name only; file paths are unchanged';
-
-	/// en: 'Name cannot be empty'
-	String get torrentTaskNameEmpty => 'Name cannot be empty';
-
-	/// en: 'Name contains unsupported characters'
-	String get torrentTaskNameInvalid => 'Name contains unsupported characters';
-
 	/// en: 'Select files'
 	String get torrentSelectFiles => 'Select files';
 
@@ -9371,6 +9359,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'No connected users'
 	String get torrentUsersEmpty => 'No connected users';
+
+	/// en: 'Unknown client'
+	String get torrentPeerUnknownClient => 'Unknown client';
 
 	/// en: 'No HTTP sources'
 	String get torrentHttpSourcesEmpty => 'No HTTP sources';
@@ -12892,10 +12883,6 @@ extension on Translations {
 			'torrentSeedTimeLimit' => 'Seeding time limit',
 			'torrentSeedTimeLimitHint' => 'In minutes; 0 means unlimited',
 			'torrentMinutes' => 'min',
-			'torrentTaskName' => 'Torrent task name',
-			'torrentTaskNameHint' => 'Changes the task display name only; file paths are unchanged',
-			'torrentTaskNameEmpty' => 'Name cannot be empty',
-			'torrentTaskNameInvalid' => 'Name contains unsupported characters',
 			'torrentSelectFiles' => 'Select files',
 			'torrentApplySelection' => 'Apply selection',
 			'torrentDelete' => 'Delete',
@@ -12944,6 +12931,7 @@ extension on Translations {
 			'torrentHttpSourcesTab' => 'HTTP sources',
 			'torrentFilesEmpty' => 'No files',
 			'torrentUsersEmpty' => 'No connected users',
+			'torrentPeerUnknownClient' => 'Unknown client',
 			'torrentHttpSourcesEmpty' => 'No HTTP sources',
 			'torrentSelectedFiles' => ({required Object count}) => '${count} files selected',
 			'torrentDownloadSelected' => 'Download',

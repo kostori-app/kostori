@@ -83,11 +83,6 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
             onPressed: _toggleRun,
           ),
           Button.icon(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: t.torrentTaskName,
-            onPressed: _renameTask,
-          ),
-          Button.icon(
             icon: const Icon(Icons.delete_outline),
             tooltip: t.torrentDelete,
             isLoading: _deleteBusy,
@@ -464,9 +459,29 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: AppSelectableText(
-                      peer.address.toContactEncodingString(),
-                      style: const TextStyle(fontSize: 13),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          torrentPeerClientName(peer.remotePeerId) ??
+                              t.torrentPeerUnknownClient,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        AppSelectableText(
+                          peer.address.toContactEncodingString(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   Text(
@@ -546,44 +561,6 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
     } catch (error) {
       Log.error('种子文件改名失败', '$error');
       return t.torrentRenameFailed;
-    }
-  }
-
-  Future<void> _renameTask() async {
-    final ctrl = TextEditingController(text: _job.name);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => ContentDialog(
-        title: t.torrentTaskName,
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          maxLength: 200,
-          decoration: InputDecoration(
-            labelText: t.torrentTaskName,
-            hintText: t.torrentTaskNameHint,
-          ),
-        ),
-        actions: [
-          Button.text(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(t.cancel),
-          ),
-          Button.filled(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: Text(t.save),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
-    if (!mounted || name == null) return;
-    if (name.isEmpty) {
-      context.showMessage(message: t.torrentTaskNameEmpty);
-      return;
-    }
-    if (!_manager.renameJob(_job, name)) {
-      context.showMessage(message: t.torrentTaskNameInvalid);
     }
   }
 

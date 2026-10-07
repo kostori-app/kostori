@@ -3137,10 +3137,6 @@ torrentSeedRatioLimitHint: For example, 1.0 stops after uploading one torrent si
 torrentSeedTimeLimit: Seeding time limit
 torrentSeedTimeLimitHint: In minutes; 0 means unlimited
 torrentMinutes: min
-torrentTaskName: Torrent task name
-torrentTaskNameHint: Changes the task display name only; file paths are unchanged
-torrentTaskNameEmpty: Name cannot be empty
-torrentTaskNameInvalid: Name contains unsupported characters
 torrentSelectFiles: Select files
 torrentApplySelection: Apply selection
 torrentDelete: Delete
@@ -3189,6 +3185,7 @@ torrentUsersTab: Users
 torrentHttpSourcesTab: HTTP sources
 torrentFilesEmpty: No files
 torrentUsersEmpty: No connected users
+torrentPeerUnknownClient: Unknown client
 torrentHttpSourcesEmpty: No HTTP sources
 torrentSelectedFiles: '$count files selected'
 torrentDownloadSelected: Download

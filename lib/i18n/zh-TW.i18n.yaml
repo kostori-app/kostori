@@ -3138,10 +3138,6 @@ torrentSeedRatioLimitHint: 例如 1.0 表示上傳達到一個種子大小後停
 torrentSeedTimeLimit: 做種時長上限
 torrentSeedTimeLimitHint: 單位：分鐘，0 表示不限
 torrentMinutes: 分鐘
-torrentTaskName: 種子任務名稱
-torrentTaskNameHint: 僅修改任務顯示名稱，不會修改檔案路徑
-torrentTaskNameEmpty: 名稱不能為空
-torrentTaskNameInvalid: 名稱包含不可用字元
 torrentSelectFiles: 選擇檔案
 torrentApplySelection: 套用選擇
 torrentDelete: 刪除
@@ -3190,6 +3186,7 @@ torrentUsersTab: 使用者
 torrentHttpSourcesTab: HTTP 源
 torrentFilesEmpty: 暫無檔案
 torrentUsersEmpty: 暫無已連線使用者
+torrentPeerUnknownClient: 未知用戶端
 torrentHttpSourcesEmpty: 暫無 HTTP 源
 torrentSelectedFiles: 已選擇 ${count} 個檔案
 torrentDownloadSelected: 開始下載

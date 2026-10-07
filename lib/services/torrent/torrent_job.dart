@@ -1,6 +1,37 @@
 /// 种子任务状态
 enum TorrentJobStatus { metadata, downloading, paused, completed, failed }
 
+/// Returns the client name encoded in a standard Azureus-style peer ID.
+///
+/// The torrent engine exposes the peer ID but not the optional extended
+/// handshake client string, so this covers the stable identifiers used by
+/// common BT clients and returns null for unknown formats.
+String? torrentPeerClientName(String? peerId) {
+  final value = peerId?.trim();
+  if (value == null || value.isEmpty) return null;
+  final match = RegExp(r'^-([A-Za-z0-9]{2,4})\d{4}-').firstMatch(value);
+  if (match == null) return null;
+  return switch (match.group(1)!.toLowerCase()) {
+    'qb' => 'qBittorrent',
+    'ut' => 'uTorrent',
+    'tr' => 'Transmission',
+    'de' => 'Deluge',
+    'lt' => 'libtorrent',
+    'az' => 'Azureus/Vuze',
+    'bt' => 'BitTorrent',
+    'dt' => 'dtorrent',
+    'bc' => 'BitComet',
+    'xl' => 'Xunlei',
+    'pi' => 'PicoTorrent',
+    'ar' => 'aria2',
+    'fd' => 'Free Download Manager',
+    'sp' => 'BitSpirit',
+    'ww' => 'WebTorrent',
+    'kt' => 'KTorrent',
+    _ => null,
+  };
+}
+
 /// base32 infohash（32 位）→ 40 位小写 hex；不是合法 base32 返回 null。
 String? base32ToInfoHashHex(String s) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';

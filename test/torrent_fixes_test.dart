@@ -70,6 +70,20 @@ void main() {
     );
   });
 
+  group('torrent peer client names', () {
+    test('recognizes common Azureus-style peer IDs', () {
+      expect(torrentPeerClientName('-qB5040-123456789012'), 'qBittorrent');
+      expect(torrentPeerClientName('-TR4000-123456789012'), 'Transmission');
+      expect(torrentPeerClientName('-DE1300-123456789012'), 'Deluge');
+    });
+
+    test('returns null for unknown or malformed peer IDs', () {
+      expect(torrentPeerClientName('-XX0000-123456789012'), isNull);
+      expect(torrentPeerClientName('not-a-peer-id'), isNull);
+      expect(torrentPeerClientName(null), isNull);
+    });
+  });
+
   test('torrent file priorities survive job persistence', () {
     final job = TorrentJob(
       id: 'priority-test',
@@ -580,13 +594,11 @@ void main() {
       expect(job.numDownloaders, 0);
     });
 
-    test('做种限制字段和任务名称会持久化', () {
+    test('做种限制字段会持久化', () {
       final job = makeJob()
-        ..name = '自定义任务名'
         ..uploadedBytes = 123456
         ..seedingStartedAt = 987654321;
       final restored = TorrentJob.fromJson(job.toJson());
-      expect(restored.name, '自定义任务名');
       expect(restored.uploadedBytes, 123456);
       expect(restored.seedingStartedAt, 987654321);
     });

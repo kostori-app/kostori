@@ -3097,10 +3097,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentSeedTimeLimit => '做種時長上限';
 	@override String get torrentSeedTimeLimitHint => '單位：分鐘，0 表示不限';
 	@override String get torrentMinutes => '分鐘';
-	@override String get torrentTaskName => '種子任務名稱';
-	@override String get torrentTaskNameHint => '僅修改任務顯示名稱，不會修改檔案路徑';
-	@override String get torrentTaskNameEmpty => '名稱不能為空';
-	@override String get torrentTaskNameInvalid => '名稱包含不可用字元';
 	@override String get torrentSelectFiles => '選擇檔案';
 	@override String get torrentApplySelection => '套用選擇';
 	@override String get torrentDelete => '刪除';
@@ -3149,6 +3145,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentHttpSourcesTab => 'HTTP 源';
 	@override String get torrentFilesEmpty => '暫無檔案';
 	@override String get torrentUsersEmpty => '暫無已連線使用者';
+	@override String get torrentPeerUnknownClient => '未知用戶端';
 	@override String get torrentHttpSourcesEmpty => '暫無 HTTP 源';
 	@override String torrentSelectedFiles({required Object count}) => '已選擇 ${count} 個檔案';
 	@override String get torrentDownloadSelected => '開始下載';
@@ -6423,10 +6420,6 @@ extension on TranslationsZhTw {
 			'torrentSeedTimeLimit' => '做種時長上限',
 			'torrentSeedTimeLimitHint' => '單位：分鐘，0 表示不限',
 			'torrentMinutes' => '分鐘',
-			'torrentTaskName' => '種子任務名稱',
-			'torrentTaskNameHint' => '僅修改任務顯示名稱，不會修改檔案路徑',
-			'torrentTaskNameEmpty' => '名稱不能為空',
-			'torrentTaskNameInvalid' => '名稱包含不可用字元',
 			'torrentSelectFiles' => '選擇檔案',
 			'torrentApplySelection' => '套用選擇',
 			'torrentDelete' => '刪除',
@@ -6475,6 +6468,7 @@ extension on TranslationsZhTw {
 			'torrentHttpSourcesTab' => 'HTTP 源',
 			'torrentFilesEmpty' => '暫無檔案',
 			'torrentUsersEmpty' => '暫無已連線使用者',
+			'torrentPeerUnknownClient' => '未知用戶端',
 			'torrentHttpSourcesEmpty' => '暫無 HTTP 源',
 			'torrentSelectedFiles' => ({required Object count}) => '已選擇 ${count} 個檔案',
 			'torrentDownloadSelected' => '開始下載',

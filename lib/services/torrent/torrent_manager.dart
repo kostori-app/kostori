@@ -2499,21 +2499,6 @@ class TorrentManager extends Notifier<TorrentState> {
     _emit();
   }
 
-  /// 修改任务显示名称，不改变种子内部路径或已下载文件。
-  bool renameJob(TorrentJob job, String name) {
-    final next = name.trim();
-    if (next.isEmpty ||
-        next.length > 200 ||
-        next.contains(RegExp(r'[\x00-\x1f]'))) {
-      return false;
-    }
-    if (job.name == next) return true;
-    job.name = next;
-    _persist();
-    _emit();
-    return true;
-  }
-
   TorrentTask? engineOf(TorrentJob job) => _engines[job.id];
   TorrentModel? modelOf(TorrentJob job) => _models[job.id];
 
