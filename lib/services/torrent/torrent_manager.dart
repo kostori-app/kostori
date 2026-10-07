@@ -367,19 +367,15 @@ class TorrentManager extends Notifier<TorrentState> {
   final Map<String, Future<void>> _resumeOperations = {};
   final Map<String, Future<void>> _prepareOperations = {};
 
-  /// 元数据发现重试的初始间隔；后续指数退避并封顶 60 秒。
-  static Duration get _metadataRetryInitial =>
-      Platform.isAndroid || Platform.isIOS
-      ? const Duration(seconds: 15)
-      : const Duration(seconds: 10);
-
-  static const Duration _metadataRetryCeiling = Duration(seconds: 60);
+  /// 元数据发现失败后的固定重试间隔。
+  static const Duration _metadataRetryInterval = Duration(seconds: 60);
 
   /// 自动重试抓取元数据的次数上限，超过即判定为不可用。
   static const int _maxMetadataAttempts = 3;
 
   /// 元数据发现重试的最长间隔（秒）。
-  static int get metadataRetryCeilingSeconds => _metadataRetryCeiling.inSeconds;
+  static int get metadataRetryCeilingSeconds =>
+      _metadataRetryInterval.inSeconds;
 
   /// 兼容旧调用；现在表示单次发现重试的上限，不是整个抓取总时长。
   static int get metadataTimeoutSeconds => metadataRetryCeilingSeconds;
@@ -1250,7 +1246,6 @@ class TorrentManager extends Notifier<TorrentState> {
             .where((uri) => uri.scheme == 'http' || uri.scheme == 'https');
         for (final tracker in httpTrackers) {
           unawaited(() async {
-            var delay = _metadataRetryInitial;
             while (!finished) {
               try {
                 final options = await downloader.getOptions(
@@ -1267,13 +1262,8 @@ class TorrentManager extends Notifier<TorrentState> {
                   addPeer(peer, PeerSource.tracker);
                 }
               } catch (_) {}
-              await waitForTrackerRetry(delay);
+              await waitForTrackerRetry(_metadataRetryInterval);
               if (finished) return;
-              final nextSeconds = (delay.inSeconds * 2).clamp(
-                _metadataRetryInitial.inSeconds,
-                _metadataRetryCeiling.inSeconds,
-              );
-              delay = Duration(seconds: nextSeconds);
             }
           }());
         }
