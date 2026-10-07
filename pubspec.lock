@@ -486,8 +486,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "40c159c31dbf9a70f824239e9a780227ea9ceeec"
-      resolved-ref: "40c159c31dbf9a70f824239e9a780227ea9ceeec"
+      ref: "2bc3a7d"
+      resolved-ref: "2bc3a7d45e5e8e7f2ff92562641700a838586660"
       url: "https://github.com/axlmly/dtorrent_task_v2"
     source: git
     version: "0.5.4"
