@@ -896,6 +896,37 @@ abstract class _PlayerController with Store {
     windowFrame.removeCloseListener(onWindowClose);
   }
 
+  void _applyMobileFullscreenSystemUi({
+    required bool fullscreen,
+    required bool portrait,
+  }) {
+    unawaited(
+      (fullscreen
+              ? SystemChrome.setEnabledSystemUIMode(
+                  SystemUiMode.immersiveSticky,
+                )
+              : SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge))
+          .catchError((_) {}),
+    );
+    unawaited(
+      SystemChrome.setPreferredOrientations(
+        fullscreen
+            ? (portrait
+                  ? const [DeviceOrientation.portraitUp]
+                  : [
+                      DeviceOrientation.landscapeLeft,
+                      DeviceOrientation.landscapeRight,
+                    ])
+            : const [],
+      ).catchError((_) {}),
+    );
+    unawaited(
+      (fullscreen ? WakelockPlus.enable() : WakelockPlus.disable()).catchError(
+        (_) {},
+      ),
+    );
+  }
+
   @action
   Future<void> toggleFullScreen(
     BuildContext context, {
@@ -922,35 +953,33 @@ abstract class _PlayerController with Store {
 
     // --- 移动端逻辑 ---
     if (isFullScreen) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      _applyMobileFullscreenSystemUi(fullscreen: false, portrait: false);
       App.pop();
-      // 恢复全部方向，避免残留"仅竖屏"导致 MIUI 禁用分屏/自由窗口
-      SystemChrome.setPreferredOrientations([]);
-      isPortraitFullscreen = false;
-      WakelockPlus.disable();
     } else {
-      WakelockPlus.enable();
-      await SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.immersiveSticky,
-        overlays: SystemUiOverlay.values,
+      isFullScreen = true;
+      isPortraitFullscreen = isPortraitFullScreen;
+      _applyMobileFullscreenSystemUi(
+        fullscreen: true,
+        portrait: isPortraitFullScreen,
       );
-      if (isPortraitFullScreen) {
-        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-      } else {
-        SystemChrome.setPreferredOrientations([
-          DeviceOrientation.landscapeLeft,
-          DeviceOrientation.landscapeRight,
-        ]);
-      }
-      App.rootContext.toFadeScale(
-        () => FullscreenVideoPage(playerController: this as PlayerController),
+      unawaited(
+        App.rootContext
+            .toFullscreen(
+              () => FullscreenVideoPage(
+                playerController: this as PlayerController,
+              ),
+            )
+            .whenComplete(() {
+              if (isFullScreen) {
+                _applyMobileFullscreenSystemUi(
+                  fullscreen: false,
+                  portrait: false,
+                );
+                isFullScreen = false;
+                isPortraitFullscreen = false;
+              }
+            }),
       );
-    }
-
-    // 移动端全屏状态翻转
-    isFullScreen = !isFullScreen;
-    if (isPortraitFullScreen) {
-      isPortraitFullscreen = !isPortraitFullscreen;
     }
   }
 

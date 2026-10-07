@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.provider.OpenableColumns
 import android.util.Log
 import android.view.KeyEvent
 import androidx.activity.result.ActivityResultCallback
@@ -73,6 +74,9 @@ class MainActivity : AudioServiceFragmentActivity() {
 
     private var textShareHandler: ((String) -> Unit)? = null
 
+    private var pendingVideoIntent: String? = null
+    private var videoIntentSink: EventChannel.EventSink? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (intent?.action == Intent.ACTION_SEND) {
@@ -82,16 +86,102 @@ class MainActivity : AudioServiceFragmentActivity() {
                     handleSharedText(text)
             }
         }
+        handleVideoIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         if (intent.action == Intent.ACTION_SEND) {
             if (intent.type == "text/plain") {
                 val text = intent.getStringExtra(Intent.EXTRA_TEXT)
                 if (text != null)
                     handleSharedText(text)
             }
+        }
+        handleVideoIntent(intent)
+    }
+
+    private fun handleVideoIntent(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_VIEW) return
+        val uri = intent.data ?: return
+        val type = intent.type ?: contentResolver.getType(uri) ?: ""
+        if (!type.startsWith("video/", ignoreCase = true)) return
+        val raw = uri.toString()
+        val sink = videoIntentSink
+        if (sink == null) {
+            pendingVideoIntent = raw
+        } else {
+            materializeVideoIntent(raw, sink)
+        }
+    }
+
+    private fun materializeVideoIntent(
+        rawUri: String,
+        sink: EventChannel.EventSink,
+    ) {
+        torrentRelayWorkers.execute {
+            val path = materializeVideoUri(rawUri)
+            runOnUiThread {
+                if (videoIntentSink === sink) {
+                    sink.success(path)
+                }
+            }
+        }
+    }
+
+    private fun materializeVideoUri(rawUri: String): String? {
+        return try {
+            val uri = Uri.parse(rawUri)
+            when (uri.scheme?.lowercase()) {
+                "file" -> uri.path
+                "content" -> {
+                    val name = contentResolver.query(
+                        uri,
+                        arrayOf(OpenableColumns.DISPLAY_NAME),
+                        null,
+                        null,
+                        null,
+                    )?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            cursor.getString(0)
+                        } else {
+                            null
+                        }
+                    }
+                    val extension = name
+                        ?.substringAfterLast('.', "")
+                        ?.takeIf { it.matches(Regex("[A-Za-z0-9]{1,10}")) }
+                    val suffix = if (extension == null) ".video" else ".$extension"
+                    val dir = File(cacheDir, "external_videos")
+                    if (!dir.exists()) dir.mkdirs()
+                    val target = File(
+                        dir,
+                        "video_${System.currentTimeMillis()}$suffix",
+                    )
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        target.outputStream().use { output -> input.copyTo(output) }
+                    } ?: return null
+                    target.absolutePath
+                }
+                else -> File(rawUri).takeIf { it.exists() }?.absolutePath
+            }
+        } catch (error: Exception) {
+            Log.e("Kostori", "materialize video failed: ${error.message}")
+            null
+        }
+    }
+
+    private fun consumePendingVideo(result: MethodChannel.Result) {
+        val raw = pendingVideoIntent
+        pendingVideoIntent = null
+        if (raw == null) {
+            result.success(null)
+            return
+        }
+        torrentRelayWorkers.execute {
+            val path = materializeVideoUri(raw)
+            runOnUiThread { result.success(path) }
         }
     }
 
@@ -172,6 +262,32 @@ class MainActivity : AudioServiceFragmentActivity() {
         // 既会重复注册，也会让本文件编译期依赖 Flutter 生成到
         // src/main/java 的那份文件（它可能残留 integration_test 引用）。
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "kostori/external_intent",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getInitialVideo" -> consumePendingVideo(result)
+                else -> result.notImplemented()
+            }
+        }
+        EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "kostori/external_intent/events",
+        ).setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                videoIntentSink = events
+                val pending = pendingVideoIntent
+                pendingVideoIntent = null
+                if (pending != null && events != null) {
+                    materializeVideoIntent(pending, events)
+                }
+            }
+
+            override fun onCancel(arguments: Any?) {
+                videoIntentSink = null
+            }
+        })
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "kostori/method_channel"

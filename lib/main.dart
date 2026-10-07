@@ -26,8 +26,10 @@ import 'package:kostori/headless.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/auth_page.dart';
+import 'package:kostori/pages/download/local_player_page.dart';
 import 'package:kostori/pages/main_page.dart';
 import 'package:kostori/utils/data_sync.dart';
+import 'package:kostori/utils/external_video_intent.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
@@ -196,18 +198,83 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   DateTime _lastSyncCheck = DateTime.now();
+  StreamSubscription<String>? _externalVideoSubscription;
+  String? _pendingExternalVideo;
+  bool _openingExternalVideo = false;
+  late bool _externalVideoAuthorized;
 
   @override
   void initState() {
     App.registerForceRebuild(forceRebuild);
+    _externalVideoAuthorized =
+        appdata.settings['authorizationRequired'] != true;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     WidgetsBinding.instance.addObserver(this);
     // 幂等：热重载会重跑 initState，确保主 isolate 通道与 webview 处理器始终就位
     MainIsolateRunner.register();
     WebViewResolver.registerMainIsolateHandler();
     JsEngine.registerWorkerBridgeHandler();
+    _listenForExternalVideos();
     checkUpdates();
     super.initState();
+  }
+
+  void _listenForExternalVideos() {
+    if (!App.isMobile) return;
+    _externalVideoSubscription = ExternalVideoIntent.videoPaths.listen(
+      _queueExternalVideo,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final path = await ExternalVideoIntent.getInitialVideoPath();
+      if (path != null && path.isNotEmpty) _queueExternalVideo(path);
+    });
+  }
+
+  void _queueExternalVideo(String path) {
+    if (path.isEmpty) return;
+    if (!_externalVideoAuthorized) {
+      _pendingExternalVideo = path;
+      return;
+    }
+    if (_openingExternalVideo) {
+      _pendingExternalVideo = path;
+      return;
+    }
+    final context = App.rootContextOrNull;
+    if (context == null || !context.mounted) {
+      _pendingExternalVideo = path;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final pending = _pendingExternalVideo;
+        _pendingExternalVideo = null;
+        if (pending != null) _queueExternalVideo(pending);
+      });
+      return;
+    }
+    _openingExternalVideo = true;
+    unawaited(
+      context.to(() => LocalPlayerPage(filePath: path)).whenComplete(() {
+        _openingExternalVideo = false;
+        final pending = _pendingExternalVideo;
+        _pendingExternalVideo = null;
+        if (pending != null) _queueExternalVideo(pending);
+      }),
+    );
+  }
+
+  void _openPendingExternalVideoAfterAuth() {
+    final pending = _pendingExternalVideo;
+    _pendingExternalVideo = null;
+    if (pending != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _queueExternalVideo(pending);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _externalVideoSubscription?.cancel();
+    super.dispose();
   }
 
   bool isAuthPageActive = false;
@@ -248,12 +315,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.hidden &&
         !isAuthPageActive &&
         !IO.isSelectingFiles) {
+      _externalVideoAuthorized = false;
       isAuthPageActive = true;
       App.rootContext.to(
         () => AuthPage(
           onSuccessfulAuth: () {
             App.rootContext.pop();
+            _externalVideoAuthorized = true;
             isAuthPageActive = false;
+            _openPendingExternalVideoAfterAuth();
           },
         ),
       );
@@ -300,7 +370,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (appdata.settings['authorizationRequired']) {
       home = AuthPage(
         onSuccessfulAuth: () {
-          App.rootContext.toReplacement(() => const MainPage());
+          _externalVideoAuthorized = true;
+          unawaited(App.rootContext.toReplacement(() => const MainPage()));
+          _openPendingExternalVideoAfterAuth();
         },
       );
     } else {

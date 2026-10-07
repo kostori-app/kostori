@@ -569,3 +569,47 @@ class FadeScalePageRoute<T> extends PageRoute<T> {
     );
   }
 }
+
+class FullscreenPageRoute<T> extends PageRoute<T> {
+  FullscreenPageRoute({required this.builder});
+
+  final WidgetBuilder builder;
+  Widget? _child;
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 120);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 100);
+
+  @override
+  Color? get barrierColor => null;
+
+  @override
+  String? get barrierLabel => null;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    return _child ??= builder(context);
+  }
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (animation.status == AnimationStatus.reverse) {
+      return child;
+    }
+    return FadeTransition(opacity: animation, child: child);
+  }
+}

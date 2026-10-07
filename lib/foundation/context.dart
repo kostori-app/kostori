@@ -54,6 +54,12 @@ extension Navigation on BuildContext {
         .push<T>(FadeScalePageRoute<T>(builder: (_) => builder()));
   }
 
+  Future<T?> toFullscreen<T>(Widget Function() builder) {
+    _unfocusBeforeNavigate();
+    return Navigator.of(this)
+        .push<T>(FullscreenPageRoute<T>(builder: (_) => builder()));
+  }
+
   double get width => MediaQuery.sizeOf(this).width;
 
   double get height => MediaQuery.sizeOf(this).height;

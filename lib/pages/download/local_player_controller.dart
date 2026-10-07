@@ -652,8 +652,6 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   /// 全屏（对齐 watcher PlayerController.toggleFullScreen）：
   /// PC 端切系统窗口全屏 + 隐藏自绘窗框；移动端沉浸式 + 横屏 + 全屏路由。
   Future<void> toggleFullscreen() async {
-    final next = !state.fullscreen;
-
     // --- PC 端逻辑 ---
     if (App.isDesktop) {
       if (state.fullscreen) {
@@ -665,6 +663,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
           );
         });
       }
+      final next = !state.fullscreen;
       await windowManager.setFullScreen(next);
       _update(state.copyWith(fullscreen: next));
       WindowFrame.of(App.rootContext).setWindowFrame(!next);
@@ -673,30 +672,50 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     }
 
     // --- 移动端逻辑 ---
-    _update(state.copyWith(fullscreen: next));
-    if (next) {
-      WakelockPlus.enable();
-      await SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.immersiveSticky,
-        overlays: SystemUiOverlay.values,
-      );
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-      Future.microtask(() {
-        App.rootContext.toFadeScale(
-          () => LocalFullscreenVideoPage(filePath: filePath),
-        );
-      });
-    } else {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      // 恢复全部方向，避免残留"仅横屏"导致 MIUI 禁用分屏/自由窗口
-      SystemChrome.setPreferredOrientations([]);
-      WakelockPlus.disable();
+    if (state.fullscreen) {
+      _applyMobileFullscreenSystemUi(fullscreen: false);
       App.rootContext.pop();
+    } else {
+      _update(state.copyWith(fullscreen: true));
+      _applyMobileFullscreenSystemUi(fullscreen: true);
+      unawaited(
+        App.rootContext
+            .toFullscreen(() => LocalFullscreenVideoPage(filePath: filePath))
+            .whenComplete(() {
+              if (state.fullscreen) {
+                _applyMobileFullscreenSystemUi(fullscreen: false);
+                _update(state.copyWith(fullscreen: false));
+              }
+            }),
+      );
     }
     _resetHideTimer();
+  }
+
+  void _applyMobileFullscreenSystemUi({required bool fullscreen}) {
+    unawaited(
+      (fullscreen
+              ? SystemChrome.setEnabledSystemUIMode(
+                  SystemUiMode.immersiveSticky,
+                )
+              : SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge))
+          .catchError((_) {}),
+    );
+    unawaited(
+      SystemChrome.setPreferredOrientations(
+        fullscreen
+            ? const [
+                DeviceOrientation.landscapeLeft,
+                DeviceOrientation.landscapeRight,
+              ]
+            : const [],
+      ).catchError((_) {}),
+    );
+    unawaited(
+      (fullscreen ? WakelockPlus.enable() : WakelockPlus.disable()).catchError(
+        (_) {},
+      ),
+    );
   }
 
   /// 停止进度同步（左右滑动 seek 时暂停）
