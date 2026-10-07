@@ -49,6 +49,7 @@ class DhtClient {
   final Map<String, _DhtNode> _known = {};
   final Map<String, _DhtNode> _pending = {};
   final Map<String, int> _queriedAt = {};
+  final Map<String, int> _queryAttempts = {};
   final Set<String> _seenPeers = {};
 
   static const int _maxQueries = 2000;
@@ -56,8 +57,8 @@ class DhtClient {
   /// 未收到响应的查询上限；超过后丢弃最早的条目，避免无响应节点堆积。
   static const int _maxPending = 512;
 
-  /// 查询超时：超过该时长未应答的节点重新纳入候选，避免节点表枯竭。
-  static const int _retryAfterMs = 15000;
+  static const int _retryInitialMs = 10000;
+  static const int _retryCeilingMs = 60000;
 
   static const int _queriesPerRound = 40;
 
@@ -171,6 +172,7 @@ class DhtClient {
     _pending.clear();
     _known.clear();
     _queriedAt.clear();
+    _queryAttempts.clear();
     _seenPeers.clear();
   }
 
@@ -193,9 +195,20 @@ class DhtClient {
   void _expireQueries() {
     if (_queriedAt.isEmpty) return;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final before = _queriedAt.length;
-    _queriedAt.removeWhere((_, at) => now - at >= _retryAfterMs);
-    if (_queriedAt.length == before) return;
+    final expired = <String>[];
+    for (final entry in _queriedAt.entries) {
+      final attempt = _queryAttempts[entry.key] ?? 1;
+      final exponent = (attempt - 1).clamp(0, 3);
+      final retryAfterMs = (_retryInitialMs * (1 << exponent)).clamp(
+        _retryInitialMs,
+        _retryCeilingMs,
+      );
+      if (now - entry.value >= retryAfterMs) expired.add(entry.key);
+    }
+    if (expired.isEmpty) return;
+    for (final key in expired) {
+      _queriedAt.remove(key);
+    }
     // 重新纳入候选的节点必须同步清掉，否则同一地址会在待回列表里堆多条
     _pending.removeWhere((_, node) {
       return !_queriedAt.containsKey(_key(node.ip, node.port));
@@ -228,13 +241,15 @@ class DhtClient {
     if (_str(message['y']) != 'r') return;
     final r = message['r'];
     if (r is! Map) return;
-
     final tid = _str(message['t']);
     if (tid != null) {
       final responder = _pending.remove(tid);
       final responderId = _bytes(r['id']);
-      if (responder != null && responderId != null) {
-        responder.id = responderId;
+      if (responder != null) {
+        if (responderId != null) responder.id = responderId;
+        final nodeKey = _key(responder.ip, responder.port);
+        _queriedAt[nodeKey] = DateTime.now().millisecondsSinceEpoch;
+        _queryAttempts[nodeKey] = 0;
       }
     }
 
@@ -310,6 +325,7 @@ class DhtClient {
     if (_queriedAt.length >= _maxQueries) return;
     final nodeKey = _key(node.ip, node.port);
     _queriedAt[nodeKey] = DateTime.now().millisecondsSinceEpoch;
+    _queryAttempts[nodeKey] = (_queryAttempts[nodeKey] ?? 0) + 1;
     final socket = node.ip.type == InternetAddressType.IPv6
         ? _socketV6
         : _socketV4;

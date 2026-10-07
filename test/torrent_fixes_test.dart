@@ -316,11 +316,8 @@ void main() {
       expect(e.toString(), isNot(contains('0:00')));
     });
 
-    test('元数据超时按平台给出合理的发现窗口', () {
-      // 桌面端有 peer 时通常 1~10 秒拿到；移动端需要容纳蜂窝网络和 UDP NAT
-      // 的额外建立时间，不能沿用桌面端的短超时。
-      final limit = Platform.isAndroid || Platform.isIOS ? 120 : 60;
-      expect(TorrentManager.metadataTimeoutSeconds, lessThanOrEqualTo(limit));
+    test('元数据发现重试间隔封顶为 60 秒', () {
+      expect(TorrentManager.metadataRetryCeilingSeconds, 60);
       expect(
         TorrentManager.maxMetadataAttempts,
         inInclusiveRange(1, 5),

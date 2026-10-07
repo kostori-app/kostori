@@ -178,7 +178,7 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
         ),
         const SizedBox(height: 10),
         LinearProgressIndicator(
-          value: _job.isFetchingMeta ? null : _job.progress,
+          value: _job.isFetchingMeta ? 0 : _job.progress,
           minHeight: 4,
         ),
         const SizedBox(height: 10),

@@ -36,12 +36,7 @@ const String kTorrentDownloadDir = 'torrentDownloadDir';
 /// `selectedFiles` 哨兵：表示「一个文件都不选」。空列表仍表示「全部」（兼容旧数据）。
 const int kTorrentNoFile = -1;
 
-/// 元数据抓取超时（[TorrentManager._metadataTimeout]）。
-///
-/// 引擎在找不到 peer 时不会自己失败，只能由上层超时兜底，
-/// 单独定义异常类型是为了把它和真正的解析/网络错误区分开，
-/// 避免把 `TimeoutException after 0:03:00.000000: Future not completed`
-/// 这种原始文本暴露到界面。
+/// 元数据发现失败。网络发现本身采用退避重试，不用固定总时长截断。
 class TorrentMetadataTimeout implements Exception {
   const TorrentMetadataTimeout({this.vpnActive = false});
 
@@ -342,23 +337,22 @@ class TorrentManager extends Notifier<TorrentState> {
   final Map<String, Future<void>> _resumeOperations = {};
   final Map<String, Future<void>> _prepareOperations = {};
 
-  /// 元数据抓取超时。
-  ///
-  /// 引擎在「一个 peer 都找不到」时既不成功也不失败（只在 hash 不匹配时抛
-  /// `MetaDataDownloadFailed`），只能靠这里兜底。桌面端保持较短等待；移动端
-  /// 的蜂窝网络、DNS 和 UDP NAT 建立通常更慢，给它更长的发现窗口。
-  static Duration get _metadataTimeout {
-    if (Platform.isAndroid || Platform.isIOS) {
-      return const Duration(seconds: 120);
-    }
-    return const Duration(seconds: 45);
-  }
+  /// 元数据发现重试的初始间隔；后续指数退避并封顶 60 秒。
+  static Duration get _metadataRetryInitial =>
+      Platform.isAndroid || Platform.isIOS
+      ? const Duration(seconds: 15)
+      : const Duration(seconds: 10);
+
+  static const Duration _metadataRetryCeiling = Duration(seconds: 60);
 
   /// 自动重试抓取元数据的次数上限，超过即判定为不可用。
   static const int _maxMetadataAttempts = 3;
 
-  /// 对外暴露的元数据抓取超时（秒），便于测试与设置项读取。
-  static int get metadataTimeoutSeconds => _metadataTimeout.inSeconds;
+  /// 元数据发现重试的最长间隔（秒）。
+  static int get metadataRetryCeilingSeconds => _metadataRetryCeiling.inSeconds;
+
+  /// 兼容旧调用；现在表示单次发现重试的上限，不是整个抓取总时长。
+  static int get metadataTimeoutSeconds => metadataRetryCeilingSeconds;
 
   /// 对外暴露的自动重试次数上限。
   static int get maxMetadataAttempts => _maxMetadataAttempts;
@@ -1033,8 +1027,20 @@ class TorrentManager extends Notifier<TorrentState> {
     var downloaderReady = false;
     var finished = false;
     final pendingPeers = <({CompactAddress peer, PeerSource source})>[];
-    var mobileHttpTrackerCount = 0;
-    var mobileHttpPeerCount = 0;
+    final trackerRetryTimers = <Timer, Completer<void>>{};
+    DhtClient? dht;
+
+    Future<void> waitForTrackerRetry(Duration delay) {
+      final waiter = Completer<void>();
+      late final Timer timer;
+      timer = Timer(delay, () {
+        trackerRetryTimers.remove(timer);
+        if (!waiter.isCompleted) waiter.complete();
+      });
+      trackerRetryTimers[timer] = waiter;
+      return waiter.future;
+    }
+
     void flushPendingPeers() {
       if (finished) return;
       downloaderReady = true;
@@ -1106,7 +1112,6 @@ class TorrentManager extends Notifier<TorrentState> {
     // v2 磁力等）时退回自己从磁力串里提取，否则这里会静默跳过 DHT，
     // trackerless 磁力就只能干等超时。
     final infoHash = _infoHashBytes(link?.infoHash, magnet);
-    DhtClient? dht;
     if (infoHash != null) {
       dht = DhtClient(
         infoHash: infoHash,
@@ -1115,7 +1120,6 @@ class TorrentManager extends Notifier<TorrentState> {
             .whereType<Uri>()
             .toList(),
         onPeer: addDhtPeer,
-        onLog: (m) => Log.info('DHT', m),
       );
       unawaited(dht.start());
 
@@ -1124,22 +1128,34 @@ class TorrentManager extends Notifier<TorrentState> {
       if ((Platform.isAndroid || Platform.isIOS) && link != null) {
         final httpTrackers = _mobileMetadataTrackers(link.trackers)
             .where((uri) => uri.scheme == 'http' || uri.scheme == 'https');
-        mobileHttpTrackerCount = httpTrackers.length;
         for (final tracker in httpTrackers) {
           unawaited(() async {
-            final options = await downloader.getOptions(
-              tracker,
-              link.infoHashString,
-            );
-            final peers = await httpClient.announce(
-              tracker,
-              infoHash,
-              peerId: options['peerId'] as String,
-            );
-            if (finished) return;
-            mobileHttpPeerCount += peers.length;
-            for (final peer in peers) {
-              addPeer(peer, PeerSource.tracker);
+            var delay = _metadataRetryInitial;
+            while (!finished) {
+              try {
+                final options = await downloader.getOptions(
+                  tracker,
+                  link.infoHashString,
+                );
+                final peers = await httpClient.announce(
+                  tracker,
+                  infoHash,
+                  peerId: options['peerId'] as String,
+                );
+                if (finished) return;
+                for (final peer in peers) {
+                  addPeer(peer, PeerSource.tracker);
+                }
+              } catch (error, stack) {
+                Log.info('元数据 HTTP tracker', '$tracker: $error\n$stack');
+              }
+              await waitForTrackerRetry(delay);
+              if (finished) return;
+              final nextSeconds = (delay.inSeconds * 2).clamp(
+                _metadataRetryInitial.inSeconds,
+                _metadataRetryCeiling.inSeconds,
+              );
+              delay = Duration(seconds: nextSeconds);
             }
           }());
         }
@@ -1156,23 +1172,16 @@ class TorrentManager extends Notifier<TorrentState> {
                 (_) => Future<Uint8List>.error(const TorrentFetchCancelled()),
               ),
             ]);
-      return await raced.timeout(_metadataTimeout);
+      return await raced;
     } on TorrentFetchCancelled {
       rethrow;
-    } on TimeoutException {
-      // 引擎在「找不到 peer」时不会发 MetaDataDownloadFailed，
-      // 只能靠这里的超时兜底。给出可读原因，别把原始异常文本抛给 UI。
-      Log.warning(
-        '元数据',
-        '抓取超时：${dht?.debugSummary ?? 'DHT 未启动'}，'
-            'HTTP tracker=$mobileHttpTrackerCount，返回 peer=$mobileHttpPeerCount'
-            '${downloader is MobileMetadataDownloader ? '，TCP ${downloader.debugSummary}' : ''}',
-      );
-      throw TorrentMetadataTimeout(
-        vpnActive: await TorrentNetwork.isVpnActive(),
-      );
     } finally {
       finished = true;
+      for (final entry in trackerRetryTimers.entries.toList()) {
+        entry.key.cancel();
+        if (!entry.value.isCompleted) entry.value.complete();
+      }
+      trackerRetryTimers.clear();
       httpClient.close();
       pendingPeers.clear();
       if (jobId != null && identical(_fetchCancels[jobId], cancel)) {
@@ -2025,6 +2034,21 @@ class TorrentManager extends Notifier<TorrentState> {
         engine = _engines[job.id];
       }
       if (engine == null) {
+        // 恢复流程可能刚以 refetch=false 检查过旧任务。若用户此时点了
+        // 开始，第二次准备必须允许触发元数据抓取，不能把空引擎当成启动异常。
+        if (!job.hasMetadata) {
+          await _prepareEngine(job, start: true, refetch: true);
+          engine = _engines[job.id];
+        }
+      }
+      if (engine == null) {
+        // 元数据抓取已经在后台运行，等待完成后会由 _refetchMetadata 创建引擎。
+        // 失败状态也由任务卡片展示具体原因，不再弹出误导性的引擎未就绪。
+        if (job.isFetchingMeta || job.status == TorrentJobStatus.failed) {
+          _persist();
+          _emit();
+          return;
+        }
         throw StateError('torrent engine is not ready');
       }
       if (_pausedByUser.contains(job.id)) {

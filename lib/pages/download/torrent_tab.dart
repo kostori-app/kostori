@@ -454,8 +454,8 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  // 进度未知时用不确定动画，其余状态显示确定进度
-                  value: job.isFetchingMeta ? null : job.progress,
+                  // 元数据阶段保持静态轨道，避免卡片反复闪动。
+                  value: job.isFetchingMeta ? 0 : job.progress,
                   borderRadius: BorderRadius.circular(4),
                   minHeight: 4,
                 ),
