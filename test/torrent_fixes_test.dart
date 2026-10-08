@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dtorrent_task_v2/dtorrent_task_v2.dart' show TaskState;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
 import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:kostori/services/torrent/torrent_job.dart';
@@ -20,6 +21,21 @@ TorrentFileEntry _file(int i, int size, int done) => TorrentFileEntry(
 );
 
 void main() {
+  test('legacy configuration cannot override torrent client identity', () {
+    const legacyKey = 'torrentPeerIdPrefix';
+    final present = appdata.implicitData.containsKey(legacyKey);
+    final original = appdata.implicitData[legacyKey];
+    addTearDown(() {
+      if (present) {
+        appdata.implicitData[legacyKey] = original;
+      } else {
+        appdata.implicitData.remove(legacyKey);
+      }
+    });
+    appdata.implicitData[legacyKey] = '-qB0001-';
+    expect(TorrentManager.torrentPeerIdPrefix, '-KT0001-');
+  });
+
   test(
     'torrent socket override does not recurse through its loopback path',
     () async {

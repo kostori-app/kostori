@@ -9171,12 +9171,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'New torrents use this directory; existing torrents are migrated when it changes'
 	String get torrentDownloadDirDesc => 'New torrents use this directory; existing torrents are migrated when it changes';
 
-	/// en: 'BT client identity'
-	String get torrentPeerIdPrefix => 'BT client identity';
-
-	/// en: 'Eight ASCII characters, for example -qB0001-'
-	String get torrentPeerIdPrefixHint => 'Eight ASCII characters, for example -qB0001-';
-
 	/// en: 'Migrating torrent files…'
 	String get torrentMigrating => 'Migrating torrent files…';
 
@@ -12889,8 +12883,6 @@ extension on Translations {
 			'torrentSaveDir' => 'Save directory',
 			'torrentDownloadDir' => 'Torrent download directory',
 			'torrentDownloadDirDesc' => 'New torrents use this directory; existing torrents are migrated when it changes',
-			'torrentPeerIdPrefix' => 'BT client identity',
-			'torrentPeerIdPrefixHint' => 'Eight ASCII characters, for example -qB0001-',
 			'torrentMigrating' => 'Migrating torrent files…',
 			'torrentMigrationDone' => 'Torrent download directory updated and existing torrents migrated',
 			'torrentMigrationPartial' => 'Torrent download directory updated; some old tasks remain in their original directory',

@@ -34,7 +34,6 @@ const String kTorrentSeedRatioLimit = 'torrentSeedRatioLimit';
 const String kTorrentSeedTimeLimit = 'torrentSeedTimeLimit';
 const String kTorrentCustomNodes = 'torrentCustomNodes';
 const String kTorrentDownloadDir = 'torrentDownloadDir';
-const String kTorrentPeerIdPrefix = 'torrentPeerIdPrefix';
 
 /// `selectedFiles` 哨兵：表示「一个文件都不选」。空列表仍表示「全部」（兼容旧数据）。
 const int kTorrentNoFile = -1;
@@ -412,26 +411,8 @@ class TorrentManager extends Notifier<TorrentState> {
     return downloadDir;
   }
 
-  /// Azureus-style 8-byte client prefix used in new torrent peer IDs.
-  static String get torrentPeerIdPrefix {
-    final value = appdata.implicitData[kTorrentPeerIdPrefix] as String?;
-    if (value != null &&
-        value.length == 8 &&
-        value.codeUnits.every((byte) => byte <= 255)) {
-      return value;
-    }
-    return '-KT0001-';
-  }
-
-  static set torrentPeerIdPrefix(String value) {
-    final normalized = value.trim();
-    if (normalized.length != 8 ||
-        normalized.codeUnits.any((byte) => byte > 255)) {
-      return;
-    }
-    appdata.implicitData[kTorrentPeerIdPrefix] = normalized;
-    appdata.writeImplicitData();
-  }
+  /// 固定客户端前缀；旧配置不能覆盖标识。
+  static const String torrentPeerIdPrefix = idPrefix;
 
   /// 设置种子专用目录，并把已有任务的文件和状态一并迁移过去。
   ///

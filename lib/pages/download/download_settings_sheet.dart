@@ -249,12 +249,6 @@ class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
           onTap: () => _editSeedRatio(context),
         ),
         SettingsActionButton(
-          icon: Icons.badge_outlined,
-          title: t.torrentPeerIdPrefix,
-          subtitle: TorrentManager.torrentPeerIdPrefix,
-          onTap: () => _editPeerIdPrefix(context),
-        ),
-        SettingsActionButton(
           icon: Icons.timer_outlined,
           title: t.torrentSeedTimeLimit,
           subtitle: _m.seedTimeLimitMinutes <= 0
@@ -345,46 +339,6 @@ class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
     ctrl.dispose();
     if (value == null || value.isNaN || value.isNegative) return;
     setState(() => _m.seedRatioLimit = value);
-  }
-
-  Future<void> _editPeerIdPrefix(BuildContext context) async {
-    final ctrl = TextEditingController(
-      text: TorrentManager.torrentPeerIdPrefix,
-    );
-    final value = await showDialog<String>(
-      context: context,
-      builder: (ctx) => ContentDialog(
-        title: t.torrentPeerIdPrefix,
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          maxLength: 8,
-          decoration: InputDecoration(
-            labelText: t.torrentPeerIdPrefix,
-            hintText: t.torrentPeerIdPrefixHint,
-          ),
-        ),
-        actions: [
-          Button.text(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(t.cancel),
-          ),
-          Button.filled(
-            onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: Text(t.confirm),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
-    if (value == null) return;
-    final prefix = value.trim();
-    if (prefix.length != 8 || prefix.codeUnits.any((byte) => byte > 255)) {
-      if (mounted) context.showMessage(message: t.torrentPeerIdPrefixHint);
-      return;
-    }
-    TorrentManager.torrentPeerIdPrefix = prefix;
-    if (mounted) setState(() {});
   }
 
   Future<void> _editSeedTime(BuildContext context) async {

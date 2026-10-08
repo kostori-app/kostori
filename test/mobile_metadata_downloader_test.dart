@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dtorrent_task_v2/dtorrent_task_v2.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kostori/services/torrent/mobile_metadata_downloader.dart';
+import 'package:kostori/services/torrent/torrent_manager.dart';
 
 final _metadata = Uint8List.fromList(ascii.encode('d4:name8:test.bine'));
 final _hash = sha1.convert(_metadata);
@@ -46,6 +47,7 @@ class _LocalPeer {
   final connected = Completer<void>();
   final disconnected = Completer<void>();
   final sockets = <Socket>[];
+  String? receivedPeerId;
 
   CompactAddress get address =>
       CompactAddress(InternetAddress.loopbackIPv4, server.port);
@@ -62,6 +64,7 @@ class _LocalPeer {
         buffer.addAll(bytes);
         if (!handshaken) {
           if (buffer.length < 68) return;
+          receivedPeerId = String.fromCharCodes(buffer.sublist(48, 68));
           buffer = buffer.sublist(68);
           handshaken = true;
           socket.add([
@@ -161,6 +164,15 @@ void main() {
         await result.future.timeout(const Duration(seconds: 5)),
         orderedEquals(_metadata),
       );
+      expect(
+        live.receivedPeerId,
+        startsWith(TorrentManager.torrentPeerIdPrefix),
+      );
+      final options = await downloader.getOptions(
+        Uri.parse('http://127.0.0.1/announce'),
+        _hash.toString(),
+      );
+      expect(options['peerId'], live.receivedPeerId);
     },
   );
 

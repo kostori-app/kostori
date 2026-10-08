@@ -3083,8 +3083,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentSaveDir => '保存目录';
 	@override String get torrentDownloadDir => '种子下载目录';
 	@override String get torrentDownloadDirDesc => '新种子使用此目录，修改时会迁移已有种子';
-	@override String get torrentPeerIdPrefix => 'BT 客户端标识';
-	@override String get torrentPeerIdPrefixHint => '请输入 8 个 ASCII 字符，例如 -qB0001-';
 	@override String get torrentMigrating => '正在迁移种子文件…';
 	@override String get torrentMigrationDone => '种子下载目录已更新，已有种子已迁移';
 	@override String get torrentMigrationPartial => '种子下载目录已更新，部分旧任务保留在原目录';
@@ -6414,8 +6412,6 @@ extension on TranslationsZhCn {
 			'torrentSaveDir' => '保存目录',
 			'torrentDownloadDir' => '种子下载目录',
 			'torrentDownloadDirDesc' => '新种子使用此目录，修改时会迁移已有种子',
-			'torrentPeerIdPrefix' => 'BT 客户端标识',
-			'torrentPeerIdPrefixHint' => '请输入 8 个 ASCII 字符，例如 -qB0001-',
 			'torrentMigrating' => '正在迁移种子文件…',
 			'torrentMigrationDone' => '种子下载目录已更新，已有种子已迁移',
 			'torrentMigrationPartial' => '种子下载目录已更新，部分旧任务保留在原目录',
