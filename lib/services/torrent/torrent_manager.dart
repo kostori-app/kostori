@@ -2574,9 +2574,10 @@ class TorrentManager extends Notifier<TorrentState> {
       for (final pieceIndex in pieces) {
         final piece = task.pieceManager?[pieceIndex];
         if (piece == null) continue;
-        for (var subIndex = 0; subIndex < piece.subPiecesCount; subIndex++) {
-          piece.pushSubPieceBack(subIndex);
-        }
+        // A flushed piece keeps its completion markers and _flushed flag even
+        // after individual sub-pieces are returned. Reset the whole piece so
+        // a deleted file is reported as empty and can be downloaded again.
+        piece.reset();
         await fileManager.updateBitfield(pieceIndex, false);
       }
 
