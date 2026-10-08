@@ -30,9 +30,17 @@ void main() {
     json['totalDone'] = 2;
     json['progress'] = 0.5;
     expect(TorrentJob.fromJson(json).status, TorrentJobStatus.paused);
+    json['progress'] = 1;
+    expect(TorrentJob.fromJson(json).status, TorrentJobStatus.paused);
     json['totalWanted'] = 0;
     json['selectedFiles'] = [kTorrentNoFile];
     expect(TorrentJob.fromJson(json).status, TorrentJobStatus.paused);
+  });
+
+  test('an incomplete torrent never rounds its percentage up to 100', () {
+    expect(torrentProgressPercent(1363 / 1364), '99.9');
+    expect(torrentProgressPercent(0.99999), '99.9');
+    expect(torrentProgressPercent(1), '100.0');
   });
 
   test('completed content remains completed when seeding is stopped', () {

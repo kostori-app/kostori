@@ -3170,6 +3170,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentAddedAt => '加入於';
 	@override String get torrentFileCount => '檔案數';
 	@override String get torrentUploadedTotal => '累計上傳';
+	@override String get torrentDownloadSpeed => '下載速度';
+	@override String get torrentRecheck => '校驗本機檔案';
+	@override String get torrentChecking => '正在校驗';
+	@override String get torrentCheckFailed => '檔案校驗失敗';
+	@override String get torrentPiecesAllFiles => '區塊數包含未選擇下載的檔案';
 	@override String get torrentSeedRatio => '做種率';
 	@override String get torrentSeedDuration => '做種時長';
 	@override String get torrentSeeds => '種子';
@@ -6501,6 +6506,11 @@ extension on TranslationsZhTw {
 			'torrentAddedAt' => '加入於',
 			'torrentFileCount' => '檔案數',
 			'torrentUploadedTotal' => '累計上傳',
+			'torrentDownloadSpeed' => '下載速度',
+			'torrentRecheck' => '校驗本機檔案',
+			'torrentChecking' => '正在校驗',
+			'torrentCheckFailed' => '檔案校驗失敗',
+			'torrentPiecesAllFiles' => '區塊數包含未選擇下載的檔案',
 			'torrentSeedRatio' => '做種率',
 			'torrentSeedDuration' => '做種時長',
 			'torrentSeeds' => '種子',

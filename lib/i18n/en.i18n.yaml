@@ -3210,6 +3210,11 @@ torrentTotalSize: Total size
 torrentAddedAt: Added
 torrentFileCount: Files
 torrentUploadedTotal: Uploaded total
+torrentDownloadSpeed: Download speed
+torrentRecheck: Verify local files
+torrentChecking: Checking files
+torrentCheckFailed: File verification failed
+torrentPiecesAllFiles: Piece counts include unselected files
 torrentSeedRatio: Seeding ratio
 torrentSeedDuration: Seeding time
 torrentSeeds: Seeds

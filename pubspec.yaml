@@ -182,7 +182,7 @@ dependency_overrides:
   dtorrent_task_v2:
     git:
       url: https://github.com/axlmly/dtorrent_task_v2
-      ref: 5d878a2
+      ref: 94283ab
 
 flutter_launcher_icons:
   android: true

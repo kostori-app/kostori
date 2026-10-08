@@ -175,12 +175,15 @@ String _statusLabel(TorrentJobStatus s, {bool seeding = false}) {
 
 /// 下载进度文本：已下载 / 总大小 + 百分比。
 String _progressText(TorrentJob job) {
-  if (job.isFinished) return '100.0%';
+  if (job.isChecking) {
+    return '${t.torrentChecking} ${torrentProgressPercent(job.checkProgress)}%';
+  }
+  if (job.hasCompletedDownload) return '100.0%';
   final total = job.totalWanted > 0 ? job.totalWanted : job.totalDone;
-  if (total <= 0) return '${(job.progress * 100).toStringAsFixed(1)}%';
-  final done = (job.progress * total).round().clamp(0, total);
+  if (total <= 0) return '${torrentProgressPercent(job.progress)}%';
+  final done = job.totalDone.clamp(0, total);
   return '${formatBytesShort(done)} / ${formatBytesShort(total)}  '
-      '${(job.progress * 100).toStringAsFixed(1)}%';
+      '${torrentProgressPercent(job.progress)}%';
 }
 
 /// 无种子名时的占位标题：仅抓取元数据阶段提示获取中，其余状态回退到 info hash。

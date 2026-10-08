@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -168,6 +169,33 @@ void main() {
     expect(response.statusCode, HttpStatus.partialContent);
     expect(await body(response), payload.sublist(0, 1000));
   });
+
+  test(
+    'sends available subpieces before waiting for the next missing block',
+    () async {
+      final piece = task.pieceManager!.pieces[0]!;
+      piece.subPieceReceived(0, Uint8List(16384));
+      piece.writeComplete();
+      final response = await request(range: 'bytes=0-32700');
+      final first = Completer<List<int>>();
+      final bytes = <int>[];
+      final finished = Completer<void>();
+      response.listen(
+        (chunk) {
+          bytes.addAll(chunk);
+          if (!first.isCompleted) first.complete(chunk);
+        },
+        onError: finished.completeError,
+        onDone: finished.complete,
+      );
+      final chunk = await first.future.timeout(const Duration(seconds: 2));
+      expect(chunk, payload.sublist(0, chunk.length));
+      expect(finished.isCompleted, isFalse);
+      completeAll();
+      await finished.future.timeout(const Duration(seconds: 3));
+      expect(bytes, payload.sublist(0, 32701));
+    },
+  );
 
   test(
     'renamed paths work through both the index route and legacy path',

@@ -263,7 +263,7 @@ class _TorrentFileListState extends State<TorrentFileList>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '$statusText · ${formatBytesShort(node.downloaded)} / ${formatBytesShort(node.size)} · ${(progress * 100).toStringAsFixed(1)}%',
+                        '$statusText · ${formatBytesShort(node.downloaded)} / ${formatBytesShort(node.size)} · ${torrentProgressPercent(progress)}%',
                         style: TextStyle(
                           fontSize: 11,
                           color: priority == null

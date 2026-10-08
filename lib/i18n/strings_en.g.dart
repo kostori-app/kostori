@@ -9435,6 +9435,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Uploaded total'
 	String get torrentUploadedTotal => 'Uploaded total';
 
+	/// en: 'Download speed'
+	String get torrentDownloadSpeed => 'Download speed';
+
+	/// en: 'Verify local files'
+	String get torrentRecheck => 'Verify local files';
+
+	/// en: 'Checking files'
+	String get torrentChecking => 'Checking files';
+
+	/// en: 'File verification failed'
+	String get torrentCheckFailed => 'File verification failed';
+
+	/// en: 'Piece counts include unselected files'
+	String get torrentPiecesAllFiles => 'Piece counts include unselected files';
+
 	/// en: 'Seeding ratio'
 	String get torrentSeedRatio => 'Seeding ratio';
 
@@ -12980,6 +12995,11 @@ extension on Translations {
 			'torrentAddedAt' => 'Added',
 			'torrentFileCount' => 'Files',
 			'torrentUploadedTotal' => 'Uploaded total',
+			'torrentDownloadSpeed' => 'Download speed',
+			'torrentRecheck' => 'Verify local files',
+			'torrentChecking' => 'Checking files',
+			'torrentCheckFailed' => 'File verification failed',
+			'torrentPiecesAllFiles' => 'Piece counts include unselected files',
 			'torrentSeedRatio' => 'Seeding ratio',
 			'torrentSeedDuration' => 'Seeding time',
 			'torrentSeeds' => 'Seeds',

@@ -158,7 +158,6 @@ class TorrentStreamServer {
   ) async* {
     RandomAccessFile? access;
     var position = start;
-    const chunkSize = 128 * 1024;
     var lastPiece = -1;
     try {
       while (position < end) {
@@ -171,11 +170,28 @@ class TorrentStreamServer {
           _setRequestPriority(requestId, file, position, end);
           lastPiece = index;
         }
-        final next = math.min(
-          math.min(position + chunkSize, end),
+        final subpieceEnd = math.min(
+          math.min(
+            piece.offset +
+                (((file.offset + position - piece.offset) ~/
+                            piece.subPieceSize) +
+                        1) *
+                    piece.subPieceSize -
+                file.offset,
+            end,
+          ),
           piece.end - file.offset,
         );
-        if (!await _waitForRange(file, position, next, cancelled)) return;
+        if (!await _waitForRange(file, position, subpieceEnd, cancelled)) {
+          return;
+        }
+        final chunkEnd = math.min(
+          math.min(position + 128 * 1024, end),
+          piece.end - file.offset,
+        );
+        final next = file.isRangeWritten(position, chunkEnd)
+            ? chunkEnd
+            : subpieceEnd;
         if (access == null) {
           access = await File(file.filePath).open(mode: FileMode.read);
           await access.setPosition(position);

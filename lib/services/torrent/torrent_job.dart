@@ -1,6 +1,13 @@
 /// 种子任务状态
 enum TorrentJobStatus { metadata, downloading, paused, completed, failed }
 
+/// 保留 100% 给字节数真正完整的内容，避免一位小数把缺块舍入为完成。
+String torrentProgressPercent(double progress) {
+  if (!progress.isFinite || progress <= 0) return '0.0';
+  if (progress >= 1) return '100.0';
+  return (progress * 100).clamp(0.0, 99.9).toStringAsFixed(1);
+}
+
 /// Returns the client name encoded in a standard Azureus-style peer ID.
 ///
 /// The torrent engine exposes the peer ID but not the optional extended
@@ -141,6 +148,9 @@ class TorrentJob {
 
   bool hasMetadata;
 
+  bool isChecking = false;
+  double checkProgress = 0;
+
   final int createdAt;
   String? error;
 
@@ -257,7 +267,7 @@ class TorrentJob {
         status == TorrentJobStatus.paused &&
         hasMetadata &&
         totalWanted > 0 &&
-        (totalDone >= totalWanted || progress >= 1);
+        totalDone >= totalWanted;
     return TorrentJob(
       id: j['id'] as String,
       magnet: j['magnet'] as String? ?? '',

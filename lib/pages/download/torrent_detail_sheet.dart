@@ -81,7 +81,17 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
                 ? t.torrentPause
                 : t.torrentResume,
             isLoading: _runBusy,
-            onPressed: _toggleRun,
+            onPressed: () {
+              if (!_job.isChecking) _toggleRun();
+            },
+          ),
+          Button.icon(
+            icon: const Icon(Icons.fact_check_outlined),
+            tooltip: t.torrentRecheck,
+            isLoading: _job.isChecking,
+            onPressed: () {
+              if (_job.hasMetadata && !_job.isChecking) _recheck();
+            },
           ),
           Button.icon(
             icon: const Icon(Icons.delete_outline),
@@ -162,6 +172,16 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
     }
   }
 
+  Future<void> _recheck() async {
+    try {
+      await _manager.recheck(_job);
+    } catch (error) {
+      if (mounted) {
+        context.showMessage(message: '${t.torrentCheckFailed}: $error');
+      }
+    }
+  }
+
   Widget _overview(List<TorrentFileEntry> files) {
     final model = _manager.modelOf(_job);
     final engine = _manager.engineOf(_job);
@@ -169,8 +189,7 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
     final completed = bitfield?.completedPieces.toSet() ?? <int>{};
     final pieces = model?.pieces?.length ?? 0;
     final cs = Theme.of(context).colorScheme;
-    final isCompleted =
-        !_job.isFetchingMeta && _job.totalWanted > 0 && _job.progress >= 1.0;
+    final isCompleted = _job.hasCompletedDownload;
     final displayedDone = isCompleted ? _job.totalWanted : _job.totalDone;
     final displayedProgress = isCompleted ? 1.0 : _job.progress;
     return ListView(
@@ -180,7 +199,7 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
         const SizedBox(height: 12),
         Text(
           '${formatBytesShort(displayedDone)} / ${formatBytesShort(_job.totalWanted)} · '
-          '${(displayedProgress * 100).toStringAsFixed(1)}%',
+          '${torrentProgressPercent(displayedProgress)}%',
           style: TextStyle(color: cs.onSurfaceVariant),
         ),
         const SizedBox(height: 10),
@@ -190,7 +209,9 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
         ),
         const SizedBox(height: 10),
         Text(
-          _status(_job.status),
+          _job.isChecking
+              ? '${t.torrentChecking} ${torrentProgressPercent(_job.checkProgress)}%'
+              : _status(_job.status),
           style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
         ),
         if (_job.error != null && !isCompleted) ...[
@@ -220,6 +241,14 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
             ),
             style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
           ),
+          if (_job.selectedFiles.isNotEmpty &&
+              _job.selectedFiles.length < files.length) ...[
+            const SizedBox(height: 4),
+            Text(
+              t.torrentPiecesAllFiles,
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+            ),
+          ],
         ],
         _heading(t.torrentInfo),
         _info(
@@ -239,13 +268,11 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
         _info(t.torrentSavePathLabel, _job.savePath, copy: true),
         _info(t.torrentFileCount, '${files.length}'),
         _heading(t.torrentTransfer),
+        _info(t.torrentDownloadSpeed, formatSpeed(_job.downloadRate)),
         _info(
-          t.download,
-          isCompleted
-              ? '${formatBytesShort(displayedDone)} / '
-                    '${formatBytesShort(_job.totalWanted)}'
-              : '${formatSpeed(_job.downloadRate)} / '
-                    '${formatBytesShort(displayedDone)}',
+          t.torrentDownloaded,
+          '${formatBytesShort(displayedDone)} / '
+          '${formatBytesShort(_job.totalWanted)}',
         ),
         _info(t.upload, formatSpeed(_job.uploadRate)),
         _info(t.torrentUploadedTotal, formatBytesShort(_job.uploadedBytes)),

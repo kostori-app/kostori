@@ -366,6 +366,7 @@ class TorrentManager extends Notifier<TorrentState> {
   final Map<String, Completer<void>> _fetchCancels = {};
   final Map<String, Future<void>> _resumeOperations = {};
   final Map<String, Future<void>> _prepareOperations = {};
+  final Map<String, Future<void>> _checkOperations = {};
 
   /// 元数据发现失败后的固定重试间隔。
   static const Duration _metadataRetryInterval = Duration(seconds: 60);
@@ -1383,6 +1384,7 @@ class TorrentManager extends Notifier<TorrentState> {
   }) async {
     if (_engines.containsKey(job.id)) return;
     TorrentTask? createdTask;
+    final wasCompleted = job.hasCompletedDownload;
     try {
       final magnet = _tryParseMagnet(job.magnet);
       final loaded = await _loadModel(job, magnet);
@@ -1479,7 +1481,33 @@ class TorrentManager extends Notifier<TorrentState> {
       if (Platform.isAndroid) task.dht?.clearBootstrapNodes();
       final shouldStart =
           start && !_pausedByUser.contains(job.id) && !pauseAfterMetadata;
+      await task.prepare();
+      _applySelection(task, job, model);
+      _refreshProgress(job, model);
+      if (wasCompleted && !job.hasCompletedDownload && !job.isChecking) {
+        job.isChecking = true;
+        job.checkProgress = 0;
+        _emit();
+        try {
+          await task.fileManager!.recheck(
+            onlyMissing: true,
+            onProgress: (checked, total) {
+              job.checkProgress = total == 0 ? 1 : checked / total;
+              _emit();
+            },
+          );
+          _refreshProgress(job, model);
+          _persist();
+        } finally {
+          job.isChecking = false;
+          _emit();
+        }
+      }
       if (shouldStart) {
+        if (_pausedByUser.contains(job.id)) {
+          _updateTransferStatus(job, running: false);
+          return;
+        }
         await task.start();
         if (!_jobs.contains(job)) {
           try {
@@ -1494,8 +1522,6 @@ class TorrentManager extends Notifier<TorrentState> {
           _pauseTransfer(job);
         }
       } else {
-        // 加载状态文件，让暂停中的任务也能显示单文件进度
-        await task.prepare();
         if (!_jobs.contains(job)) {
           try {
             await task.stop();
@@ -2217,7 +2243,6 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   void _pauseTransfer(TorrentJob job) {
-    final completed = job.isFinished || job.hasCompletedDownload;
     final engine = _engines[job.id];
     if (engine != null && engine.state == TaskState.running) engine.pause();
     try {
@@ -2225,12 +2250,6 @@ class TorrentManager extends Notifier<TorrentState> {
     } catch (_) {}
     _uploadSamples.remove(job.id);
     _updateTransferStatus(job, running: false);
-    if (completed) {
-      job.status = TorrentJobStatus.completed;
-      job.seedingPaused = true;
-      job.progress = 1;
-      job.error = null;
-    }
   }
 
   void pause(TorrentJob job) {
@@ -2257,6 +2276,8 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 恢复任务；[isRetry] 为 true 时（用户手动点重试）重置元数据重试预算。
   Future<void> resume(TorrentJob job, {bool isRetry = false}) {
+    final check = _checkOperations[job.id];
+    if (check != null) return check;
     _pausedByUser.remove(job.id);
     job.seedingPaused = false;
     final pending = _resumeOperations[job.id];
@@ -2279,6 +2300,10 @@ class TorrentManager extends Notifier<TorrentState> {
 
   Future<void> _resumeDirect(TorrentJob job, {bool isRetry = false}) async {
     await _ensureReadyForOperation();
+    final knownModel = _models[job.id];
+    if (_engines[job.id]?.fileManager != null && knownModel != null) {
+      _refreshProgress(job, knownModel);
+    }
     // 任务首次取得元数据后会按策略暂停；这次 resume 是用户明确的继续
     // 操作，因此清除待处理标记，避免下一次恢复再次拦截启动。
     if (job.hasMetadata && job.stopAfter == TorrentStopPolicy.afterMetadata) {
@@ -2389,7 +2414,80 @@ class TorrentManager extends Notifier<TorrentState> {
     }
   }
 
+  Future<void> recheck(TorrentJob job) {
+    final pending = _checkOperations[job.id];
+    if (pending != null) return pending;
+    final operation = _recheckDirect(job);
+    _checkOperations[job.id] = operation;
+    return operation.whenComplete(() => _checkOperations.remove(job.id));
+  }
+
+  Future<void> _recheckDirect(TorrentJob job) async {
+    await _ensureReadyForOperation();
+    await _prepareOperations[job.id];
+    await _resumeOperations[job.id];
+    if (!_jobs.contains(job) || !job.hasMetadata) return;
+    if (_fileMutations.contains(job.id)) {
+      throw StateError(t.torrentChecking);
+    }
+    var engine = _engines[job.id];
+    final wasRunning = engine?.state == TaskState.running;
+    job.isChecking = true;
+    job.checkProgress = 0;
+    _emit();
+    try {
+      await stopStreams(job);
+      if (engine != null) {
+        // 重建已断开连接的引擎，校验期间不会再有在途分片改写文件。
+        engine.pause();
+        await engine.stop();
+        _engines.remove(job.id);
+        _started.remove(job.id);
+      }
+      _downloadBlockedAfterCompletion.remove(job.id);
+      await _prepareEngine(job, start: false, refetch: false);
+      engine = _engines[job.id];
+      final files = engine?.fileManager;
+      if (files == null) throw StateError('torrent files are not ready');
+      await files.recheck(
+        onProgress: (checked, total) {
+          job.checkProgress = total == 0 ? 1 : checked / total;
+          _emit();
+        },
+      );
+      _refreshProgress(job, _models[job.id]!);
+      _updateTransferStatus(job, running: false);
+      job.checkProgress = 1;
+      job.error = null;
+      _persist();
+    } catch (_) {
+      final currentModel = _models[job.id];
+      if (_engines[job.id]?.fileManager != null && currentModel != null) {
+        _refreshProgress(job, currentModel);
+      }
+      _updateTransferStatus(job, running: false);
+      _persist();
+      rethrow;
+    } finally {
+      job.isChecking = false;
+      _emit();
+    }
+    if (wasRunning && !_pausedByUser.contains(job.id)) {
+      await TorrentNetwork.run(() => _resumeDirect(job));
+    }
+  }
+
   Future<void> remove(TorrentJob job, {bool deleteFiles = true}) async {
+    _pausedByUser.add(job.id);
+    final preparing = _prepareOperations[job.id];
+    if (preparing != null) await preparing;
+    final check = _checkOperations[job.id];
+    if (check != null) {
+      _pausedByUser.add(job.id);
+      try {
+        await check;
+      } catch (_) {}
+    }
     // 删除时必须取消元数据抓取。否则抓取完成后会重新给已删除的 job
     // 创建引擎，留下后台 socket/定时器和不可见的下载任务。
     _cancelFetch(job);
@@ -2522,6 +2620,7 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   void setSelectedFiles(TorrentJob job, List<int> indices) {
+    if (job.isChecking) return;
     _downloadBlockedAfterCompletion.remove(job.id);
     job.selectedFiles = List<int>.from(indices);
     job.selectionInitialized = true;
@@ -2540,6 +2639,7 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 删除选中的内容文件，并使对应 pieces 重新进入可下载状态。
   /// 删除后文件默认标记为 skip，避免用户只是清理磁盘却立刻被重新下载。
   Future<void> deleteFiles(TorrentJob job, Iterable<int> indices) async {
+    if (job.isChecking) throw StateError(t.torrentChecking);
     if (!_fileMutations.add(job.id)) {
       throw StateError('torrent file operation already in progress');
     }
@@ -2640,6 +2740,7 @@ class TorrentManager extends Notifier<TorrentState> {
     Iterable<int> indices,
     FilePriority priority,
   ) {
+    if (job.isChecking) return;
     final model = _models[job.id];
     final engine = _engines[job.id];
     final valid = indices
@@ -2751,6 +2852,9 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 只修改磁盘路径，保留种子内路径、info hash 和分片/文件下标。
   Future<void> renameFile(TorrentJob job, int index, String name) async {
+    if (job.isChecking || _fileMutations.contains(job.id)) {
+      throw StateError(t.torrentChecking);
+    }
     if (!isValidFileName(name)) throw ArgumentError.value(name);
     final task = _engines[job.id];
     final files = task?.fileManager?.files;
@@ -2923,6 +3027,7 @@ class TorrentManager extends Notifier<TorrentState> {
       // 改成 paused，否则会让保活通知停止后立即重启。
       if (_starting.contains(job.id) ||
           _prepareOperations.containsKey(job.id) ||
+          job.isChecking ||
           job.status == TorrentJobStatus.metadata) {
         continue;
       }
@@ -3102,6 +3207,7 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 仅文件下载和实际做种时保活；抓取元数据不发布下载通知。
   static bool needsKeepAlive(TorrentJob job, TaskState? engineState) =>
       job.hasMetadata &&
+      !job.isChecking &&
       !job.seedingPaused &&
       engineState == TaskState.running &&
       (job.status == TorrentJobStatus.downloading ||

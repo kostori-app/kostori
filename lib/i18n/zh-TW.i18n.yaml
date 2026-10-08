@@ -3211,6 +3211,11 @@ torrentTotalSize: 總大小
 torrentAddedAt: 加入於
 torrentFileCount: 檔案數
 torrentUploadedTotal: 累計上傳
+torrentDownloadSpeed: 下載速度
+torrentRecheck: 校驗本機檔案
+torrentChecking: 正在校驗
+torrentCheckFailed: 檔案校驗失敗
+torrentPiecesAllFiles: 區塊數包含未選擇下載的檔案
 torrentSeedRatio: 做種率
 torrentSeedDuration: 做種時長
 torrentSeeds: 種子

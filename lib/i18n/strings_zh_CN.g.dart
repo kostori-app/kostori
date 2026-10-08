@@ -3171,6 +3171,11 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentAddedAt => '添加于';
 	@override String get torrentFileCount => '文件数';
 	@override String get torrentUploadedTotal => '累计上传';
+	@override String get torrentDownloadSpeed => '下载速度';
+	@override String get torrentRecheck => '校验本地文件';
+	@override String get torrentChecking => '正在校验';
+	@override String get torrentCheckFailed => '文件校验失败';
+	@override String get torrentPiecesAllFiles => '区块数包含未选择下载的文件';
 	@override String get torrentSeedRatio => '做种率';
 	@override String get torrentSeedDuration => '做种时长';
 	@override String get torrentSeeds => '种子';
@@ -6503,6 +6508,11 @@ extension on TranslationsZhCn {
 			'torrentAddedAt' => '添加于',
 			'torrentFileCount' => '文件数',
 			'torrentUploadedTotal' => '累计上传',
+			'torrentDownloadSpeed' => '下载速度',
+			'torrentRecheck' => '校验本地文件',
+			'torrentChecking' => '正在校验',
+			'torrentCheckFailed' => '文件校验失败',
+			'torrentPiecesAllFiles' => '区块数包含未选择下载的文件',
 			'torrentSeedRatio' => '做种率',
 			'torrentSeedDuration' => '做种时长',
 			'torrentSeeds' => '种子',
