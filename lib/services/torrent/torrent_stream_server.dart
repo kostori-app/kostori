@@ -50,10 +50,18 @@ class TorrentStreamServer {
     } catch (_) {}
   }
 
-  Uri urlFor(TorrentFileEntry file) => urlForPath(
-    port,
-    file.path,
-  ).replace(queryParameters: {'fileIndex': '${file.index}'});
+  /// Use an opaque route for new playback URLs.
+  ///
+  /// The file index is authoritative and avoids sending long, percent-encoded
+  /// torrent paths through Android's native player URL parser. The handler
+  /// still accepts the previous path-based URLs for already cached players.
+  Uri urlFor(TorrentFileEntry file) => Uri(
+    scheme: 'http',
+    host: '127.0.0.1',
+    port: port,
+    path: '/stream',
+    queryParameters: {'fileIndex': '${file.index}'},
+  );
 
   static Uri urlForPath(int port, String filePath) => Uri(
     scheme: 'http',
