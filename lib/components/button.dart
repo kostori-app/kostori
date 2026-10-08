@@ -633,33 +633,38 @@ class SettingsActionButton extends StatelessWidget {
           enabled: onTap != null,
           isLoading: isLoading,
           onTap: onTap ?? () {},
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (trailing != null) ...[const SizedBox(width: 10), trailing!],
-              const SizedBox(width: 8),
+              if (trailing != null) ...[trailing!, const SizedBox(width: 10)],
               const Icon(Icons.chevron_right, size: 20),
             ],
+          ),
+          child: Expanded(
+            child: Row(
+              children: [
+                Icon(icon),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
