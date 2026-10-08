@@ -14,6 +14,16 @@ class _TestPlayer extends LocalPlayerController {
 }
 
 void main() {
+  test('torrent loopback playback uses a longer network timeout', () {
+    expect(
+      localPlaybackNetworkProperties(
+        'http://127.0.0.1:37473/stream?fileIndex=1',
+      ),
+      {'network-timeout': '75', 'http-proxy': ''},
+    );
+    expect(localPlaybackNetworkProperties('https://example.com/video.mp4'), {});
+  });
+
   testWidgets(
     'failed loopback playback retries the disk path and disposes once',
     (tester) async {

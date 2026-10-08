@@ -23,6 +23,19 @@ import 'package:window_manager/window_manager.dart';
 
 const String kLocalPlayerPosKeyPrefix = 'localPlayerPos:';
 
+Map<String, String> localPlaybackNetworkProperties(String path) {
+  final uri = Uri.tryParse(path);
+  if (uri == null ||
+      uri.scheme != 'http' ||
+      (uri.host != '127.0.0.1' && uri.host != 'localhost') ||
+      uri.path != '/stream' ||
+      int.tryParse(uri.queryParameters['fileIndex'] ?? '') == null) {
+    return const {};
+  }
+  // 缺失分片最多等待 60 秒，播放器必须比串流服务更晚超时。
+  return const {'network-timeout': '75', 'http-proxy': ''};
+}
+
 /// 生成稳定的播放进度存储 key。
 ///
 /// 种子串流走本地回环端口，而端口每次会话都是随机的（`TorrentStreamServer`
@@ -359,6 +372,14 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
         }),
       );
       await applyAndroidHwdecCodecs(p);
+      final native = p.platform;
+      if (native is NativePlayer) {
+        for (final property in localPlaybackNetworkProperties(
+          filePath,
+        ).entries) {
+          await native.setProperty(property.key, property.value);
+        }
+      }
       final open = p.open(Media(filePath), play: true);
       _openFuture = open;
       await open;

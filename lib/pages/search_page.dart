@@ -248,6 +248,14 @@ class _SearchPageState extends State<SearchPage> {
       controller: controller,
       onChanged: (s) {},
       focusNode: focusNode,
+      action: Button.icon(
+        icon: const Icon(Icons.search),
+        tooltip: t.search,
+        onPressed: () {
+          focusNode.unfocus();
+          search(controller.text);
+        },
+      ),
     );
     yield buildSearchTarget();
     yield SliverAnimatedPaintExtent(

@@ -672,7 +672,9 @@ class RHttpAdapter implements HttpClientAdapter {
     try {
       yield* body;
     } catch (e, s) {
-      NetLog.error('Network', '${options.method} ${options.uri} 响应体读取失败: $e');
+      if (options.extra['noLog'] != true) {
+        NetLog.error('Network', '${options.method} ${options.uri} 响应体读取失败: $e');
+      }
       Error.throwWithStackTrace(
         DioException(
           requestOptions: options,

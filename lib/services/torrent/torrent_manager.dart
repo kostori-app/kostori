@@ -2823,13 +2823,15 @@ class TorrentManager extends Notifier<TorrentState> {
         localFile.pieces.every((piece) => piece.isCompletelyWritten);
     final fileContentComplete = localFile.isRangeWritten(0, localFile.length);
     final local = File(localFile.filePath);
-    if ((job.status == TorrentJobStatus.completed ||
-            localFile.completed ||
-            piecesComplete ||
-            fileContentComplete) &&
+    if ((localFile.completed || piecesComplete || fileContentComplete) &&
         await local.exists() &&
         await local.length() >= localFile.length) {
       return localFile.filePath;
+    }
+    if (engine.state != TaskState.running) {
+      final model = _models[job.id];
+      if (model != null) _refreshProgress(job, model);
+      await resume(job);
     }
     var server = _servers[job.id];
     if (server == null || !server.running) {
@@ -2868,9 +2870,7 @@ class TorrentManager extends Notifier<TorrentState> {
     final file = files[fileIndex];
     final local = File(file.filePath);
     final contentComplete =
-        job.status == TorrentJobStatus.completed ||
-        file.completed ||
-        file.isRangeWritten(0, file.length);
+        file.completed || file.isRangeWritten(0, file.length);
     if (!contentComplete || file.length <= 0 || !await local.exists()) {
       return null;
     }
@@ -3125,21 +3125,13 @@ class TorrentManager extends Notifier<TorrentState> {
     }
     _lastKeepAlive = now;
     unawaited(
-      DownloadKeepAlive.attach(
-        DownloadKeepAlive.ownerTorrent,
-        [
-          for (final j in active)
-            (
-              title: j.name.isEmpty ? j.id : j.name,
-              progress: j.progress.clamp(0.0, 1.0).toDouble(),
-            ),
-        ],
-        remaining: _jobs
-            .where(
-              (j) => j.hasMetadata && j.status != TorrentJobStatus.completed,
-            )
-            .length,
-      ),
+      DownloadKeepAlive.attach(DownloadKeepAlive.ownerTorrent, [
+        for (final j in active)
+          (
+            title: j.name.isEmpty ? j.id : j.name,
+            progress: j.progress.clamp(0.0, 1.0).toDouble(),
+          ),
+      ], remaining: active.length),
     );
   }
 }

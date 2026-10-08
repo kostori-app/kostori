@@ -361,15 +361,11 @@ class DownloadManager extends ChangeNotifier {
       return;
     }
     _lastKeepAlive = now;
-    // 剩余任务数 = 全部未完成（下载中/排队/暂停/失败），进度条只列当前传输中的
-    final remaining = _tasks
-        .where((t) => t.status != DownloadStatus.completed)
-        .length;
     unawaited(
       DownloadKeepAlive.attach(
         DownloadKeepAlive.ownerHttp,
         active.map((t) => (title: t.title, progress: t.progress)).toList(),
-        remaining: remaining,
+        remaining: active.length,
       ),
     );
   }
@@ -723,6 +719,7 @@ class DownloadManager extends ChangeNotifier {
       task.filePath = finalPath;
       // 补全实际文件大小（m3u8 下载时无法预知总大小，合并后取真实值）
       task.totalBytes = await File(finalPath).length();
+      task.downloadedBytes = task.totalBytes;
       task.status = DownloadStatus.completed;
       // 与 completed 同一帧刷掉合并态（finally 里统一 notify），
       // 避免合并条先变回下载条再消失
@@ -774,6 +771,7 @@ class DownloadManager extends ChangeNotifier {
           task.status = DownloadStatus.failed;
           task.error = e.toString();
         }
+        Log.error('DownloadManager', '下载重试失败 ${task.title}: $e\n$s');
         _notifyDownloadFailed(task, e);
       } else {
         Log.error('DownloadManager', '下载失败 ${task.title}: $e\n$s');
@@ -862,8 +860,8 @@ class DownloadManager extends ChangeNotifier {
     if (lastTime != null && lastBytes != null) {
       final dt = now.difference(lastTime).inMilliseconds;
       final db = task.downloadedBytes - lastBytes;
-      if (dt >= 500 && db >= 0) {
-        task.downloadSpeed = db / (dt / 1000);
+      if (db < 0 || dt >= 500) {
+        task.downloadSpeed = db < 0 ? 0 : db / (dt / 1000);
         _speedSampleTime[task.id] = now;
         _speedSampleBytes[task.id] = task.downloadedBytes;
       }
@@ -899,6 +897,7 @@ class DownloadManager extends ChangeNotifier {
   void _clearSpeedSamples(String id) {
     _speedSampleTime.remove(id);
     _speedSampleBytes.remove(id);
+    _lastProgressNotify.remove(id);
   }
 
   /// 每次请求前用 jar 里最新的 cookie 刷新任务头：
@@ -956,20 +955,54 @@ class DownloadManager extends ChangeNotifier {
       headers = const {};
     }
     task.progress = 0;
+    task.downloadedBytes = 0;
+    task.downloadSpeed = 0;
+    _clearSpeedSamples(task.id);
+    final output = File(tmpPath);
+    if (await output.exists()) await output.delete();
     notifyListeners();
-    await FfmpegEncoder.download(
-      FfmpegDownloadArgs(
-        inputUrl: input,
-        outputPath: tmpPath,
-        headers: headers,
-        outputFormat: 'mp4',
-        cancelToken: cancelToken,
-        onProgress: (p) {
-          task.progress = p;
-          _notifyProgress();
-        },
-      ),
-    );
+    Future<void>? sampling;
+    Future<void> sampleOutput() async {
+      try {
+        if (!await output.exists()) return;
+        final bytes = await output.length();
+        if (cancelToken.isCancelled || !_tasks.contains(task)) return;
+        task.downloadedBytes = bytes;
+        if (task.totalBytes > 0) {
+          final progress = (bytes / task.totalBytes).clamp(0.0, 0.99);
+          if (progress > task.progress) task.progress = progress;
+        }
+        _updateDownloadProgress(task);
+      } on FileSystemException {
+        // FFmpeg 初始化输出时，文件可能暂时不可用。
+      }
+    }
+
+    final timer = Timer.periodic(_progressNotifyInterval, (_) {
+      sampling ??= sampleOutput().whenComplete(() => sampling = null);
+    });
+    try {
+      await FfmpegEncoder.download(
+        FfmpegDownloadArgs(
+          inputUrl: input,
+          outputPath: tmpPath,
+          headers: headers,
+          outputFormat: 'mp4',
+          cancelToken: cancelToken,
+          onProgress: (progress) {
+            if (cancelToken.isCancelled || !_tasks.contains(task)) return;
+            if (progress > task.progress) {
+              task.progress = progress.clamp(0.0, 0.99);
+              _notifyProgress();
+            }
+          },
+        ),
+      );
+    } finally {
+      timer.cancel();
+      await sampling;
+      await sampleOutput();
+    }
   }
 
   /// 打开写盘 sink：优先后台写盘 isolate，失败则回退 ISOink 直写。
@@ -1052,8 +1085,8 @@ class DownloadManager extends ChangeNotifier {
               followRedirects: true,
               receiveTimeout: null,
               extra: useHttp2
-                  ? {'streaming': true}
-                  : {'httpVersion11': true, 'streaming': true},
+                  ? {'streaming': true, 'noLog': true}
+                  : {'httpVersion11': true, 'streaming': true, 'noLog': true},
             ),
             cancelToken: dioCancel,
           );
@@ -1071,7 +1104,7 @@ class DownloadManager extends ChangeNotifier {
               headers: headers,
               followRedirects: true,
               receiveTimeout: null,
-              extra: {'streaming': true},
+              extra: {'streaming': true, 'noLog': true},
             ),
             cancelToken: dioCancel,
           );
@@ -1270,6 +1303,8 @@ class DownloadManager extends ChangeNotifier {
             segPaths[i] = segFile.path;
             completed++;
           } else {
+            final partial = File('${segFile.path}.part');
+            if (await segFile.exists()) await _deleteQuiet(segFile);
             // 分片下载带重试：签名 CDN（如 beeg）偶发 403/断连，重试可缓解。
             // 部分 CDN 会把分片连接挂住（不发数据也不断开），rhttp 不认 dio 的
             // receiveTimeout；对「请求」和「取块」都套 stall 超时主动判停并重试。
@@ -1289,6 +1324,8 @@ class DownloadManager extends ChangeNotifier {
                   }
                 },
               );
+              var got = 0;
+              var accepted = false;
               try {
                 final resp = await dio
                     .get<ResponseBody>(
@@ -1312,10 +1349,9 @@ class DownloadManager extends ChangeNotifier {
                     -1;
                 final sink = await _openSink(
                   writer,
-                  segFile.path,
+                  partial.path,
                   append: false,
                 );
-                var got = 0;
                 try {
                   await for (final chunk in resp.data!.stream.timeout(
                     _kHlsStallTimeout,
@@ -1325,6 +1361,8 @@ class DownloadManager extends ChangeNotifier {
                     }
                     final backpressure = sink.add(chunk);
                     got += chunk.length;
+                    task.downloadedBytes += chunk.length;
+                    _updateDownloadProgress(task);
                     if (backpressure != null) await backpressure;
                   }
                   await sink.flush();
@@ -1346,8 +1384,10 @@ class DownloadManager extends ChangeNotifier {
                 }
                 // 落盘校验：close 后文件元数据即准确，对不上说明写入丢了
                 //（无 fsync，崩溃/断电可能丢尾），重试而非将坏片送去合并
-                if (await segFile.length() != got) continue;
+                if (await partial.length() != got) continue;
+                await partial.rename(segFile.path);
                 received = got;
+                accepted = true;
                 break;
               } on TimeoutException {
                 segCancel.cancel();
@@ -1364,13 +1404,17 @@ class DownloadManager extends ChangeNotifier {
                 if (attempt >= 2) rethrow;
               } finally {
                 forward.cancel();
+                if (!accepted) {
+                  task.downloadedBytes -= got;
+                  await _deleteQuiet(partial);
+                  _updateDownloadProgress(task);
+                }
               }
             }
             if (received <= 0) {
               throw Exception('分片 $i 下载为空');
             }
             segPaths[i] = segFile.path;
-            task.downloadedBytes += received;
             completed++;
           }
           task.progress = segUrls.isEmpty ? 1 : completed / segUrls.length;
@@ -1479,8 +1523,8 @@ class DownloadManager extends ChangeNotifier {
     String content;
     String targetUrl = task.url;
     final Map<String, dynamic> versionExtra = useHttp2
-        ? const {}
-        : const {'httpVersion11': true};
+        ? const {'noLog': true}
+        : const {'httpVersion11': true, 'noLog': true};
     Response<String> root;
     try {
       root = await dio.get<String>(
@@ -1488,6 +1532,9 @@ class DownloadManager extends ChangeNotifier {
         options: Options(
           headers: task.headers,
           responseType: ResponseType.plain,
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
           extra: versionExtra,
         ),
       );
@@ -1523,6 +1570,9 @@ class DownloadManager extends ChangeNotifier {
             options: Options(
               headers: task.headers,
               responseType: ResponseType.plain,
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 15),
+              sendTimeout: const Duration(seconds: 15),
               extra: versionExtra,
             ),
           );
@@ -2452,12 +2502,12 @@ void Function() _cleanupOrphanSegmentsRunner(
 ) =>
     () => _cleanupOrphanSegmentsSync(rootPath, keepDirs, keepIds);
 
-/// 统计分片目录内所有文件的字节数（后台 isolate 执行）。
+/// 只统计已完成分片，排除中断后遗留的临时文件。
 int _segDirBytesSync(String dir) {
   var total = 0;
   try {
     for (final f in Directory(dir).listSync()) {
-      if (f is! File) continue;
+      if (f is! File || !f.path.endsWith('.ts')) continue;
       try {
         total += f.lengthSync();
       } catch (_) {}

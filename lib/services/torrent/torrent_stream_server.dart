@@ -207,7 +207,29 @@ class TorrentStreamServer {
     final first = (file.offset + start) ~/ pieceLength;
     final last = (file.offset + end - 1) ~/ pieceLength;
     final selected = <int>{};
-    // 保留首段和尾段窗口；MP4 尾部索引可能先于正文被播放器请求。
+    final fileFirst = file.offset ~/ pieceLength;
+    final fileLast = (file.offset + file.length - 1) ~/ pieceLength;
+    // 视频头和尾部索引应提前下载，不能等播放器探测到那里才排队。
+    for (
+      var i = fileFirst;
+      i <= fileLast && i < fileFirst + 16 && i < pieceCount;
+      i++
+    ) {
+      if (i >= 0 &&
+          task.pieceManager?.pieces[i]?.isCompletelyWritten == false) {
+        selected.add(i);
+      }
+    }
+    for (
+      var i = math.max(fileFirst, fileLast - 3);
+      i <= fileLast && i < pieceCount;
+      i++
+    ) {
+      if (i >= 0 &&
+          task.pieceManager?.pieces[i]?.isCompletelyWritten == false) {
+        selected.add(i);
+      }
+    }
     for (var i = first; i <= last && i < first + 16 && i < pieceCount; i++) {
       if (i >= 0 &&
           task.pieceManager?.pieces[i]?.isCompletelyWritten == false) {

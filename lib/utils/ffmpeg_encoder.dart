@@ -4,8 +4,6 @@ import 'dart:io';
 
 import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart'
     if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit_config.dart'
-    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_session.dart'
     if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_session.dart';
 import 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart'
@@ -409,7 +407,7 @@ class FfmpegEncoder {
     final cmd = buf.toString();
     Log.info('FfmpegEncoder', 'Download: $cmd');
 
-    // 流复制无法从 stderr 解析 time，用文件大小估算进度
+    // 输入时长由执行器从日志提取，流复制也能按媒体时间报告进度。
     if (Platform.isWindows) {
       await _runWindows(
         cmd,
@@ -876,7 +874,6 @@ class FfmpegEncoder {
     return null;
   }
 
-  /// 桌面端执行。下载模式（无 time 输出）用文件大小估算进度。
   /// 引号感知的命令行拆分：保留双引号包裹的参数为一个整体，
   /// 避免 `-headers "User-Agent: xxx"` 这类带空格的值被拆散。
   static List<String> _splitCommandLine(String cmd) {
@@ -932,7 +929,7 @@ class FfmpegEncoder {
     }
 
     double lastProgress = 0;
-    int lastSize = 0;
+    var expectedMs = totalMs;
     final stderrBuffer = StringBuffer();
 
     void report(double p) {
@@ -942,51 +939,38 @@ class FfmpegEncoder {
       }
     }
 
-    // 下载模式：监控输出文件大小（时间戳输出可能不存在）
-    Timer? sizeTimer;
-    if (isDownload && outputPath != null) {
-      sizeTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-        final f = File(outputPath);
-        if (!await f.exists()) return;
-        final size = await f.length();
-        if (size > lastSize) {
-          lastSize = size;
-          // 没有总时长信息，仅标记已产出数据
-          report(lastProgress);
-        }
-      });
-    }
-
     process.stderr.transform(const SystemEncoding().decoder).listen((data) {
       stderrBuffer.write(data);
-      final m = RegExp(r'time=(\d+):(\d+):(\d+)\.(\d+)').firstMatch(data);
-      if (m != null) {
-        try {
-          final currentMs =
-              int.parse(m.group(1)!) * 3600000 +
-              int.parse(m.group(2)!) * 60000 +
-              int.parse(m.group(3)!) * 1000 +
-              int.parse(m.group(4)!);
-          if (totalMs > 0) {
-            double p = (currentMs / totalMs).clamp(0.0, 1.0);
-            report(p);
-          }
-        } catch (_) {}
+      if (isDownload && expectedMs <= 0) {
+        expectedMs = _logTimestampMs(data, 'Duration:') ?? 0;
+      }
+      final currentMs = _logTimestampMs(data, 'time=');
+      if (currentMs != null && expectedMs > 0) {
+        report((currentMs / expectedMs).clamp(0.0, 0.99));
       }
     });
 
     final exitCode = await process.exitCode;
     cancelTimer?.cancel();
-    sizeTimer?.cancel();
     if (cancelToken != null && cancelToken.isCancelled) {
       throw FfmpegCancelledException();
     }
-    onProgress?.call(1.0);
     if (exitCode != 0) {
       throw Exception(
         'FFmpeg exited with code: $exitCode. Stderr: $stderrBuffer',
       );
     }
+    onProgress?.call(1.0);
+  }
+
+  static int? _logTimestampMs(String text, String prefix) {
+    final match = RegExp(
+      '${RegExp.escape(prefix)}\\s*(\\d+):(\\d+):(\\d+(?:\\.\\d+)?)',
+    ).firstMatch(text);
+    if (match == null) return null;
+    return int.parse(match.group(1)!) * 3600000 +
+        int.parse(match.group(2)!) * 60000 +
+        (double.parse(match.group(3)!) * 1000).round();
   }
 
   /// 移动端执行。
@@ -1001,20 +985,11 @@ class FfmpegEncoder {
     Log.info('FfmpegEncoder', 'Mobile FFmpeg command: $cmd');
 
     double lastProgress = 0;
-
-    FFmpegKitConfig.enableStatisticsCallback((stats) {
-      final t = stats.getTime();
-      if (t > 0 && totalMs > 0) {
-        double p = (t / totalMs).clamp(0.0, 1.0);
-        if (p > lastProgress + 0.01) {
-          lastProgress = p;
-          onProgress?.call(p);
-        }
-      }
-    });
+    var expectedMs = totalMs;
 
     final completer = Completer<void>();
     FFmpegSession? completedSession;
+    Timer? cancelTimer;
 
     try {
       final session = await FFmpegKit.executeAsync(
@@ -1025,11 +1000,15 @@ class FfmpegEncoder {
             completer.complete();
           }
         },
-        (log) {},
+        (log) {
+          if (isDownload && expectedMs <= 0) {
+            expectedMs = _logTimestampMs(log.getMessage(), 'Duration:') ?? 0;
+          }
+        },
         (stats) {
           final t = stats.getTime();
-          if (t > 0 && totalMs > 0) {
-            double p = (t / totalMs).clamp(0.0, 1.0);
+          if (t > 0 && expectedMs > 0) {
+            double p = (t / expectedMs).clamp(0.0, 0.99);
             if (p > lastProgress + 0.01) {
               lastProgress = p;
               onProgress?.call(p);
@@ -1040,7 +1019,6 @@ class FfmpegEncoder {
 
       final timeout = Duration(seconds: 300);
       // 取消检查：定时探测，命中则取消 ffmpeg session
-      Timer? cancelTimer;
       if (cancelToken != null) {
         cancelTimer = Timer.periodic(const Duration(milliseconds: 400), (_) {
           if (cancelToken.isCancelled) {
@@ -1062,8 +1040,6 @@ class FfmpegEncoder {
       if (cancelToken != null && cancelToken.isCancelled) {
         throw FfmpegCancelledException();
       }
-
-      onProgress?.call(1.0);
 
       final returnCode = await completedSession!.getReturnCode();
       final output = await completedSession!.getOutput();
@@ -1092,9 +1068,12 @@ class FfmpegEncoder {
           'Logs: $allLogs',
         );
       }
+      onProgress?.call(1.0);
     } catch (e) {
       Log.error('FfmpegEncoder', 'FFmpeg Kit error: $e');
       rethrow;
+    } finally {
+      cancelTimer?.cancel();
     }
   }
 

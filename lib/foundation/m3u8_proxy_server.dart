@@ -82,6 +82,9 @@ class M3u8ProxyServer {
                 options: Options(
                   responseType: ResponseType.bytes,
                   headers: _headers,
+                  connectTimeout: const Duration(seconds: 20),
+                  receiveTimeout: const Duration(seconds: 20),
+                  extra: const {'noLog': true},
                 ),
               );
               final bytes = resp.data ?? const <int>[];
@@ -137,7 +140,13 @@ class M3u8ProxyServer {
   ) async {
     final resp = await _dio.get<String>(
       url,
-      options: Options(responseType: ResponseType.plain, headers: headers),
+      options: Options(
+        responseType: ResponseType.plain,
+        headers: headers,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+        extra: const {'noLog': true},
+      ),
     );
     var content = resp.data ?? '';
 
