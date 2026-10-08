@@ -2809,19 +2809,61 @@ class TorrentManager extends Notifier<TorrentState> {
     final piecesComplete =
         localFile.pieces.isNotEmpty &&
         localFile.pieces.every((piece) => piece.isCompletelyWritten);
+    final fileContentComplete = localFile.isRangeWritten(0, localFile.length);
     final local = File(localFile.filePath);
-    if ((localFile.completed || piecesComplete) &&
+    if ((job.status == TorrentJobStatus.completed ||
+            localFile.completed ||
+            piecesComplete ||
+            fileContentComplete) &&
         await local.exists() &&
         await local.length() >= localFile.length) {
       return localFile.filePath;
     }
     var server = _servers[job.id];
     if (server == null || !server.running) {
-      server = TorrentStreamServer(engine);
+      final model = _models[job.id];
+      server = TorrentStreamServer(
+        engine,
+        onIdle: model == null
+            ? null
+            : () {
+                try {
+                  // 播放窗口结束后恢复用户设置的文件优先级；否则串流窗口
+                  // 的临时 priority 集合会一直覆盖“正常/高/最高”选择。
+                  if (_downloadBlockedAfterCompletion.contains(job.id)) {
+                    engine.setFilePriorities({
+                      for (var i = 0; i < model.files.length; i++)
+                        i: FilePriority.skip,
+                    });
+                  } else {
+                    _applySelection(engine, job, model);
+                  }
+                } catch (_) {}
+              },
+      );
       await server.start();
       _servers[job.id] = server;
     }
     return server.urlFor(entries[fileIndex]).toString();
+  }
+
+  /// 串流打开失败时，为已完成文件提供磁盘路径回退。
+  Future<String?> localPlaybackPath(TorrentJob job, int fileIndex) async {
+    final files = _engines[job.id]?.fileManager?.files;
+    if (files == null || fileIndex < 0 || fileIndex >= files.length) {
+      return null;
+    }
+    final file = files[fileIndex];
+    final local = File(file.filePath);
+    final contentComplete =
+        job.status == TorrentJobStatus.completed ||
+        file.completed ||
+        file.isRangeWritten(0, file.length);
+    if (!contentComplete || file.length <= 0 || !await local.exists()) {
+      return null;
+    }
+    if (await local.length() < file.length) return null;
+    return file.filePath;
   }
 
   Future<void> stopStreams(TorrentJob job) async {

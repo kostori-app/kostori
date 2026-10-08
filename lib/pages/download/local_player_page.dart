@@ -8,6 +8,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
 import 'package:kostori/pages/watcher/player_cache.dart';
@@ -21,19 +22,60 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 /// 本地视频播放页（播放已下载的 mp4 / 种子流）
-class LocalPlayerPage extends StatelessWidget {
+class LocalPlayerPage extends StatefulWidget {
   final String filePath;
+  final String? fallbackFilePath;
 
   /// 页面销毁时回调（如停止种子流、恢复文件优先级）
   final VoidCallback? onDispose;
 
-  const LocalPlayerPage({super.key, required this.filePath, this.onDispose});
+  const LocalPlayerPage({
+    super.key,
+    required this.filePath,
+    this.fallbackFilePath,
+    this.onDispose,
+  });
+
+  @override
+  State<LocalPlayerPage> createState() => _LocalPlayerPageState();
+}
+
+class _LocalPlayerPageState extends State<LocalPlayerPage> {
+  late String _filePath = widget.filePath;
+  bool _usedFallback = false;
+
+  void _onPlaybackError(String error) {
+    final fallback = widget.fallbackFilePath;
+    if (!error.contains('Failed to open') ||
+        !mounted ||
+        _usedFallback ||
+        fallback == null ||
+        fallback == _filePath) {
+      return;
+    }
+    final uri = Uri.tryParse(_filePath);
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        (uri.host != '127.0.0.1' && uri.host != 'localhost')) {
+      return;
+    }
+    _usedFallback = true;
+    Log.warning('本地播放', '串流打开失败，尝试磁盘文件 $fallback\n$error');
+    // provider 在媒体回调期间更新；下一帧切换来源，避免在 build 中 setState。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _filePath = fallback);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: LocalPlayerView(filePath: filePath, onDispose: onDispose),
+      body: LocalPlayerView(
+        filePath: _filePath,
+        onPlaybackError: _onPlaybackError,
+        onDispose: widget.onDispose,
+      ),
     );
   }
 }
@@ -76,11 +118,17 @@ class _LocalFullscreenVideoPageState
 /// MouseRegion、点击/双击/长按 2x / 左右滑动 seek / 上下滑动音量·亮度、磨砂 HUD。
 class LocalPlayerView extends ConsumerStatefulWidget {
   final String filePath;
+  final void Function(String error)? onPlaybackError;
 
   /// 页面销毁时回调（如停止种子流）
   final VoidCallback? onDispose;
 
-  const LocalPlayerView({super.key, required this.filePath, this.onDispose});
+  const LocalPlayerView({
+    super.key,
+    required this.filePath,
+    this.onPlaybackError,
+    this.onDispose,
+  });
 
   @override
   ConsumerState<LocalPlayerView> createState() => _LocalPlayerViewState();
@@ -283,7 +331,13 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(localPlayerControllerProvider(widget.filePath));
+    final provider = localPlayerControllerProvider(widget.filePath);
+    ref.listen(provider, (previous, next) {
+      if (next.error.isNotEmpty && next.error != previous?.error) {
+        widget.onPlaybackError?.call(next.error);
+      }
+    });
+    final state = ref.watch(provider);
     final c = ctrl;
     return Scaffold(
       backgroundColor: Colors.black,
@@ -305,6 +359,11 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                       style: const TextStyle(color: Colors.white70),
                       textAlign: TextAlign.center,
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  Button.text(
+                    onPressed: _showVideoInfo,
+                    child: Text(t.watcherDetailsLogs),
                   ),
                 ],
               ),

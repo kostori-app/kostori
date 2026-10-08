@@ -613,10 +613,12 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
   Future<void> _play(int index) async {
     try {
       final url = await _manager.streamUrl(_job, index);
+      final localPath = await _manager.localPlaybackPath(_job, index);
       if (!mounted) return;
       context.to(
         () => LocalPlayerPage(
           filePath: url,
+          fallbackFilePath: localPath,
           // 捕获已经解析出的管理器实例；播放器销毁时详情页可能已经
           // 卸载，此时再通过 ref.read 会触发 Riverpod 的生命周期断言。
           onDispose: () => _manager.stopStreams(_job),
