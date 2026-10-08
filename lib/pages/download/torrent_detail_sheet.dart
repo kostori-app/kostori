@@ -593,9 +593,8 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
       title: t.torrentDeleteFiles,
       content: Text(t.torrentDeleteFilesConfirm),
       actions: [
-        Button.text(onPressed: () => context.pop(false), child: Text(t.cancel)),
         Button.filled(
-          onPressed: () => context.pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
           child: Text(t.confirm),
         ),
       ],
@@ -638,14 +637,14 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
       actions: [
         Button.text(
           onPressed: () {
-            context.pop();
+            Navigator.of(context, rootNavigator: true).pop();
             _removeJob(deleteFiles: false);
           },
           child: Text(t.torrentDeleteTaskOnly),
         ),
         Button.filled(
           onPressed: () {
-            context.pop();
+            Navigator.of(context, rootNavigator: true).pop();
             _removeJob(deleteFiles: true);
           },
           child: Text(t.torrentDeleteWithFiles),

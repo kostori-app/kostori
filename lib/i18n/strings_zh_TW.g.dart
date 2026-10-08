@@ -3082,6 +3082,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentSaveDir => '保存目錄';
 	@override String get torrentDownloadDir => '種子下載目錄';
 	@override String get torrentDownloadDirDesc => '新種子使用此目錄，變更時會遷移現有種子';
+	@override String get torrentPeerIdPrefix => 'BT 用戶端識別';
+	@override String get torrentPeerIdPrefixHint => '請輸入 8 個 ASCII 字元，例如 -qB0001-';
 	@override String get torrentMigrating => '正在遷移種子檔案…';
 	@override String get torrentMigrationDone => '種子下載目錄已更新，現有種子已遷移';
 	@override String get torrentMigrationPartial => '種子下載目錄已更新，部分舊任務保留在原目錄';
@@ -6410,6 +6412,8 @@ extension on TranslationsZhTw {
 			'torrentSaveDir' => '保存目錄',
 			'torrentDownloadDir' => '種子下載目錄',
 			'torrentDownloadDirDesc' => '新種子使用此目錄，變更時會遷移現有種子',
+			'torrentPeerIdPrefix' => 'BT 用戶端識別',
+			'torrentPeerIdPrefixHint' => '請輸入 8 個 ASCII 字元，例如 -qB0001-',
 			'torrentMigrating' => '正在遷移種子檔案…',
 			'torrentMigrationDone' => '種子下載目錄已更新，現有種子已遷移',
 			'torrentMigrationPartial' => '種子下載目錄已更新，部分舊任務保留在原目錄',

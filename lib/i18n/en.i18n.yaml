@@ -3122,6 +3122,8 @@ torrentStatusFailed: Failed
 torrentSaveDir: Save directory
 torrentDownloadDir: Torrent download directory
 torrentDownloadDirDesc: New torrents use this directory; existing torrents are migrated when it changes
+torrentPeerIdPrefix: BT client identity
+torrentPeerIdPrefixHint: Eight ASCII characters, for example -qB0001-
 torrentMigrating: Migrating torrent files…
 torrentMigrationDone: Torrent download directory updated and existing torrents migrated
 torrentMigrationPartial: Torrent download directory updated; some old tasks remain in their original directory

@@ -190,7 +190,9 @@ class _TorrentFileListState extends State<TorrentFileList>
     final priority = node.file == null
         ? null
         : _priorityLabel(node.file!.index);
-    final statusText = priority == null ? status : '$priority · $status';
+    final statusText = priority == null || priority == status
+        ? status
+        : '$priority · $status';
     return Padding(
       padding: EdgeInsets.only(left: (depth * 14.0).clamp(0, 42), bottom: 8),
       child: Material(

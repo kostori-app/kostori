@@ -34,6 +34,7 @@ const String kTorrentSeedRatioLimit = 'torrentSeedRatioLimit';
 const String kTorrentSeedTimeLimit = 'torrentSeedTimeLimit';
 const String kTorrentCustomNodes = 'torrentCustomNodes';
 const String kTorrentDownloadDir = 'torrentDownloadDir';
+const String kTorrentPeerIdPrefix = 'torrentPeerIdPrefix';
 
 /// `selectedFiles` 哨兵：表示「一个文件都不选」。空列表仍表示「全部」（兼容旧数据）。
 const int kTorrentNoFile = -1;
@@ -411,6 +412,27 @@ class TorrentManager extends Notifier<TorrentState> {
     return downloadDir;
   }
 
+  /// Azureus-style 8-byte client prefix used in new torrent peer IDs.
+  static String get torrentPeerIdPrefix {
+    final value = appdata.implicitData[kTorrentPeerIdPrefix] as String?;
+    if (value != null &&
+        value.length == 8 &&
+        value.codeUnits.every((byte) => byte <= 255)) {
+      return value;
+    }
+    return '-KT0001-';
+  }
+
+  static set torrentPeerIdPrefix(String value) {
+    final normalized = value.trim();
+    if (normalized.length != 8 ||
+        normalized.codeUnits.any((byte) => byte > 255)) {
+      return;
+    }
+    appdata.implicitData[kTorrentPeerIdPrefix] = normalized;
+    appdata.writeImplicitData();
+  }
+
   /// 设置种子专用目录，并把已有任务的文件和状态一并迁移过去。
   ///
   /// 任务自己的 [TorrentJob.savePath] 仍然是最终依据。迁移失败时保留旧
@@ -487,7 +509,10 @@ class TorrentManager extends Notifier<TorrentState> {
       );
       for (final tr in limitActiveTrackerUris(configured)) {
         try {
-          engine.startAnnounceUrl(tr, model.infoHashBuffer);
+          engine.startAnnounceUrl(
+            tr,
+            model.v1InfoHash ?? model.truncatedInfoHash,
+          );
         } catch (_) {}
       }
     }
@@ -1463,6 +1488,11 @@ class TorrentManager extends Notifier<TorrentState> {
         // partialSeedingEnabled：只勾选部分文件时 isAllComplete 永远为 false，
         // tracker 收不到 completed 通告、做种比例恶化。开启后改发 event=paused。
         true,
+        null, // sslConfig
+        null, // encryptionConfig
+        null, // peerId
+        TorrentManager.torrentPeerIdPrefix,
+        activePeerLimit,
       );
       createdTask = task;
       _engines[job.id] = task;
@@ -2039,7 +2069,7 @@ class TorrentManager extends Notifier<TorrentState> {
     );
     for (final tr in trackersForTask) {
       try {
-        task.startAnnounceUrl(tr, model.infoHashBuffer);
+        task.startAnnounceUrl(tr, model.v1InfoHash ?? model.truncatedInfoHash);
       } catch (_) {}
     }
     if (!Platform.isAndroid) {
@@ -2527,8 +2557,10 @@ class TorrentManager extends Notifier<TorrentState> {
         for (final index in valid)
           for (final piece in fileManager.files[index].pieces) piece.index,
       };
+      final deletedPaths = <String>{};
       for (final index in valid) {
         final path = fileManager.files[index].filePath;
+        deletedPaths.add(path);
         await fileManager.files[index].delete();
         // DownloadFile.delete() only knows about its lazily opened handle.
         // A restored task may have no handle even though the file is present.
@@ -2538,6 +2570,7 @@ class TorrentManager extends Notifier<TorrentState> {
           throw FileSystemException('torrent file was not deleted', path);
         }
       }
+      await _pruneTorrentDirectories(job.savePath, deletedPaths);
       for (final pieceIndex in pieces) {
         final piece = task.pieceManager?[pieceIndex];
         if (piece == null) continue;
@@ -3007,11 +3040,12 @@ class TorrentManager extends Notifier<TorrentState> {
     });
     for (final candidate in scored.take(overflow)) {
       if (!_peerTrimPending.add(candidate.key)) continue;
-      // BadException tells the engine not to reconnect the intentionally
-      // released peer, otherwise the connection cap would churn forever.
       unawaited(
-        candidate.peer
-            .dispose(BadException('peer connection limit'))
+        (engine.peersManager?.disconnectPeer(
+                  candidate.peer,
+                  BadException('peer connection limit'),
+                ) ??
+                Future<void>.value())
             .catchError((_) {}),
       );
     }
