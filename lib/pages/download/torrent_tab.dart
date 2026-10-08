@@ -158,7 +158,7 @@ class TorrentTab extends ConsumerStatefulWidget {
   ConsumerState<TorrentTab> createState() => _TorrentTabState();
 }
 
-String _statusLabel(TorrentJobStatus s) {
+String _statusLabel(TorrentJobStatus s, {bool seeding = false}) {
   switch (s) {
     case TorrentJobStatus.metadata:
       return t.torrentStatusMetadata;
@@ -167,7 +167,7 @@ String _statusLabel(TorrentJobStatus s) {
     case TorrentJobStatus.paused:
       return t.torrentStatusPaused;
     case TorrentJobStatus.completed:
-      return t.torrentStatusCompleted;
+      return seeding ? t.torrentStatusSeeding : t.torrentStatusCompleted;
     case TorrentJobStatus.failed:
       return t.torrentStatusFailed;
   }
@@ -232,6 +232,7 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
       // 否则被「全部暂停」停掉元数据任务后永远回不来。
       if (j.status == TorrentJobStatus.paused ||
           j.status == TorrentJobStatus.metadata ||
+          (j.isFinished && j.seedingPaused) ||
           j.status == TorrentJobStatus.failed) {
         await _m.resume(j, isRetry: j.status == TorrentJobStatus.failed);
       }
@@ -253,8 +254,7 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
     if (job.isFetchingMeta || job.status == TorrentJobStatus.downloading) {
       return true;
     }
-    return job.status == TorrentJobStatus.completed &&
-        _m.engineOf(job)?.state == TaskState.running;
+    return _m.isSeeding(job);
   }
 
   Future<void> _toggleJob(TorrentJob job) async {
@@ -404,6 +404,8 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
   Widget _jobCard(TorrentJob job) {
     final cs = Theme.of(context).colorScheme;
     final running = _isRunning(job);
+    final seeding = _m.isSeeding(job);
+    final status = _statusLabel(job.status, seeding: seeding);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       child: Material(
@@ -428,7 +430,9 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        job.isFinished
+                        seeding
+                            ? Icons.upload_outlined
+                            : job.isFinished
                             ? Icons.check_circle_outline
                             : job.isFetchingMeta
                             ? Icons.downloading_outlined
@@ -452,7 +456,7 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '${_statusLabel(job.status)} · '
+                            '$status · '
                             '${t.torrentPeers} ${job.numPeers}/${job.numSeeds}',
                             style: TextStyle(
                               fontSize: 12,
@@ -476,9 +480,7 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                   children: [
                     Expanded(
                       child: Text(
-                        job.hasMetadata
-                            ? _progressText(job)
-                            : _statusLabel(job.status),
+                        job.hasMetadata ? _progressText(job) : status,
                         style: TextStyle(
                           fontSize: 11,
                           color: cs.onSurfaceVariant,
@@ -501,7 +503,13 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: Icon(running ? Icons.pause : Icons.play_arrow),
-                      tooltip: running ? t.torrentPause : t.torrentResume,
+                      tooltip: job.isFinished
+                          ? running
+                                ? t.torrentStopSeeding
+                                : t.torrentResumeSeeding
+                          : running
+                          ? t.torrentPause
+                          : t.torrentResume,
                       onPressed: () => _toggleJob(job),
                     ),
                     IconButton(

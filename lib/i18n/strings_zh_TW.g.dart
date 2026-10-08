@@ -3078,6 +3078,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentStatusDownloading => '下載中';
 	@override String get torrentStatusPaused => '已暫停';
 	@override String get torrentStatusCompleted => '已完成';
+	@override String get torrentStatusSeeding => '做種中';
+	@override String get torrentStopSeeding => '停止做種';
+	@override String get torrentResumeSeeding => '繼續做種';
 	@override String get torrentStatusFailed => '失敗';
 	@override String get torrentSaveDir => '保存目錄';
 	@override String get torrentDownloadDir => '種子下載目錄';
@@ -6406,6 +6409,9 @@ extension on TranslationsZhTw {
 			'torrentStatusDownloading' => '下載中',
 			'torrentStatusPaused' => '已暫停',
 			'torrentStatusCompleted' => '已完成',
+			'torrentStatusSeeding' => '做種中',
+			'torrentStopSeeding' => '停止做種',
+			'torrentResumeSeeding' => '繼續做種',
 			'torrentStatusFailed' => '失敗',
 			'torrentSaveDir' => '保存目錄',
 			'torrentDownloadDir' => '種子下載目錄',

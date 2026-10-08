@@ -3079,6 +3079,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentStatusDownloading => '下载中';
 	@override String get torrentStatusPaused => '已暂停';
 	@override String get torrentStatusCompleted => '已完成';
+	@override String get torrentStatusSeeding => '做种中';
+	@override String get torrentStopSeeding => '停止做种';
+	@override String get torrentResumeSeeding => '继续做种';
 	@override String get torrentStatusFailed => '失败';
 	@override String get torrentSaveDir => '保存目录';
 	@override String get torrentDownloadDir => '种子下载目录';
@@ -6408,6 +6411,9 @@ extension on TranslationsZhCn {
 			'torrentStatusDownloading' => '下载中',
 			'torrentStatusPaused' => '已暂停',
 			'torrentStatusCompleted' => '已完成',
+			'torrentStatusSeeding' => '做种中',
+			'torrentStopSeeding' => '停止做种',
+			'torrentResumeSeeding' => '继续做种',
 			'torrentStatusFailed' => '失败',
 			'torrentSaveDir' => '保存目录',
 			'torrentDownloadDir' => '种子下载目录',

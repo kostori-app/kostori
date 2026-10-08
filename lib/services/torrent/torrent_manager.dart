@@ -626,9 +626,7 @@ class TorrentManager extends Notifier<TorrentState> {
       if (!_seedLimitReached(job)) continue;
       try {
         engine.pause();
-        job.downloadRate = 0;
-        job.uploadRate = 0;
-        job.status = TorrentJobStatus.paused;
+        _pauseTransfer(job);
         changed = true;
       } catch (_) {}
     }
@@ -648,9 +646,7 @@ class TorrentManager extends Notifier<TorrentState> {
       }
       try {
         engine.pause();
-        job.downloadRate = 0;
-        job.uploadRate = 0;
-        job.status = TorrentJobStatus.paused;
+        _pauseTransfer(job);
         changed = true;
       } catch (_) {}
     }
@@ -1495,10 +1491,7 @@ class TorrentManager extends Notifier<TorrentState> {
         _started.add(job.id);
         _applyEndpoints(task, job, model);
         if (_pausedByUser.contains(job.id)) {
-          task.pause();
-          job.status = TorrentJobStatus.paused;
-        } else {
-          job.status = TorrentJobStatus.downloading;
+          _pauseTransfer(job);
         }
       } else {
         // 加载状态文件，让暂停中的任务也能显示单文件进度
@@ -1510,11 +1503,21 @@ class TorrentManager extends Notifier<TorrentState> {
           _engines.remove(job.id);
           return;
         }
-        job.status = TorrentJobStatus.paused;
       }
       // 必须在 start/prepare 之后：此时 fileManager/pieceManager 才就绪，
       // 否则 setFilePriority / applySelectedFiles 会被静默忽略
       _applySelection(task, job, model);
+      _refreshProgress(job, model);
+      _updateTransferStatus(job, running: task.state == TaskState.running);
+      if (job.isFinished && task.state == TaskState.running) {
+        if (job.stopAfter == TorrentStopPolicy.afterDownload ||
+            stopSeedAfterComplete ||
+            _seedLimitReached(job)) {
+          _pauseTransfer(job);
+        } else {
+          _blockCompletedDownloads(job, task, model);
+        }
+      }
       if (pauseAfterMetadata) _persist();
     } catch (e) {
       if (createdTask != null && identical(_engines[job.id], createdTask)) {
@@ -2195,20 +2198,50 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   // ── 操作 ──────────────────────────────────────────────────────────────────
+  void _updateTransferStatus(TorrentJob job, {required bool running}) {
+    final completed = job.hasCompletedDownload;
+    job.status = completed
+        ? TorrentJobStatus.completed
+        : running
+        ? TorrentJobStatus.downloading
+        : TorrentJobStatus.paused;
+    job.seedingPaused = completed && !running;
+    if (completed) {
+      job.progress = 1;
+      job.error = null;
+    }
+    if (!running) {
+      job.downloadRate = 0;
+      job.uploadRate = 0;
+    }
+  }
+
+  void _pauseTransfer(TorrentJob job) {
+    final completed = job.isFinished || job.hasCompletedDownload;
+    final engine = _engines[job.id];
+    if (engine != null && engine.state == TaskState.running) engine.pause();
+    try {
+      engine?.stopScheduling();
+    } catch (_) {}
+    _uploadSamples.remove(job.id);
+    _updateTransferStatus(job, running: false);
+    if (completed) {
+      job.status = TorrentJobStatus.completed;
+      job.seedingPaused = true;
+      job.progress = 1;
+      job.error = null;
+    }
+  }
+
   void pause(TorrentJob job) {
     _pausedByUser.add(job.id);
     // 中止进行中的元数据抓取，避免其在超时后覆盖 pause 设置的状态
     _cancelFetch(job);
-    final engine = _engines[job.id];
-    if (engine != null && engine.state == TaskState.running) {
-      engine.pause();
+    final model = _models[job.id];
+    if (_engines[job.id]?.fileManager != null && model != null) {
+      _refreshProgress(job, model);
     }
-    try {
-      engine?.stopScheduling();
-    } catch (_) {}
-    job.downloadRate = 0;
-    job.uploadRate = 0;
-    job.status = TorrentJobStatus.paused;
+    _pauseTransfer(job);
     _persist();
     _emit();
   }
@@ -2225,11 +2258,12 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 恢复任务；[isRetry] 为 true 时（用户手动点重试）重置元数据重试预算。
   Future<void> resume(TorrentJob job, {bool isRetry = false}) {
     _pausedByUser.remove(job.id);
+    job.seedingPaused = false;
     final pending = _resumeOperations[job.id];
     if (pending != null) return pending;
     if (job.hasMetadata && job.status == TorrentJobStatus.paused) {
       // 先反馈用户操作，再等待引擎恢复文件状态和网络连接。
-      job.status = TorrentJobStatus.downloading;
+      _updateTransferStatus(job, running: true);
       _emit();
     }
     final operation = TorrentNetwork.run(
@@ -2251,30 +2285,15 @@ class TorrentManager extends Notifier<TorrentState> {
       job.stopAfter = TorrentStopPolicy.none;
       _persist();
     }
-    if (stopSeedAfterComplete &&
-        (job.status == TorrentJobStatus.completed || job.progress >= 1.0)) {
-      job.status = TorrentJobStatus.paused;
-      job.downloadRate = 0;
-      job.uploadRate = 0;
+    if ((job.hasCompletedDownload &&
+            (stopSeedAfterComplete ||
+                job.stopAfter == TorrentStopPolicy.afterDownload)) ||
+        _seedLimitReached(job)) {
+      _pauseTransfer(job);
       _persist();
       _emit();
       return;
     }
-    if (_seedLimitReached(job)) {
-      job.status = TorrentJobStatus.paused;
-      job.downloadRate = 0;
-      job.uploadRate = 0;
-      _persist();
-      _emit();
-      return;
-    }
-    // 已完成任务仍可能在应用重启后等待 fileManager 恢复。播放请求需要
-    // 继续准备引擎；只有引擎已经存在时才可以直接返回。
-    if (job.status == TorrentJobStatus.completed &&
-        _engines.containsKey(job.id)) {
-      return;
-    }
-    _pausedByUser.remove(job.id);
     // 库的 start() 非幂等（server socket 已被监听会抛 "Stream was already
     // listened to"），并发 resume 也会重复 start，这里串行化并容错。
     if (!_starting.add(job.id)) return;
@@ -2310,18 +2329,24 @@ class TorrentManager extends Notifier<TorrentState> {
         throw StateError('torrent engine is not ready');
       }
       if (_pausedByUser.contains(job.id)) {
-        if (engine.state == TaskState.running) engine.pause();
-        job.status = TorrentJobStatus.paused;
+        _pauseTransfer(job);
         _persist();
         _emit();
         return;
+      }
+      final model = _models[job.id];
+      if (model != null) {
+        _refreshProgress(job, model);
+        if (job.hasCompletedDownload) {
+          _blockCompletedDownloads(job, engine, model);
+        }
       }
       if (engine.state == TaskState.paused &&
           engine.fileManager != null &&
           engine.peersManager != null) {
         engine.resume();
         _applyLimits(engine);
-        job.status = TorrentJobStatus.downloading;
+        _updateTransferStatus(job, running: true);
       } else if (engine.state != TaskState.running) {
         // stopped：首次启动或 stop() 之后；start() 非幂等，容错重复启动
         try {
@@ -2346,8 +2371,7 @@ class TorrentManager extends Notifier<TorrentState> {
           return;
         }
         if (_pausedByUser.contains(job.id)) {
-          engine.pause();
-          job.status = TorrentJobStatus.paused;
+          _pauseTransfer(job);
           _persist();
           _emit();
           return;
@@ -2355,7 +2379,7 @@ class TorrentManager extends Notifier<TorrentState> {
         _started.add(job.id);
         final model = _models[job.id];
         if (model != null) _applyEndpoints(engine, job, model);
-        job.status = TorrentJobStatus.downloading;
+        _updateTransferStatus(job, running: true);
       }
       _sync();
       _persist();
@@ -2505,6 +2529,8 @@ class TorrentManager extends Notifier<TorrentState> {
     final model = _models[job.id];
     if (engine != null && model != null) {
       _applySelection(engine, job, model);
+      _refreshProgress(job, model);
+      _updateTransferStatus(job, running: engine.state == TaskState.running);
     }
     if (model != null) job.totalWanted = _wantedBytes(job, model);
     _persist();
@@ -2592,8 +2618,8 @@ class TorrentManager extends Notifier<TorrentState> {
         job.uploadRate = 0;
       } else if (wasRunning) {
         task.resume();
-        job.status = TorrentJobStatus.downloading;
       }
+      _updateTransferStatus(job, running: task.state == TaskState.running);
       _persist();
       _emit();
     } catch (_) {
@@ -2752,6 +2778,11 @@ class TorrentManager extends Notifier<TorrentState> {
   TorrentTask? engineOf(TorrentJob job) => _engines[job.id];
   TorrentModel? modelOf(TorrentJob job) => _models[job.id];
 
+  bool isSeeding(TorrentJob job) =>
+      job.isFinished &&
+      !job.seedingPaused &&
+      _engines[job.id]?.state == TaskState.running;
+
   List<String> httpSourcesOf(TorrentJob job) {
     final magnet = _tryParseMagnet(job.magnet);
     return {
@@ -2870,6 +2901,8 @@ class TorrentManager extends Notifier<TorrentState> {
         ..write('|')
         ..write(job.seedingStartedAt)
         ..write('|')
+        ..write(job.seedingPaused)
+        ..write('|')
         ..write(job.numPeers)
         ..write('|')
         ..write(job.numSeeds)
@@ -2893,7 +2926,6 @@ class TorrentManager extends Notifier<TorrentState> {
           job.status == TorrentJobStatus.metadata) {
         continue;
       }
-      final noneSelected = _isNoneSelected(job.selectedFiles);
       final model = _models[job.id];
       if (_downloadBlockedAfterCompletion.contains(job.id)) {
         _clearBlockedPeerSuggestions(engine);
@@ -2904,13 +2936,14 @@ class TorrentManager extends Notifier<TorrentState> {
 
       // 暂停是用户的明确操作。即使某个恢复回调或引擎内部状态晚到，
       // 轮询也不能把任务重新标记为下载中。
-      if (_pausedByUser.contains(job.id) && engine.state == TaskState.running) {
+      if ((_pausedByUser.contains(job.id) ||
+              (job.isFinished && job.seedingPaused)) &&
+          engine.state == TaskState.running) {
         try {
           engine.pause();
         } catch (_) {}
-        job.downloadRate = 0;
-        job.uploadRate = 0;
-        job.status = TorrentJobStatus.paused;
+        refreshProgress();
+        _pauseTransfer(job);
         continue;
       }
 
@@ -2926,12 +2959,8 @@ class TorrentManager extends Notifier<TorrentState> {
         if (engine.fileManager != null) {
           refreshProgress();
         }
-        if (!noneSelected && job.progress >= 1.0) {
-          job.status = TorrentJobStatus.completed;
-          job.error = null;
-          job.totalDone = job.totalWanted;
-        } else if (job.status != TorrentJobStatus.failed) {
-          job.status = TorrentJobStatus.paused;
+        if (job.status != TorrentJobStatus.failed) {
+          _updateTransferStatus(job, running: false);
         }
         continue;
       }
@@ -2953,24 +2982,15 @@ class TorrentManager extends Notifier<TorrentState> {
       job.numSeeds = engine.seederNumber;
       job.numDownloaders = engine.trackerDownloaders ?? 0;
       refreshProgress();
-      if (engine.state == TaskState.paused) {
-        job.status = TorrentJobStatus.paused;
-      } else if (!noneSelected && job.progress >= 1.0) {
+      _updateTransferStatus(job, running: engine.state == TaskState.running);
+      if (job.isFinished && engine.state == TaskState.running) {
         job.seedingStartedAt ??= now.millisecondsSinceEpoch;
-        job.status = TorrentJobStatus.completed;
-        job.error = null;
-        job.totalDone = job.totalWanted;
         // 完成后的做种/停止策略
         if (job.stopAfter == TorrentStopPolicy.afterDownload ||
             stopSeedAfterComplete ||
             _seedLimitReached(job)) {
-          try {
-            engine.pause();
-          } catch (_) {}
-          job.status = TorrentJobStatus.paused;
+          _pauseTransfer(job);
         }
-      } else {
-        job.status = TorrentJobStatus.downloading;
       }
       if (job.progress < 1.0 || job.status != TorrentJobStatus.completed) {
         _downloadBlockedAfterCompletion.remove(job.id);
@@ -3082,6 +3102,7 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 仅文件下载和实际做种时保活；抓取元数据不发布下载通知。
   static bool needsKeepAlive(TorrentJob job, TaskState? engineState) =>
       job.hasMetadata &&
+      !job.seedingPaused &&
       engineState == TaskState.running &&
       (job.status == TorrentJobStatus.downloading ||
           job.status == TorrentJobStatus.completed);

@@ -9159,6 +9159,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Completed'
 	String get torrentStatusCompleted => 'Completed';
 
+	/// en: 'Seeding'
+	String get torrentStatusSeeding => 'Seeding';
+
+	/// en: 'Stop seeding'
+	String get torrentStopSeeding => 'Stop seeding';
+
+	/// en: 'Resume seeding'
+	String get torrentResumeSeeding => 'Resume seeding';
+
 	/// en: 'Failed'
 	String get torrentStatusFailed => 'Failed';
 
@@ -12879,6 +12888,9 @@ extension on Translations {
 			'torrentStatusDownloading' => 'Downloading',
 			'torrentStatusPaused' => 'Paused',
 			'torrentStatusCompleted' => 'Completed',
+			'torrentStatusSeeding' => 'Seeding',
+			'torrentStopSeeding' => 'Stop seeding',
+			'torrentResumeSeeding' => 'Resume seeding',
 			'torrentStatusFailed' => 'Failed',
 			'torrentSaveDir' => 'Save directory',
 			'torrentDownloadDir' => 'Torrent download directory',

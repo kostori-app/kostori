@@ -3119,6 +3119,9 @@ torrentStatusMetadata: 取得中介資料
 torrentStatusDownloading: 下載中
 torrentStatusPaused: 已暫停
 torrentStatusCompleted: 已完成
+torrentStatusSeeding: 做種中
+torrentStopSeeding: 停止做種
+torrentResumeSeeding: 繼續做種
 torrentStatusFailed: 失敗
 torrentSaveDir: 保存目錄
 torrentDownloadDir: 種子下載目錄

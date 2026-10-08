@@ -3117,6 +3117,9 @@ torrentStatusMetadata: 获取元数据
 torrentStatusDownloading: 下载中
 torrentStatusPaused: 已暂停
 torrentStatusCompleted: 已完成
+torrentStatusSeeding: 做种中
+torrentStopSeeding: 停止做种
+torrentResumeSeeding: 继续做种
 torrentStatusFailed: 失败
 torrentSaveDir: 保存目录
 torrentDownloadDir: 种子下载目录

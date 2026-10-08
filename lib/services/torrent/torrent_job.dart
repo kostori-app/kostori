@@ -136,6 +136,9 @@ class TorrentJob {
   /// 开始做种的时间戳（毫秒）。
   int? seedingStartedAt;
 
+  /// 已完成内容保持 completed，停止做种单独记录。
+  bool seedingPaused;
+
   bool hasMetadata;
 
   final int createdAt;
@@ -178,6 +181,7 @@ class TorrentJob {
     this.totalWanted = 0,
     this.uploadedBytes = 0,
     this.seedingStartedAt,
+    this.seedingPaused = false,
     this.hasMetadata = false,
     this.error,
     this.selectedFiles = const [],
@@ -187,6 +191,9 @@ class TorrentJob {
   });
 
   bool get isFinished => status == TorrentJobStatus.completed;
+
+  bool get hasCompletedDownload =>
+      hasMetadata && totalWanted > 0 && totalDone >= totalWanted;
 
   /// 是否处于抓取元数据阶段（进度未知，进度条需用不确定动画）。
   ///
@@ -208,6 +215,7 @@ class TorrentJob {
     'totalWanted': totalWanted,
     'uploadedBytes': uploadedBytes,
     'seedingStartedAt': seedingStartedAt,
+    'seedingPaused': seedingPaused,
     'createdAt': createdAt,
     'error': error,
     'torrentPath': torrentPath,
@@ -237,6 +245,19 @@ class TorrentJob {
         }
       }
     }
+    final status = TorrentJobStatus.values.firstWhere(
+      (e) => e.name == j['status'],
+      orElse: () => TorrentJobStatus.paused,
+    );
+    final hasMetadata = (j['hasMetadata'] as bool?) ?? false;
+    final progress = (j['progress'] as num?)?.toDouble() ?? 0;
+    final totalDone = (j['totalDone'] as num?)?.toInt() ?? 0;
+    final totalWanted = (j['totalWanted'] as num?)?.toInt() ?? 0;
+    final completedWhilePaused =
+        status == TorrentJobStatus.paused &&
+        hasMetadata &&
+        totalWanted > 0 &&
+        (totalDone >= totalWanted || progress >= 1);
     return TorrentJob(
       id: j['id'] as String,
       magnet: j['magnet'] as String? ?? '',
@@ -244,16 +265,14 @@ class TorrentJob {
       savePath: j['savePath'] as String? ?? '',
       createdAt: (j['createdAt'] as num?)?.toInt() ?? 0,
       name: (j['name'] as String?) ?? '',
-      status: TorrentJobStatus.values.firstWhere(
-        (e) => e.name == j['status'],
-        orElse: () => TorrentJobStatus.paused,
-      ),
-      progress: (j['progress'] as num?)?.toDouble() ?? 0,
-      hasMetadata: (j['hasMetadata'] as bool?) ?? false,
-      totalDone: (j['totalDone'] as num?)?.toInt() ?? 0,
-      totalWanted: (j['totalWanted'] as num?)?.toInt() ?? 0,
+      status: completedWhilePaused ? TorrentJobStatus.completed : status,
+      progress: progress,
+      hasMetadata: hasMetadata,
+      totalDone: totalDone,
+      totalWanted: totalWanted,
       uploadedBytes: (j['uploadedBytes'] as num?)?.toInt() ?? 0,
       seedingStartedAt: (j['seedingStartedAt'] as num?)?.toInt(),
+      seedingPaused: (j['seedingPaused'] as bool?) ?? completedWhilePaused,
       error: j['error'] as String?,
       selectedFiles: selected,
       // 旧任务没有该字段：除「全不选」哨兵（-1）外都视为已初始化，尊重已有选择

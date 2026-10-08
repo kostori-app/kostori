@@ -3118,6 +3118,9 @@ torrentStatusMetadata: Getting metadata
 torrentStatusDownloading: Downloading
 torrentStatusPaused: Paused
 torrentStatusCompleted: Completed
+torrentStatusSeeding: Seeding
+torrentStopSeeding: Stop seeding
+torrentResumeSeeding: Resume seeding
 torrentStatusFailed: Failed
 torrentSaveDir: Save directory
 torrentDownloadDir: Torrent download directory
