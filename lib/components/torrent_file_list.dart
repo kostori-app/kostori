@@ -266,9 +266,7 @@ class _TorrentFileListState extends State<TorrentFileList>
                         '$statusText · ${formatBytesShort(node.downloaded)} / ${formatBytesShort(node.size)} · ${torrentProgressPercent(progress)}%',
                         style: TextStyle(
                           fontSize: 11,
-                          color: priority == null
-                              ? cs.onSurfaceVariant
-                              : cs.primary,
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
                     ],
