@@ -48,11 +48,10 @@ void main() {
         createdAt: 0,
         hasMetadata: true,
         selectedFiles: [1],
-        status: TorrentJobStatus.completed,
-        totalDone: 6,
+        status: TorrentJobStatus.paused,
+        totalDone: 5,
         totalWanted: 6,
-        progress: 1,
-        seedingPaused: true,
+        progress: 0.9999,
       );
       await File(job.torrentPath).writeAsBytes(info);
       await DownloadDatabase.instance.saveJobJson([jsonEncode(job.toJson())]);

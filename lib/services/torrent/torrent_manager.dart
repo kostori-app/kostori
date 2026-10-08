@@ -1384,7 +1384,10 @@ class TorrentManager extends Notifier<TorrentState> {
   }) async {
     if (_engines.containsKey(job.id)) return;
     TorrentTask? createdTask;
-    final wasCompleted = job.hasCompletedDownload;
+    final wasNearlyComplete =
+        job.hasCompletedDownload ||
+        job.status == TorrentJobStatus.completed ||
+        job.progress >= 0.9995;
     try {
       final magnet = _tryParseMagnet(job.magnet);
       final loaded = await _loadModel(job, magnet);
@@ -1484,7 +1487,7 @@ class TorrentManager extends Notifier<TorrentState> {
       await task.prepare();
       _applySelection(task, job, model);
       _refreshProgress(job, model);
-      if (wasCompleted && !job.hasCompletedDownload && !job.isChecking) {
+      if (wasNearlyComplete && !job.hasCompletedDownload && !job.isChecking) {
         job.isChecking = true;
         job.checkProgress = 0;
         _emit();
