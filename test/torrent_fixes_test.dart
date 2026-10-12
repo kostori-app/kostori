@@ -127,6 +127,21 @@ void main() {
     );
   });
 
+  test('idle torrent peers are given time to exchange bitfields', () {
+    expect(
+      TorrentManager.peersToTrim({
+        for (var i = 0; i < 13; i++) 'peer-$i': 0,
+      }, limit: 12),
+      isEmpty,
+    );
+    expect(
+      TorrentManager.peersToTrim({
+        for (var i = 0; i < 13; i++) 'peer-$i': i == 12 ? 1.0 : 0.0,
+      }, limit: 12),
+      ['peer-0'],
+    );
+  });
+
   group('种子下载通知', () {
     TorrentJob job(TorrentJobStatus status, {bool hasMetadata = true}) =>
         TorrentJob(

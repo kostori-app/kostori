@@ -289,13 +289,17 @@ class TorrentManager extends Notifier<TorrentState> {
   static int get activeTrackerLimit =>
       Platform.isAndroid || Platform.isIOS ? 6 : 32;
 
-  /// Maximum number of connected peers retained per running task.
+  /// 每个运行任务的目标连接保留数。
   ///
-  /// The engine's hard-coded limit is 50 and counts idle sockets too. A lower
-  /// app-level cap keeps mobile downloads responsive when several tasks run at
-  /// once; low-activity peers are released when the cap is exceeded.
+  /// 移动端在所有节点均空闲时暂不清理连接，等待位图交换并进入可传输状态；
+  /// 有节点开始传输后，再按活跃度轮换低速连接。
   static int get activePeerLimit =>
       Platform.isAndroid || Platform.isIOS ? 12 : 24;
+
+  /// 引擎连接上限高于应用层目标保留数，为新节点交换 bitfield 留出时间；
+  /// 开始传输后再由应用层按活跃度清理连接。
+  static int get enginePeerLimit =>
+      Platform.isAndroid || Platform.isIOS ? 24 : 50;
 
   /// Combines recent download and upload rates for peer admission decisions.
   /// Rates are in KiB/s and invalid values are treated as idle.
@@ -308,6 +312,29 @@ class TorrentManager extends Notifier<TorrentState> {
         : 0.0;
     final upload = uploadRate.isFinite && uploadRate > 0 ? uploadRate : 0.0;
     return download + upload;
+  }
+
+  /// 所有节点均空闲时保留连接，等待位图交换和对端解除阻塞；出现传输后，
+  /// 按活跃度将连接数裁剪至 [limit]。
+  static List<String> peersToTrim(
+    Map<String, double> peerScores, {
+    required int limit,
+  }) {
+    if (peerScores.length <= limit ||
+        !peerScores.values.any((score) => score.isFinite && score > 0)) {
+      return const [];
+    }
+    final ranked = peerScores.entries.toList()
+      ..sort((a, b) {
+        final aScore = a.value.isFinite && a.value > 0 ? a.value : 0.0;
+        final bScore = b.value.isFinite && b.value > 0 ? b.value : 0.0;
+        final byActivity = aScore.compareTo(bScore);
+        return byActivity != 0 ? byActivity : a.key.compareTo(b.key);
+      });
+    return ranked
+        .take(peerScores.length - limit)
+        .map((entry) => entry.key)
+        .toList();
   }
 
   /// Public pure helper for tests and callers that need the same engine limit.
@@ -348,6 +375,7 @@ class TorrentManager extends Notifier<TorrentState> {
 
   final Map<String, TorrentTask> _engines = {};
   final Map<String, TorrentModel> _models = {};
+  final Map<String, DhtClient> _mobilePeerDiscovery = {};
   final Map<String, TorrentStreamServer> _servers = {};
   final Map<String, DateTime> _uploadSamples = {};
   final Map<String, ({DateTime at, int uploaded})> _peerUploadSamples = {};
@@ -797,6 +825,10 @@ class TorrentManager extends Notifier<TorrentState> {
     _uploadSamples.clear();
     _peerUploadSamples.clear();
     _peerTrimPending.clear();
+    for (final client in _mobilePeerDiscovery.values) {
+      unawaited(client.stop());
+    }
+    _mobilePeerDiscovery.clear();
     for (final engine in _engines.values) {
       try {
         unawaited(engine.dispose());
@@ -1479,14 +1511,15 @@ class TorrentManager extends Notifier<TorrentState> {
         null, // encryptionConfig
         null, // peerId
         TorrentManager.torrentPeerIdPrefix,
-        activePeerLimit,
+        enginePeerLimit,
       );
       createdTask = task;
       _engines[job.id] = task;
-      // Android 的引擎 DHT 使用 RawDatagramSocket，不能经过 BT 直连中继。
-      // 移动端元数据阶段已经由直连 DHT/HTTP tracker 发现节点；清空引导
-      // 节点可避免点击继续下载时等待 VPN 接管的 DHT 重试。
-      if (Platform.isAndroid) task.dht?.clearBootstrapNodes();
+      // Android 上引擎的 RawDatagramSocket 不经过 BT UDP 中继；清除引导节点后，
+      // 由 [_startMobilePeerDiscovery] 通过原生中继统一发现节点。
+      if (Platform.isAndroid) {
+        task.dht?.clearBootstrapNodes();
+      }
       final shouldStart =
           start && !_pausedByUser.contains(job.id) && !pauseAfterMetadata;
       await task.prepare();
@@ -2097,7 +2130,51 @@ class TorrentManager extends Notifier<TorrentState> {
         } catch (_) {}
       }
     }
+    if (Platform.isAndroid) {
+      _startMobilePeerDiscovery(job, task, model);
+    } else {
+      try {
+        task.requestPeersFromDHT();
+      } catch (_) {}
+    }
     _applyLimits(task);
+  }
+
+  void _startMobilePeerDiscovery(
+    TorrentJob job,
+    TorrentTask task,
+    TorrentModel model,
+  ) {
+    if (!Platform.isAndroid || _mobilePeerDiscovery.containsKey(job.id)) return;
+    final infoHash = model.v1InfoHash;
+    if (infoHash == null || infoHash.length != 20) return;
+    final rawInfo = model.rawData?['info'];
+    if (rawInfo is Map && rawInfo['private'] == 1) return;
+
+    // Android VPN 可能接管引擎使用的原始 UDP socket。这里通过原生中继向物理
+    // 网络发送 DHT 请求，并在获取元数据后继续发现节点。
+    final client = DhtClient(
+      infoHash: infoHash,
+      bootstrapNodes: _parseTrackers(dhtNodes),
+      onPeer: (ip, port) {
+        if (_engines[job.id] != task ||
+            task.state != TaskState.running ||
+            _pausedByUser.contains(job.id)) {
+          return;
+        }
+        try {
+          task.addPeer(CompactAddress(ip, port), PeerSource.dht);
+        } catch (_) {}
+      },
+      onLog: (message) => Log.info('种子 DHT', '${job.name}: $message'),
+    );
+    _mobilePeerDiscovery[job.id] = client;
+    unawaited(client.start());
+  }
+
+  void _stopMobilePeerDiscovery(String jobId) {
+    final client = _mobilePeerDiscovery.remove(jobId);
+    if (client != null) unawaited(client.stop());
   }
 
   /// 任务可用的 announce 地址（去重、保序）：模型 announce → 磁力 `tr`
@@ -2251,6 +2328,7 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   void _pauseTransfer(TorrentJob job) {
+    _stopMobilePeerDiscovery(job.id);
     final engine = _engines[job.id];
     if (engine != null && engine.state == TaskState.running) engine.pause();
     try {
@@ -2379,6 +2457,7 @@ class TorrentManager extends Notifier<TorrentState> {
           engine.peersManager != null) {
         engine.resume();
         _applyLimits(engine);
+        if (model != null) _startMobilePeerDiscovery(job, engine, model);
         _updateTransferStatus(job, running: true);
       } else if (engine.state != TaskState.running) {
         // stopped：首次启动或 stop() 之后；start() 非幂等，容错重复启动
@@ -2447,6 +2526,7 @@ class TorrentManager extends Notifier<TorrentState> {
       await stopStreams(job);
       if (engine != null) {
         // 重建已断开连接的引擎，校验期间不会再有在途分片改写文件。
+        _stopMobilePeerDiscovery(job.id);
         engine.pause();
         await engine.stop();
         _engines.remove(job.id);
@@ -2499,6 +2579,7 @@ class TorrentManager extends Notifier<TorrentState> {
     // 删除时必须取消元数据抓取。否则抓取完成后会重新给已删除的 job
     // 创建引擎，留下后台 socket/定时器和不可见的下载任务。
     _cancelFetch(job);
+    _stopMobilePeerDiscovery(job.id);
     final server = _servers.remove(job.id);
     if (server != null) await server.stop();
     final engine = _engines[job.id];
@@ -3172,7 +3253,8 @@ class TorrentManager extends Notifier<TorrentState> {
         .toList();
     if (peers == null || peers.isEmpty) return;
 
-    final scored = <({Peer peer, double score, String key})>[];
+    final peersByKey = <String, Peer>{};
+    final peerScores = <String, double>{};
     final liveKeys = <String>{};
     for (final peer in peers) {
       final key = '${job.id}:${peer.id}';
@@ -3188,14 +3270,13 @@ class TorrentManager extends Notifier<TorrentState> {
         }
       }
       _peerUploadSamples[key] = (at: now, uploaded: uploaded);
-      scored.add((
-        peer: peer,
-        score: peerTransferScore(
-          downloadRate: peer.currentDownloadSpeed,
-          uploadRate: uploadRate,
-        ),
-        key: key,
-      ));
+      // 未收到远端 bitfield 的连接仍处于握手阶段，暂不纳入清理，避免过早断开。
+      if (peer.remoteBitfield == null) continue;
+      peersByKey[key] = peer;
+      peerScores[key] = peerTransferScore(
+        downloadRate: peer.currentDownloadSpeed,
+        uploadRate: uploadRate,
+      );
     }
 
     _peerUploadSamples.removeWhere(
@@ -3205,18 +3286,12 @@ class TorrentManager extends Notifier<TorrentState> {
       (key) => key.startsWith('${job.id}:') && !liveKeys.contains(key),
     );
 
-    final overflow = scored.length - activePeerLimit;
-    if (overflow <= 0) return;
-    scored.sort((a, b) {
-      final byActivity = a.score.compareTo(b.score);
-      if (byActivity != 0) return byActivity;
-      return a.key.compareTo(b.key);
-    });
-    for (final candidate in scored.take(overflow)) {
-      if (!_peerTrimPending.add(candidate.key)) continue;
+    for (final key in peersToTrim(peerScores, limit: activePeerLimit)) {
+      final peer = peersByKey[key];
+      if (peer == null || !_peerTrimPending.add(key)) continue;
       unawaited(
         (engine.peersManager?.disconnectPeer(
-                  candidate.peer,
+                  peer,
                   BadException('peer connection limit'),
                 ) ??
                 Future<void>.value())
