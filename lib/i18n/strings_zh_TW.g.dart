@@ -3111,7 +3111,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentDeleteTaskOnly => '僅刪除任務';
 	@override String get torrentDeleteWithFiles => '刪除任務和檔案';
 	@override String get torrentDeleteFiles => '刪除已下載內容';
-	@override String get torrentDeleteFilesConfirm => '是否刪除選中的已下載內容？刪除後會標記為不下載。';
+	@override String get torrentDeleteFilesConfirm => '是否刪除選中的已下載內容？刪除後會標記為不下載。相鄰檔案可能共用 BT 分塊，無法單獨刪除。';
+	@override String get torrentDeleteSharedPieceBlocked => '此檔案與仍在下載的檔案共用 BT 分塊，單獨刪除會使保留檔案不完整。請先取消相鄰檔案的下載，或將它們一起刪除。';
 	@override String get torrentEmpty => '尚無種子任務';
 	@override String get torrentTab => '種子';
 	@override String get torrentUnlimited => '不限';
@@ -6451,7 +6452,8 @@ extension on TranslationsZhTw {
 			'torrentDeleteTaskOnly' => '僅刪除任務',
 			'torrentDeleteWithFiles' => '刪除任務和檔案',
 			'torrentDeleteFiles' => '刪除已下載內容',
-			'torrentDeleteFilesConfirm' => '是否刪除選中的已下載內容？刪除後會標記為不下載。',
+			'torrentDeleteFilesConfirm' => '是否刪除選中的已下載內容？刪除後會標記為不下載。相鄰檔案可能共用 BT 分塊，無法單獨刪除。',
+			'torrentDeleteSharedPieceBlocked' => '此檔案與仍在下載的檔案共用 BT 分塊，單獨刪除會使保留檔案不完整。請先取消相鄰檔案的下載，或將它們一起刪除。',
 			'torrentEmpty' => '尚無種子任務',
 			'torrentTab' => '種子',
 			'torrentUnlimited' => '不限',

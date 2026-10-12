@@ -9258,8 +9258,11 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Delete downloaded files'
 	String get torrentDeleteFiles => 'Delete downloaded files';
 
-	/// en: 'Delete the selected downloaded files? They will be marked as not downloaded.'
-	String get torrentDeleteFilesConfirm => 'Delete the selected downloaded files? They will be marked as not downloaded.';
+	/// en: 'Delete the selected downloaded files? They will be marked as not downloaded. Adjacent files may share BitTorrent pieces and cannot be deleted separately.'
+	String get torrentDeleteFilesConfirm => 'Delete the selected downloaded files? They will be marked as not downloaded. Adjacent files may share BitTorrent pieces and cannot be deleted separately.';
+
+	/// en: 'This file shares BitTorrent pieces with files that are still selected. Deleting it alone would invalidate those files. Deselect or delete the adjacent files first.'
+	String get torrentDeleteSharedPieceBlocked => 'This file shares BitTorrent pieces with files that are still selected. Deleting it alone would invalidate those files. Deselect or delete the adjacent files first.';
 
 	/// en: 'No torrent tasks'
 	String get torrentEmpty => 'No torrent tasks';
@@ -12948,7 +12951,8 @@ extension on Translations {
 			'torrentDeleteTaskOnly' => 'Task only',
 			'torrentDeleteWithFiles' => 'Task and files',
 			'torrentDeleteFiles' => 'Delete downloaded files',
-			'torrentDeleteFilesConfirm' => 'Delete the selected downloaded files? They will be marked as not downloaded.',
+			'torrentDeleteFilesConfirm' => 'Delete the selected downloaded files? They will be marked as not downloaded. Adjacent files may share BitTorrent pieces and cannot be deleted separately.',
+			'torrentDeleteSharedPieceBlocked' => 'This file shares BitTorrent pieces with files that are still selected. Deleting it alone would invalidate those files. Deselect or delete the adjacent files first.',
 			'torrentEmpty' => 'No torrent tasks',
 			'torrentTab' => 'Torrents',
 			'torrentUnlimited' => 'Unlimited',

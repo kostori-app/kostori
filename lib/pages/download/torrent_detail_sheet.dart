@@ -637,6 +637,11 @@ class _TorrentDetailSheetState extends ConsumerState<TorrentDetailSheet>
     try {
       await _manager.deleteFiles(_job, indices);
       return true;
+    } on TorrentSharedPieceDeletionException {
+      if (mounted) {
+        context.showMessage(message: t.torrentDeleteSharedPieceBlocked);
+      }
+      return false;
     } catch (error) {
       Log.error('种子内容删除失败', '$error');
       if (mounted) context.showMessage(message: t.deleteFailed);

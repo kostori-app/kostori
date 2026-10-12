@@ -48,6 +48,11 @@ class TorrentMetadataTimeout implements Exception {
   String toString() => 'torrent metadata timeout';
 }
 
+/// 单独删除该文件会使仍选中文件依赖的 piece 失效。
+class TorrentSharedPieceDeletionException implements Exception {
+  const TorrentSharedPieceDeletionException();
+}
+
 /// 内置公共 tracker；与磁力自带、用户在「种子设置」里配置的列表合并去重后使用。
 const List<String> kDefaultTrackers = [
   'http://1337.abcvg.info:80/announce',
@@ -2641,6 +2646,7 @@ class TorrentManager extends Notifier<TorrentState> {
 
   /// 删除选中的内容文件，并使对应 pieces 重新进入可下载状态。
   /// 删除后文件默认标记为 skip，避免用户只是清理磁盘却立刻被重新下载。
+  /// 若目标文件与仍选中的文件共用 piece，则拒绝单独删除，以保护保留文件。
   Future<void> deleteFiles(TorrentJob job, Iterable<int> indices) async {
     if (job.isChecking) throw StateError(t.torrentChecking);
     if (!_fileMutations.add(job.id)) {
@@ -2659,6 +2665,29 @@ class TorrentManager extends Notifier<TorrentState> {
           .where((index) => index >= 0 && index < fileManager.files.length)
           .toSet();
       if (valid.isEmpty) return;
+
+      final all = {for (var i = 0; i < model.files.length; i++) i};
+      final selected = job.selectedFiles.isEmpty
+          ? Set<int>.from(all)
+          : _isNoneSelected(job.selectedFiles)
+          ? <int>{}
+          : job.selectedFiles.toSet();
+      selected.removeAll(valid);
+      final selectedPieces = <int>{
+        for (final index in selected)
+          if (index >= 0 &&
+              index < fileManager.files.length &&
+              !fileManager.files[index].isVirtualFile)
+            for (final piece in fileManager.files[index].pieces) piece.index,
+      };
+      final sharesSelectedPiece = valid.any(
+        (index) => fileManager.files[index].pieces.any(
+          (piece) => selectedPieces.contains(piece.index),
+        ),
+      );
+      if (sharesSelectedPiece) {
+        throw const TorrentSharedPieceDeletionException();
+      }
 
       await stopStreams(job);
       wasRunning = task.state == TaskState.running;
@@ -2698,13 +2727,6 @@ class TorrentManager extends Notifier<TorrentState> {
         job.filePriorities[index] = FilePriority.skip.index;
       }
 
-      final all = {for (var i = 0; i < model.files.length; i++) i};
-      final selected = job.selectedFiles.isEmpty
-          ? all
-          : _isNoneSelected(job.selectedFiles)
-          ? <int>{}
-          : job.selectedFiles.toSet();
-      selected.removeAll(valid);
       job.selectedFiles = selected.length == all.length
           ? <int>[]
           : selected.isEmpty

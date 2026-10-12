@@ -3151,7 +3151,8 @@ torrentDeleteConfirm: Also delete the downloaded files?
 torrentDeleteTaskOnly: Task only
 torrentDeleteWithFiles: Task and files
 torrentDeleteFiles: Delete downloaded files
-torrentDeleteFilesConfirm: Delete the selected downloaded files? They will be marked as not downloaded.
+torrentDeleteFilesConfirm: Delete the selected downloaded files? They will be marked as not downloaded. Adjacent files may share BitTorrent pieces and cannot be deleted separately.
+torrentDeleteSharedPieceBlocked: This file shares BitTorrent pieces with files that are still selected. Deleting it alone would invalidate those files. Deselect or delete the adjacent files first.
 torrentEmpty: No torrent tasks
 torrentTab: Torrents
 torrentUnlimited: Unlimited
