@@ -592,44 +592,42 @@ class RHttpAdapter implements HttpClientAdapter {
       return _responseBody(options, res);
     }
 
-    var attempt = 0;
+    var retries = 0;
     while (true) {
-      attempt++;
       try {
         return await doRequest();
       } catch (e, s) {
-        // 移动网络下 TLS 握手中断、连接重置属于瞬时故障，重连一次
-        // （可能换到另一个 IP / CDN 节点）通常即可成功。
-        if (attempt < _maxAttempts &&
+        // 最多自动重试一次。若当前使用探测出的最快 IP，则把这次重试
+        // 切换为完整 hosts 地址列表，避免额外再发起一次回退请求。
+        if (retries < _maxRetries &&
             _isReplayable(options, requestStream) &&
             _isConnectionError(e)) {
+          retries++;
+          final key = fastestIpKey;
+          if (key != null) {
+            _fastestIpCache.remove(key);
+            fastestIpKey = null;
+            clientSettings = clientSettings.copyWith(
+              dnsSettings: rhttp.DnsSettings.static(
+                overrides: {...overrides, options.uri.host: hostsIps!},
+              ),
+            );
+          }
           NetLog.info(
             'Network',
-            '连接失败，重试 ${attempt + 1}/$_maxAttempts: ${options.method} '
+            '连接失败，重试 $retries/$_maxRetries: ${options.method} '
                 '${options.uri} ($e)',
           );
-          await Future<void>.delayed(Duration(milliseconds: 250 * attempt));
+          await Future<void>.delayed(Duration(milliseconds: 250 * retries));
           continue;
         }
-        // 选出的最快 IP 失效：清缓存并回退到完整列表（底层依次尝试）
-        final key = fastestIpKey;
-        if (key == null || e is rhttp.RhttpCancelException) {
-          Error.throwWithStackTrace(e, s);
-        }
-        _fastestIpCache.remove(key);
-        // 只回退一次：否则对端持续不可用时会一直循环
-        fastestIpKey = null;
-        clientSettings = clientSettings.copyWith(
-          dnsSettings: rhttp.DnsSettings.static(
-            overrides: {...overrides, options.uri.host: hostsIps!},
-          ),
-        );
+        Error.throwWithStackTrace(e, s);
       }
     }
   }
 
-  /// 连接类错误的最大尝试次数（含首次）。
-  static const int _maxAttempts = 3;
+  /// 连接类错误最多自动重试一次（不含首次请求）。
+  static const int _maxRetries = 1;
 
   /// 只重试可安全重放的请求：幂等方法且没有请求体流（流无法重放）。
   static bool _isReplayable(
