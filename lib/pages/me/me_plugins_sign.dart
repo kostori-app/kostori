@@ -197,7 +197,7 @@ class _SignCard extends StatelessWidget {
                       isLoading: busy,
                       enabled: logged,
                       leading: const Icon(Icons.event_available_outlined),
-                      text: t.signAll,
+                      text: t.checkIn,
                       onTap: onSign,
                     ),
                 ],
