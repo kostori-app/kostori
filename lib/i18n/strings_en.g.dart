@@ -9620,6 +9620,72 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'None of these IPs respond right now, try Resolve now again'
 	String get hostsAllUnreachable => 'None of these IPs respond right now, try Resolve now again';
+
+	/// en: 'ChatGPT (OpenAI)'
+	String get aiOpenAiProvider => 'ChatGPT (OpenAI)';
+
+	/// en: 'Built-in providers'
+	String get aiBuiltInProviders => 'Built-in providers';
+
+	/// en: '${enabled} of ${total} providers enabled'
+	String aiProviderSummary({required Object enabled, required Object total}) => '${enabled} of ${total} providers enabled';
+
+	/// en: 'Connection'
+	String get aiProviderConnection => 'Connection';
+
+	/// en: 'Advanced'
+	String get aiProviderAdvanced => 'Advanced';
+
+	/// en: 'OpenAI · Chat Completions'
+	String get aiProtocolChatCompletions => 'OpenAI · Chat Completions';
+
+	/// en: 'OpenAI · Responses'
+	String get aiProtocolResponses => 'OpenAI · Responses';
+
+	/// en: 'Gemini · Native API'
+	String get aiProtocolGemini => 'Gemini · Native API';
+
+	/// en: 'Claude · Messages'
+	String get aiProtocolClaude => 'Claude · Messages';
+
+	/// en: 'Enter a valid HTTP or HTTPS URL'
+	String get aiProviderInvalidUrl => 'Enter a valid HTTP or HTTPS URL';
+
+	/// en: 'Select or enter a default model'
+	String get aiProviderModelRequired => 'Select or enter a default model';
+
+	/// en: 'Enter the API base URL or a full chat endpoint. Endpoint paths are handled automatically.'
+	String get aiProviderBaseUrlHint => 'Enter the API base URL or a full chat endpoint. Endpoint paths are handled automatically.';
+
+	/// en: 'Optional for local services that do not require authentication.'
+	String get aiProviderOptionalKeyHint => 'Optional for local services that do not require authentication.';
+
+	/// en: 'Enter a model ID or select a model from the list below.'
+	String get aiProviderDefaultModelHint => 'Enter a model ID or select a model from the list below.';
+
+	/// en: '${count} models added'
+	String aiProviderModelCount({required Object count}) => '${count} models added';
+
+	/// en: 'Leave empty for the default models endpoint. Full URLs and relative paths are supported.'
+	String get aiProviderModelsUrlHint => 'Leave empty for the default models endpoint. Full URLs and relative paths are supported.';
+
+	/// en: 'Test balance query'
+	String get aiProviderQueryBalance => 'Test balance query';
+
+	/// en: 'Show API key'
+	String get aiProviderShowKey => 'Show API key';
+
+	/// en: 'Hide API key'
+	String get aiProviderHideKey => 'Hide API key';
+
+	/// en: 'Enable this provider when saved'
+	String get aiProviderEnabledHint => 'Enable this provider when saved';
+
+	/// en: 'Keep the configuration and pause this provider'
+	String get aiProviderDisabledHint => 'Keep the configuration and pause this provider';
+
+	/// en: 'The provider returned an empty response'
+	String get aiProviderEmptyResponse => 'The provider returned an empty response';
 }
 
 // Path: colors
@@ -12381,12 +12447,12 @@ extension on Translations {
 			'serverUrl' => 'Server URL',
 			'headers' => 'Headers (JSON)',
 			'noSkillsYet' => 'No skills yet',
+			_ => null,
+		} ?? switch (path) {
 			'skillName' => 'Skill Name',
 			'skillKey' => 'Skill Key',
 			'builtin' => 'Built-in',
 			'skillMarkdownHint' => 'Skills support Markdown',
-			_ => null,
-		} ?? switch (path) {
 			'sendMessage' => 'Send message',
 			'contextAutoCompressed' => 'Context too long, auto-compressed',
 			'chatGreeting' => 'How can I help you today?',
@@ -12895,12 +12961,12 @@ extension on Translations {
 			'torrentSourceTitleRegex' => 'Title regex',
 			'torrentSourceSizeRegex' => 'Size regex',
 			'torrentSourceGroupRegex' => 'Group regex',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceHashRegex' => 'Hash regex',
 			'torrentSourceMagnetTemplate' => 'Magnet template ({hash})',
 			'torrentSourceDateRegex' => 'Date regex',
 			'torrentSourceJsonPath' => 'JSON path',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceTitleField' => 'Title field',
 			'torrentSourceMagnetField' => 'Magnet field',
 			'torrentSourceHashField' => 'Hash field',
@@ -13072,6 +13138,28 @@ extension on Translations {
 			'hostsSortedFastest' => ({required Object latency}) => 'Sorted by speed, fastest ${latency} ms',
 			'hostsSortedWithUnreachable' => ({required Object count}) => 'Sorted by speed (${count} unreachable, moved to the end)',
 			'hostsAllUnreachable' => 'None of these IPs respond right now, try Resolve now again',
+			'aiOpenAiProvider' => 'ChatGPT (OpenAI)',
+			'aiBuiltInProviders' => 'Built-in providers',
+			'aiProviderSummary' => ({required Object enabled, required Object total}) => '${enabled} of ${total} providers enabled',
+			'aiProviderConnection' => 'Connection',
+			'aiProviderAdvanced' => 'Advanced',
+			'aiProtocolChatCompletions' => 'OpenAI · Chat Completions',
+			'aiProtocolResponses' => 'OpenAI · Responses',
+			'aiProtocolGemini' => 'Gemini · Native API',
+			'aiProtocolClaude' => 'Claude · Messages',
+			'aiProviderInvalidUrl' => 'Enter a valid HTTP or HTTPS URL',
+			'aiProviderModelRequired' => 'Select or enter a default model',
+			'aiProviderBaseUrlHint' => 'Enter the API base URL or a full chat endpoint. Endpoint paths are handled automatically.',
+			'aiProviderOptionalKeyHint' => 'Optional for local services that do not require authentication.',
+			'aiProviderDefaultModelHint' => 'Enter a model ID or select a model from the list below.',
+			'aiProviderModelCount' => ({required Object count}) => '${count} models added',
+			'aiProviderModelsUrlHint' => 'Leave empty for the default models endpoint. Full URLs and relative paths are supported.',
+			'aiProviderQueryBalance' => 'Test balance query',
+			'aiProviderShowKey' => 'Show API key',
+			'aiProviderHideKey' => 'Hide API key',
+			'aiProviderEnabledHint' => 'Enable this provider when saved',
+			'aiProviderDisabledHint' => 'Keep the configuration and pause this provider',
+			'aiProviderEmptyResponse' => 'The provider returned an empty response',
 			_ => null,
 		};
 	}

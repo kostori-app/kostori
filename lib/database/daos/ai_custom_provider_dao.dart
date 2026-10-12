@@ -42,6 +42,11 @@ class AiCustomProviderDao extends DatabaseAccessor<AiDatabase>
     return row == null ? null : _plainRow(row);
   }
 
+  Stream<AiCustomProvider?> watchByProvider(String provider) =>
+      (select(aiCustomProviders)..where((t) => t.provider.equals(provider)))
+          .watchSingleOrNull()
+          .map((row) => row == null ? null : _plainRow(row));
+
   Future<List<AiCustomProvider>> getEnabled() async => (await (select(
     aiCustomProviders,
   )..where((t) => t.isEnabled.equals(true))).get()).map(_plainRow).toList();
@@ -68,6 +73,17 @@ class AiCustomProviderDao extends DatabaseAccessor<AiDatabase>
     )..where((t) => t.provider.equals(provider))).write(
       AiCustomProvidersCompanion(
         apiKey: Value(SecretVault.encrypt(apiKey)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<void> updateModel(String provider, String model) {
+    return (update(
+      aiCustomProviders,
+    )..where((t) => t.provider.equals(provider))).write(
+      AiCustomProvidersCompanion(
+        defaultModel: Value(model),
         updatedAt: Value(DateTime.now()),
       ),
     );

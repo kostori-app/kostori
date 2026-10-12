@@ -3233,6 +3233,28 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String hostsSortedFastest({required Object latency}) => '已按速度排序，最快 ${latency} ms';
 	@override String hostsSortedWithUnreachable({required Object count}) => '已按速度排序（${count} 个连不上，排到最后）';
 	@override String get hostsAllUnreachable => '这些 IP 现在都连不上，建议重新自动解析';
+	@override String get aiOpenAiProvider => 'ChatGPT（OpenAI）';
+	@override String get aiBuiltInProviders => '内置服务商';
+	@override String aiProviderSummary({required Object enabled, required Object total}) => '已启用 ${enabled} / ${total} 个服务商';
+	@override String get aiProviderConnection => '连接';
+	@override String get aiProviderAdvanced => '高级';
+	@override String get aiProtocolChatCompletions => 'OpenAI · Chat Completions';
+	@override String get aiProtocolResponses => 'OpenAI · Responses';
+	@override String get aiProtocolGemini => 'Gemini · 原生接口';
+	@override String get aiProtocolClaude => 'Claude · Messages';
+	@override String get aiProviderInvalidUrl => '请输入有效的 HTTP 或 HTTPS 地址';
+	@override String get aiProviderModelRequired => '请选择或填写默认模型';
+	@override String get aiProviderBaseUrlHint => '填写 API 基础地址，也可填写完整的聊天接口地址；接口路径会自动处理。';
+	@override String get aiProviderOptionalKeyHint => '本地或免认证服务可留空。';
+	@override String get aiProviderDefaultModelHint => '可以直接填写模型 ID，也可以从下方模型列表中选择。';
+	@override String aiProviderModelCount({required Object count}) => '已添加 ${count} 个模型';
+	@override String get aiProviderModelsUrlHint => '留空使用默认模型接口，支持完整地址或相对路径。';
+	@override String get aiProviderQueryBalance => '测试余额查询';
+	@override String get aiProviderShowKey => '显示 API Key';
+	@override String get aiProviderHideKey => '隐藏 API Key';
+	@override String get aiProviderEnabledHint => '保存后启用此服务商';
+	@override String get aiProviderDisabledHint => '保留配置，暂停使用此服务商';
+	@override String get aiProviderEmptyResponse => '服务商返回了空响应';
 }
 
 // Path: colors
@@ -5884,12 +5906,12 @@ extension on TranslationsZhCn {
 			'serverUrl' => '服务器地址',
 			'headers' => '请求头（JSON）',
 			'noSkillsYet' => '暂无技能',
+			_ => null,
+		} ?? switch (path) {
 			'skillName' => '技能名称',
 			'skillKey' => '技能 Key',
 			'builtin' => '内置',
 			'skillMarkdownHint' => '技能支持 Markdown 格式',
-			_ => null,
-		} ?? switch (path) {
 			'sendMessage' => '发送消息',
 			'contextAutoCompressed' => '上下文过长，已自动压缩',
 			'chatGreeting' => '今天有什么可以帮你？',
@@ -6398,12 +6420,12 @@ extension on TranslationsZhCn {
 			'torrentSourceTitleRegex' => '标题正则',
 			'torrentSourceSizeRegex' => '体积正则',
 			'torrentSourceGroupRegex' => '分组正则',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceHashRegex' => '哈希正则',
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '时间正则',
 			'torrentSourceJsonPath' => 'JSON 路径',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceTitleField' => '标题字段',
 			'torrentSourceMagnetField' => '磁力字段',
 			'torrentSourceHashField' => '哈希字段',
@@ -6575,6 +6597,28 @@ extension on TranslationsZhCn {
 			'hostsSortedFastest' => ({required Object latency}) => '已按速度排序，最快 ${latency} ms',
 			'hostsSortedWithUnreachable' => ({required Object count}) => '已按速度排序（${count} 个连不上，排到最后）',
 			'hostsAllUnreachable' => '这些 IP 现在都连不上，建议重新自动解析',
+			'aiOpenAiProvider' => 'ChatGPT（OpenAI）',
+			'aiBuiltInProviders' => '内置服务商',
+			'aiProviderSummary' => ({required Object enabled, required Object total}) => '已启用 ${enabled} / ${total} 个服务商',
+			'aiProviderConnection' => '连接',
+			'aiProviderAdvanced' => '高级',
+			'aiProtocolChatCompletions' => 'OpenAI · Chat Completions',
+			'aiProtocolResponses' => 'OpenAI · Responses',
+			'aiProtocolGemini' => 'Gemini · 原生接口',
+			'aiProtocolClaude' => 'Claude · Messages',
+			'aiProviderInvalidUrl' => '请输入有效的 HTTP 或 HTTPS 地址',
+			'aiProviderModelRequired' => '请选择或填写默认模型',
+			'aiProviderBaseUrlHint' => '填写 API 基础地址，也可填写完整的聊天接口地址；接口路径会自动处理。',
+			'aiProviderOptionalKeyHint' => '本地或免认证服务可留空。',
+			'aiProviderDefaultModelHint' => '可以直接填写模型 ID，也可以从下方模型列表中选择。',
+			'aiProviderModelCount' => ({required Object count}) => '已添加 ${count} 个模型',
+			'aiProviderModelsUrlHint' => '留空使用默认模型接口，支持完整地址或相对路径。',
+			'aiProviderQueryBalance' => '测试余额查询',
+			'aiProviderShowKey' => '显示 API Key',
+			'aiProviderHideKey' => '隐藏 API Key',
+			'aiProviderEnabledHint' => '保存后启用此服务商',
+			'aiProviderDisabledHint' => '保留配置，暂停使用此服务商',
+			'aiProviderEmptyResponse' => '服务商返回了空响应',
 			_ => null,
 		};
 	}

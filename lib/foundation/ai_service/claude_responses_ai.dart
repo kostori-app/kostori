@@ -1,7 +1,10 @@
 // Claude (Anthropic) 与 OpenAI Responses 两种接口格式的自定义服务商实现。
-// 均为非流式（chat / chatWithTools），流式由 AiBase 默认回退到非流式一次性返回。
+// Claude 回退非流式；Responses 支持文本增量返回。
+
+import 'dart:convert';
 
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/foundation/ai_service/ai_provider_settings.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
@@ -37,13 +40,16 @@ class ClaudeAi extends AiBase {
       );
 
   @override
-  String buildUrl(AiProviderConfig config) => '${config.baseUrl}/v1/messages';
+  String buildUrl(AiProviderConfig config) => AiProviderApi.endpoint(
+    config.baseUrl ?? defaultBaseUrl,
+    'messages',
+    versioned: true,
+  );
 
   @override
   Map<String, String> buildHeaders(AiProviderConfig config) => {
-    'Content-Type': 'application/json',
-    'x-api-key': config.apiKey,
-    'anthropic-version': '2023-06-01',
+    ...AiProviderApi.headers('claude', config.apiKey),
+    if (config is OpenAiCompatibleConfig) ...config.customHeaders,
   };
 
   /// 将单条消息转为 Claude content（文本或多模态块）
@@ -275,14 +281,16 @@ class ClaudeAi extends AiBase {
   }
 }
 
-/// OpenAI Responses API
+/// OpenAI Responses API，支持文本流、图片输入和工具调用。
 class ResponsesAi extends AiBase {
   ResponsesAi({
     required this.providerKey,
     required this.sourceName,
     required this.defaultModel,
     required this.defaultBaseUrl,
-  });
+    Dio? dio,
+    this.keyLoader,
+  }) : _dio = dio ?? AppDio();
 
   @override
   final String providerKey;
@@ -290,9 +298,14 @@ class ResponsesAi extends AiBase {
   final String sourceName;
   final String defaultModel;
   final String defaultBaseUrl;
+  final Dio _dio;
+  final Future<AiApiKey?> Function()? keyLoader;
 
   @override
-  bool get supportsStreamingTools => false;
+  bool get supportsStreamingTools => true;
+
+  @override
+  Future<AiApiKey?> getKeyRow() => keyLoader?.call() ?? super.getKeyRow();
 
   @override
   AiProviderConfig buildConfig(AiApiKey row, {String? modelOverride}) =>
@@ -304,28 +317,62 @@ class ResponsesAi extends AiBase {
       );
 
   @override
-  String buildUrl(AiProviderConfig config) => '${config.baseUrl}/v1/responses';
+  String buildUrl(AiProviderConfig config) => AiProviderApi.endpoint(
+    config.baseUrl ?? defaultBaseUrl,
+    'responses',
+    versioned: true,
+  );
 
   @override
   Map<String, String> buildHeaders(AiProviderConfig config) => {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ${config.apiKey}',
+    ...AiProviderApi.headers('openai_responses', config.apiKey),
+    if (config is OpenAiCompatibleConfig) ...config.customHeaders,
   };
 
-  /// 将 AiMessage 转为 Responses 的 input 条目
-  Object _inputItem(AiMessage m) {
-    if (m.role == 'user') return {'role': 'user', 'content': m.content};
-    if (m.role == 'assistant') {
-      return {'role': 'assistant', 'content': m.content};
+  Iterable<Map<String, dynamic>> _inputItems(AiMessage message) sync* {
+    if (message is AiAssistantMessage && message.responseItems != null) {
+      yield* message.responseItems!;
+      return;
     }
-    if (m.role == 'tool') {
-      return {
+    if (message is AiToolResultMessage) {
+      yield {
         'type': 'function_call_output',
-        'call_id': m is AiToolResultMessage ? m.toolCallId : m.content,
-        'output': m.content,
+        'call_id': message.toolCallId,
+        'output': message.content,
       };
+      return;
     }
-    return {'role': 'user', 'content': m.content};
+    if (message is AiAssistantMessage &&
+        message.toolCalls?.isNotEmpty == true) {
+      if (message.content.isNotEmpty) {
+        yield {'role': 'assistant', 'content': message.content};
+      }
+      for (final call in message.toolCalls!) {
+        yield {
+          'type': 'function_call',
+          'call_id': call.id,
+          'name': call.name,
+          'arguments': jsonEncode(call.arguments),
+        };
+      }
+      return;
+    }
+    if (message is AiUserMessage && message.parts?.isNotEmpty == true) {
+      yield {
+        'role': 'user',
+        'content': [
+          if (message.content.isNotEmpty)
+            {'type': 'input_text', 'text': message.content},
+          for (final part in message.parts!)
+            if (part is AiImagePart)
+              {'type': 'input_image', 'image_url': part.dataUrl}
+            else if (part is AiTextPart)
+              {'type': 'input_text', 'text': part.text},
+        ],
+      };
+      return;
+    }
+    yield {'role': message.role, 'content': message.content};
   }
 
   @override
@@ -337,59 +384,87 @@ class ResponsesAi extends AiBase {
     AiGenerationParams? params,
   }) => {
     'model': config.model,
-    'input': [for (final m in messages) _inputItem(m)],
-    if (systemPrompt != null && systemPrompt.isNotEmpty)
-      'instructions': systemPrompt,
+    'input': [for (final message in messages) ..._inputItems(message)],
+    if (systemPrompt?.isNotEmpty == true) 'instructions': systemPrompt,
     if (params?.temperature != null) 'temperature': params!.temperature,
+    if (params?.topP != null) 'top_p': params!.topP,
     if (params?.maxTokens != null) 'max_output_tokens': params!.maxTokens,
-    if (tools != null && tools.isNotEmpty)
+    if (tools?.isNotEmpty == true)
       'tools': [
-        for (final t in tools)
+        for (final tool in tools!)
           {
             'type': 'function',
-            'name': t.name,
-            'description': t.description,
-            'parameters': t.parameters.isEmpty
-                ? const {'type': 'object'}
-                : t.parameters,
+            'name': tool.name,
+            'description': tool.description,
+            'parameters': tool.parameters.isEmpty
+                ? const {'type': 'object', 'properties': <String, dynamic>{}}
+                : tool.parameters,
+            'strict': false,
           },
       ],
+    if (tools?.isNotEmpty == true) 'include': ['reasoning.encrypted_content'],
     'store': false,
+    if (config is OpenAiCompatibleConfig) ...config.extraBodyFields,
   };
 
   @override
   String parseContent(dynamic responseData) {
-    final json = responseData as Map<String, dynamic>;
+    final json = responseData as Map;
     final output = json['output'] as List? ?? const [];
-    final sb = StringBuffer();
+    final text = StringBuffer();
     for (final item in output.whereType<Map>()) {
-      if (item['type'] == 'message') {
-        final content = item['content'] as List? ?? const [];
-        for (final c in content.whereType<Map>()) {
-          if (c['type'] == 'output_text' || c['type'] == 'text') {
-            sb.write(c['text']?.toString() ?? '');
-          }
+      if (item['type'] != 'message') continue;
+      for (final part
+          in (item['content'] as List? ?? const []).whereType<Map>()) {
+        if (part['type'] == 'output_text' || part['type'] == 'text') {
+          text.write(part['text']?.toString() ?? '');
+        } else if (part['type'] == 'refusal') {
+          text.write(part['refusal']?.toString() ?? '');
         }
       }
     }
-    return sb.toString();
+    return text.toString();
   }
 
-  static AiUsage? _parseUsage(Map<String, dynamic> json, String model) {
-    final u = json['usage'];
-    if (u is Map) {
-      return AiUsage(
-        promptTokens: u['input_tokens'] is num
-            ? (u['input_tokens'] as num).toInt()
-            : null,
-        completionTokens: u['output_tokens'] is num
-            ? (u['output_tokens'] as num).toInt()
-            : null,
-        modelName: model,
-      );
-    }
+  static AiUsage? _parseUsage(Map json, String model) {
+    final usage = json['usage'];
+    if (usage is! Map) return null;
+    final details = usage['input_tokens_details'];
+    return AiUsage(
+      promptTokens: (usage['input_tokens'] as num?)?.toInt(),
+      completionTokens: (usage['output_tokens'] as num?)?.toInt(),
+      cachedTokens: details is Map
+          ? (details['cached_tokens'] as num?)?.toInt()
+          : null,
+      modelName: model,
+    );
+  }
+
+  String? _responseError(Map json) {
+    if (json['error'] != null) return aiErrorMessageOf(json['error']);
+    if (json['status'] == 'failed') return aiErrorMessageOf(json);
     return null;
   }
+
+  Res<String> _textResult(Map json, String model) {
+    final error = _responseError(json);
+    if (error != null) return Res.error(error);
+    final text = parseContent(json);
+    if (text.trim().isEmpty) return Res.error(t.aiProviderEmptyResponse);
+    return Res(text, subData: _parseUsage(json, model));
+  }
+
+  Future<Response<dynamic>> _post(
+    AiProviderConfig config,
+    Map<String, dynamic> body,
+  ) => _dio.post<dynamic>(
+    buildUrl(config),
+    data: body,
+    options: Options(
+      headers: buildHeaders(config),
+      receiveTimeout: const Duration(minutes: 3),
+    ),
+  );
 
   @override
   Future<Res<String>> chat(
@@ -400,30 +475,24 @@ class ResponsesAi extends AiBase {
     AiProviderConfig? configOverride,
   }) async {
     try {
-      final keyRow = await getKeyRow();
-      if (keyRow == null || !keyRow.isEnabled) {
+      final key = await getKeyRow();
+      if (key == null || !key.isEnabled) {
         return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config =
-          configOverride ?? buildConfig(keyRow, modelOverride: modelOverride);
-      final response = await AppDio().request(
-        buildUrl(config),
-        data: buildRequest(
+          configOverride ?? buildConfig(key, modelOverride: modelOverride);
+      final response = await _post(
+        config,
+        buildRequest(
           messages,
           config: config,
           systemPrompt: systemPrompt,
           params: params,
         ),
-        options: Options(
-          method: 'POST',
-          headers: buildHeaders(config),
-          receiveTimeout: const Duration(minutes: 3),
-        ),
       );
-      final json = response.data as Map<String, dynamic>;
-      return Res(parseContent(json), subData: _parseUsage(json, config.model));
-    } catch (e) {
-      return Res.error(aiErrorMessageOf(e));
+      return _textResult(response.data as Map, config.model);
+    } catch (error) {
+      return Res.error(aiErrorMessageOf(error));
     }
   }
 
@@ -447,81 +516,187 @@ class ResponsesAi extends AiBase {
       );
     }
     try {
-      final keyRow = await getKeyRow();
-      if (keyRow == null || !keyRow.isEnabled) {
+      final key = await getKeyRow();
+      if (key == null || !key.isEnabled) {
         return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config =
-          configOverride ?? buildConfig(keyRow, modelOverride: modelOverride);
-      var history = [...messages];
+          configOverride ?? buildConfig(key, modelOverride: modelOverride);
+      var input = <dynamic>[
+        for (final message in messages) ..._inputItems(message),
+      ];
       for (var round = 0; round < 3; round++) {
-        final response = await AppDio().request(
-          buildUrl(config),
-          data: buildRequest(
-            history,
+        final body = buildRequest(
+          messages,
+          config: config,
+          systemPrompt: systemPrompt,
+          tools: tools,
+          params: params,
+        );
+        body['input'] = input;
+        final response = await _post(config, body);
+        final json = response.data as Map;
+        final error = _responseError(json);
+        if (error != null) return Res.error(error);
+        final output = json['output'] as List? ?? const [];
+        final calls = output
+            .whereType<Map>()
+            .where((item) => item['type'] == 'function_call')
+            .toList();
+        if (calls.isEmpty) {
+          return _textResult(json, config.model);
+        }
+        // 原样回传 output，保留推理项、调用 ID 和并行工具调用。
+        input = [...input, ...output];
+        for (final call in calls) {
+          String result;
+          try {
+            result = await onToolCall(
+              call['name']?.toString() ?? '',
+              parseToolArguments(call['arguments']?.toString() ?? ''),
+            );
+          } catch (error) {
+            result = t.toolExecutionFailed(error: error);
+          }
+          input.add({
+            'type': 'function_call_output',
+            'call_id': call['call_id'],
+            'output': result,
+          });
+        }
+      }
+      return Res.error(t.toolRoundsExceeded(source: sourceName));
+    } catch (error) {
+      return Res.error(aiErrorMessageOf(error));
+    }
+  }
+
+  @override
+  Stream<AiStreamChunk> chatStream(
+    List<AiMessage> messages, {
+    String? systemPrompt,
+    List<AiToolDefinition>? tools,
+    CancelToken? cancelToken,
+    String? modelOverride,
+    AiGenerationParams? params,
+    AiProviderConfig? configOverride,
+  }) async* {
+    try {
+      final key = await getKeyRow();
+      if (key == null || !key.isEnabled) {
+        yield AiStreamChunk(
+          errorMessage: t.apiKeyNotConfigured(source: sourceName),
+        );
+        return;
+      }
+      final config =
+          configOverride ?? buildConfig(key, modelOverride: modelOverride);
+      final response = await _dio.post<ResponseBody>(
+        buildUrl(config),
+        data: {
+          ...buildRequest(
+            messages,
             config: config,
             systemPrompt: systemPrompt,
             tools: tools,
             params: params,
           ),
-          options: Options(
-            method: 'POST',
-            headers: buildHeaders(config),
-            receiveTimeout: const Duration(minutes: 3),
-          ),
-        );
-        final json = response.data as Map<String, dynamic>;
-        final output = json['output'] as List? ?? const [];
-        final calls = output
-            .whereType<Map>()
-            .where((o) => o['type'] == 'function_call')
-            .toList();
-        if (calls.isEmpty) {
-          return Res(
-            parseContent(json),
-            subData: _parseUsage(json, config.model),
-          );
-        }
-        history = [
-          ...history,
-          for (final c in calls)
-            AiAssistantMessage(
-              content: c['arguments']?.toString() ?? '',
-              toolCalls: [
-                AiToolCall(
-                  id: c['call_id']?.toString() ?? '',
-                  name: c['name']?.toString() ?? '',
-                  arguments: parseToolArguments(
-                    c['arguments']?.toString() ?? '',
+          'stream': true,
+        },
+        options: Options(
+          headers: buildHeaders(config),
+          responseType: ResponseType.stream,
+          receiveTimeout: const Duration(minutes: 3),
+          extra: const {'streaming': true},
+        ),
+        cancelToken: cancelToken,
+      );
+      final text = StringBuffer();
+      final reasoning = StringBuffer();
+      await for (final data in sseDataLines(response.data!.stream)) {
+        if (cancelToken?.isCancelled == true) return;
+        if (data == '[DONE]') break;
+        final event = jsonDecode(data);
+        if (event is! Map) continue;
+        switch (event['type']) {
+          case 'response.output_text.delta':
+            text.write(event['delta']?.toString() ?? '');
+            yield AiStreamChunk(
+              text: text.toString(),
+              reasoning: reasoning.toString(),
+            );
+          case 'response.reasoning_summary_text.delta':
+            reasoning.write(event['delta']?.toString() ?? '');
+            yield AiStreamChunk(
+              text: text.toString(),
+              reasoning: reasoning.toString(),
+            );
+          case 'response.completed':
+          case 'response.incomplete':
+            final result = event['response'] as Map? ?? const {};
+            final error = _responseError(result);
+            if (error != null) {
+              yield AiStreamChunk(errorMessage: error);
+              return;
+            }
+            final items = (result['output'] as List? ?? const [])
+                .whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList();
+            final calls = [
+              for (final item in items)
+                if (item['type'] == 'function_call')
+                  AiToolCall(
+                    id: item['call_id']?.toString() ?? '',
+                    name: item['name']?.toString() ?? '',
+                    arguments: parseToolArguments(
+                      item['arguments']?.toString() ?? '',
+                    ),
                   ),
-                ),
-              ],
-            ),
-        ];
-        for (final c in calls) {
-          final name = c['name']?.toString() ?? '';
-          final arguments = parseToolArguments(
-            c['arguments']?.toString() ?? '',
-          );
-          String result;
-          try {
-            result = await onToolCall(name, arguments);
-          } catch (e) {
-            result = t.toolExecutionFailed(error: e);
-          }
-          history = [
-            ...history,
-            AiToolResultMessage(
-              toolCallId: c['call_id']?.toString() ?? '',
-              toolName: name,
-              result: result,
-            ),
-          ];
+            ];
+            if (text.isEmpty) text.write(parseContent(result));
+            if (text.toString().trim().isEmpty && calls.isEmpty) {
+              yield AiStreamChunk(errorMessage: t.aiProviderEmptyResponse);
+              return;
+            }
+            yield AiStreamChunk(
+              text: text.toString(),
+              reasoning: reasoning.toString(),
+              usage: _parseUsage(result, config.model),
+              done: true,
+              toolCalls: calls,
+              responseItems: items,
+              finishReason: event['type'] == 'response.incomplete'
+                  ? 'length'
+                  : calls.isEmpty
+                  ? 'stop'
+                  : 'tool_calls',
+            );
+            return;
+          case 'response.failed':
+          case 'error':
+            final error =
+                event['error'] ??
+                (event['response'] as Map?)?['error'] ??
+                event;
+            yield AiStreamChunk(errorMessage: aiErrorMessageOf(error));
+            return;
         }
       }
-      return Res.error(t.toolRoundsExceeded(source: sourceName));
-    } catch (e) {
-      return Res.error(aiErrorMessageOf(e));
+      yield text.isEmpty
+          ? AiStreamChunk(errorMessage: t.aiProviderEmptyResponse)
+          : AiStreamChunk(
+              text: text.toString(),
+              reasoning: reasoning.toString(),
+              done: true,
+              finishReason: 'stop',
+            );
+    } catch (error) {
+      if (cancelToken?.isCancelled == true ||
+          (error is DioException && CancelToken.isCancel(error))) {
+        return;
+      }
+      yield AiStreamChunk(errorMessage: aiErrorMessageOf(error));
     }
   }
 }

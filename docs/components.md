@@ -66,6 +66,8 @@
 
 **AI/分享/系统**：`AssistantAvatar`（assistant_avatar.dart）；`AiModelCard`（ai_model_card.dart）；`CharacterAvatar`、`AvatarPicker`、`CharacterCardEditor`、`CharacterCardView`、`showCharacterCardEditor`、`exportCharacterCardPng`（character_card_editor.dart）；`ShareWidget`、`captureAndSave`、`ShareQrCode`（share_widget.dart、share_cards.dart）；`CalendarScreenshotWidget`（calendar_screenshot_widget.dart）；`QrClipboardWidget`、`clipboardNotifierProvider`（qr_clipboard_widget.dart）；`BatteryWidget`、`SpeedMonitorWidget`、`NetworkStatusWidget`（system_status_widget.dart）；`WordCloudWidget`（word_cloud_widget.dart）；`WindowFrame`、`VirtualWindowFrame`、`WindowFrameController`（window_frame.dart）；`JsUiApi`（js_ui.dart）。
 
+**AI 服务商设置**：`AiProviderSettingsSection`（ai_provider_settings_section.dart，统一服务商列表）；`AiProviderEditor`（ai_provider_editor.dart，内置/自定义共用的连接、模型、高级配置编辑器）。这两个组件需单独 import。
+
 ## 最高频组件（跨 `lib/pages/` 出现次数，优先掌握）
 
 `context.showMessage`/`ToastManager`、`PolygonRefreshIndicator`、`ContentDialog`+`show*Dialog`、`Sheet`、`Appbar`、`showPopUpWidget`、`CustomSwitch`、`Button`/`CapsuleButton`、`IconTileButton`、`Select`、`AppSelectableText`/`CapsuleOptions`、`CharacterCard`、`SmoothCustomScrollView`、`KostoriRefreshIndicator`、`AnimatedImage`、`KostoriHero`。

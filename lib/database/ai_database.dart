@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kostori/database/daos/ai_api_key_dao.dart';
 import 'package:kostori/database/daos/ai_aux_settings_dao.dart';
 import 'package:kostori/database/daos/ai_custom_provider_dao.dart';
@@ -34,7 +35,7 @@ class AiApiKeys extends Table {
   /// 余额结果 JSON key path（点号分隔，如 `data.balance`）
   TextColumn get balanceKey => text().nullable()();
 
-  /// 接口格式：openai | openai_responses | gemini | claude；null 视为 openai
+  /// 接口格式：openai | openai_responses | gemini | claude；null 使用服务商默认格式
   TextColumn get apiFormat => text().nullable()();
 
   /// 自定义的"查询可用模型"接口地址；为空使用内置默认
@@ -259,6 +260,9 @@ class AiDatabase extends _$AiDatabase {
   static AiDatabase get instance => _instance ??= AiDatabase._();
 
   AiDatabase._() : super(_openConnection());
+
+  @visibleForTesting
+  AiDatabase.forTesting(super.executor);
 
   @override
   int get schemaVersion => 14;

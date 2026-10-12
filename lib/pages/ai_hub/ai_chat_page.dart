@@ -1094,7 +1094,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   Widget _buildModelProviderButton() {
     final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<AiApiKey?>(
-      stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(_source),
+      stream: watchAiProviderKey(_source),
       builder: (ctx, snap) {
         final model = snap.data?.model;
         final meta = OpenAiProviderRegistry.allProviders[_source];
@@ -2043,10 +2043,21 @@ class _ProviderModelListState extends State<ProviderModelList> {
   String? _selected;
 
   @override
+  void didUpdateWidget(ProviderModelList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.provider != widget.provider ||
+        oldWidget.currentModel != widget.currentModel) {
+      _selected = null;
+      _typeFilter = null;
+      _collapsed.clear();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<AiApiKey?>(
-      stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(widget.provider),
+      stream: watchAiProviderKey(widget.provider),
       builder: (ctx, keySnap) {
         final currentModel =
             _selected ??
@@ -2146,21 +2157,32 @@ class _ProviderModelListState extends State<ProviderModelList> {
               child: AiModelCard(
                 model: m,
                 isSelected: m.modelId == currentModel,
-                onTap: () {
+                onTap: () async {
                   if (m.modelId == currentModel) {
                     Navigator.pop(context);
                     return;
                   }
-                  setState(() => _selected = m.modelId);
                   final onModelSelected = widget.onModelSelected;
                   if (onModelSelected != null) {
                     onModelSelected(m.modelId);
                   } else {
-                    AiDatabase.instance.aiApiKeyDao.updateModel(
-                      widget.provider,
-                      m.modelId,
-                    );
+                    try {
+                      await AiProviderSettingsRepository().updateModel(
+                        widget.provider,
+                        m.modelId,
+                      );
+                    } catch (error) {
+                      if (mounted) {
+                        context.showMessage(
+                          message: aiErrorMessageOf(error),
+                          level: LogLevel.error,
+                        );
+                      }
+                      return;
+                    }
                   }
+                  if (!mounted) return;
+                  setState(() => _selected = m.modelId);
                   Navigator.pop(context);
                 },
               ),

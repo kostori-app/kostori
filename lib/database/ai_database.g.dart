@@ -279,7 +279,7 @@ class AiApiKey extends DataClass implements Insertable<AiApiKey> {
   /// 余额结果 JSON key path（点号分隔，如 `data.balance`）
   final String? balanceKey;
 
-  /// 接口格式：openai | openai_responses | gemini | claude；null 视为 openai
+  /// 接口格式：openai | openai_responses | gemini | claude；null 使用服务商默认格式
   final String? apiFormat;
 
   /// 自定义的"查询可用模型"接口地址；为空使用内置默认

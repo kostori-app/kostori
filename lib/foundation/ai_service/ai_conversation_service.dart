@@ -431,7 +431,7 @@ class AiConversationService {
       onToolCall: onToolCall,
       params: paramsOverride ?? _profileParams(profile),
       modelOverride: modelOverride,
-      configOverride: await _configOverrideFor(ai, provider, profile),
+      configOverride: await _configOverrideFor(ai, profile),
     );
     sw.stop();
     SkillRegistry.instance.setContextImage(null);
@@ -712,6 +712,7 @@ class AiConversationService {
       var currentText = '';
       var currentReasoning = '';
       var roundToolCalls = <AiToolCall>[];
+      List<Map<String, dynamic>>? roundResponseItems;
       var roundDone = false;
       thinkingStepIndex = -1;
 
@@ -722,7 +723,7 @@ class AiConversationService {
           tools: tools.isEmpty ? null : tools,
           params: genParams,
           cancelToken: cancelToken,
-          configOverride: await _configOverrideFor(ai, provider, profile),
+          configOverride: await _configOverrideFor(ai, profile),
         )) {
           if (chunk.errorMessage != null) {
             yield AiChatUpdate(
@@ -736,6 +737,9 @@ class AiConversationService {
           currentText = chunk.text;
           currentReasoning = chunk.reasoning;
           roundToolCalls = chunk.toolCalls;
+          if (chunk.responseItems != null) {
+            roundResponseItems = chunk.responseItems;
+          }
           if (chunk.usage != null) usage = chunk.usage;
           if (chunk.finishReason == 'length') truncated = true;
           roundDone = chunk.done;
@@ -804,6 +808,7 @@ class AiConversationService {
         AiAssistantMessage(
           content: currentText,
           toolCalls: roundToolCalls.isEmpty ? null : roundToolCalls,
+          responseItems: roundResponseItems,
         ),
       ];
       allText.write(currentText);
@@ -1084,7 +1089,7 @@ class AiConversationService {
       session: session,
       useTools: false,
       params: paramsOverride ?? _profileParams(profile),
-      configOverride: await _configOverrideFor(ai, provider, profile),
+      configOverride: await _configOverrideFor(ai, profile),
     );
     if (!result.success) return result;
 
@@ -1403,7 +1408,6 @@ class AiConversationService {
   /// 无覆盖或非 OpenAI 兼容服务商时返回 null。
   Future<AiProviderConfig?> _configOverrideFor(
     AiBase ai,
-    String provider,
     AssistantProfile? profile,
   ) async {
     final req = profile?.request;
@@ -1415,9 +1419,7 @@ class AiConversationService {
             req.stopSequences.isEmpty)) {
       return null;
     }
-    final keyRow = await AiDatabase.instance.aiApiKeyDao.getByProvider(
-      provider,
-    );
+    final keyRow = await ai.getKeyRow();
     if (keyRow == null || !keyRow.isEnabled) return null;
     final cfg = ai.buildConfig(keyRow);
     if (cfg is OpenAiCompatibleConfig) {

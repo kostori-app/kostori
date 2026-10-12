@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/foundation/ai_service/ai_provider_credentials.dart';
+import 'package:kostori/foundation/ai_service/balance_helper.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/res.dart';
 
@@ -86,8 +88,14 @@ class AiToolCall {
 class AiAssistantMessage extends AiMessage {
   final List<AiToolCall>? toolCalls;
 
-  const AiAssistantMessage({super.content = '', this.toolCalls})
-    : super(role: 'assistant');
+  /// Responses 原始输出，仅在同一轮工具交互中传递，不写入通用消息 JSON。
+  final List<Map<String, dynamic>>? responseItems;
+
+  const AiAssistantMessage({
+    super.content = '',
+    this.toolCalls,
+    this.responseItems,
+  }) : super(role: 'assistant');
 
   @override
   Map<String, dynamic> toJson() => {
@@ -326,6 +334,7 @@ class AiStreamChunk {
 
   /// 出错信息（出错时携带，流提前结束）
   final String? errorMessage;
+  final List<Map<String, dynamic>>? responseItems;
 
   const AiStreamChunk({
     this.text = '',
@@ -335,6 +344,7 @@ class AiStreamChunk {
     this.done = false,
     this.finishReason,
     this.errorMessage,
+    this.responseItems,
   });
 }
 
@@ -470,11 +480,20 @@ abstract class AiBase {
 
   AiProviderConfig buildConfig(AiApiKey row, {String? modelOverride});
 
-  Future<AiApiKey?> getKeyRow() =>
-      AiDatabase.instance.aiApiKeyDao.getByProvider(providerKey);
+  Future<AiApiKey?> getKeyRow() => loadAiProviderKey(providerKey);
 
   /// 查询账户余额。不支持的返回 [Res.error]，
   /// 其 [Res.errorMessage] 为 [kBalanceQueryUnsupported]。
-  Future<Res<String>> queryBalance() =>
-      Future.value(const Res.error(kBalanceQueryUnsupported));
+  Future<Res<String>> queryBalance() async {
+    final row = await getKeyRow();
+    if (row == null || !row.isEnabled || row.balanceUrl?.isNotEmpty != true) {
+      return const Res.error(kBalanceQueryUnsupported);
+    }
+    return queryBalanceByUrl(
+      baseUrl: row.baseUrl ?? '',
+      apiKey: row.apiKey,
+      balanceUrl: row.balanceUrl,
+      balanceKey: row.balanceKey,
+    );
+  }
 }

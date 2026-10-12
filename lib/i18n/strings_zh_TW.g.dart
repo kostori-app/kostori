@@ -3232,6 +3232,28 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String hostsSortedFastest({required Object latency}) => '已依速度排序，最快 ${latency} ms';
 	@override String hostsSortedWithUnreachable({required Object count}) => '已依速度排序（${count} 個連不上，排到最後）';
 	@override String get hostsAllUnreachable => '這些 IP 現在都連不上，建議重新自動解析';
+	@override String get aiOpenAiProvider => 'ChatGPT（OpenAI）';
+	@override String get aiBuiltInProviders => '內建服務商';
+	@override String aiProviderSummary({required Object enabled, required Object total}) => '已啟用 ${enabled} / ${total} 個服務商';
+	@override String get aiProviderConnection => '連線';
+	@override String get aiProviderAdvanced => '進階';
+	@override String get aiProtocolChatCompletions => 'OpenAI · Chat Completions';
+	@override String get aiProtocolResponses => 'OpenAI · Responses';
+	@override String get aiProtocolGemini => 'Gemini · 原生介面';
+	@override String get aiProtocolClaude => 'Claude · Messages';
+	@override String get aiProviderInvalidUrl => '請輸入有效的 HTTP 或 HTTPS 網址';
+	@override String get aiProviderModelRequired => '請選擇或填寫預設模型';
+	@override String get aiProviderBaseUrlHint => '填寫 API 基礎網址，也可填寫完整的聊天介面網址；介面路徑會自動處理。';
+	@override String get aiProviderOptionalKeyHint => '本機或免驗證服務可留空。';
+	@override String get aiProviderDefaultModelHint => '可以直接填寫模型 ID，也可以從下方模型清單中選擇。';
+	@override String aiProviderModelCount({required Object count}) => '已新增 ${count} 個模型';
+	@override String get aiProviderModelsUrlHint => '留空使用預設模型介面，支援完整網址或相對路徑。';
+	@override String get aiProviderQueryBalance => '測試餘額查詢';
+	@override String get aiProviderShowKey => '顯示 API Key';
+	@override String get aiProviderHideKey => '隱藏 API Key';
+	@override String get aiProviderEnabledHint => '儲存後啟用此服務商';
+	@override String get aiProviderDisabledHint => '保留設定，暫停使用此服務商';
+	@override String get aiProviderEmptyResponse => '服務商傳回了空回應';
 }
 
 // Path: colors
@@ -5883,12 +5905,12 @@ extension on TranslationsZhTw {
 			'headers' => '請求標頭（JSON）',
 			'noSkillsYet' => '暫無技能',
 			'skillName' => '技能名稱',
+			_ => null,
+		} ?? switch (path) {
 			'skillKey' => '技能 Key',
 			'builtin' => '內建',
 			'skillMarkdownHint' => '技能支援 Markdown 格式',
 			'sendMessage' => '發送訊息',
-			_ => null,
-		} ?? switch (path) {
 			'contextAutoCompressed' => '上下文過長，已自動壓縮',
 			'chatGreeting' => '今天有什麼可以幫你？',
 			'chatStart1' => '總結這段文字',
@@ -6397,12 +6419,12 @@ extension on TranslationsZhTw {
 			'torrentSourceSizeRegex' => '體積正則',
 			'torrentSourceGroupRegex' => '分組正則',
 			'torrentSourceHashRegex' => '雜湊正則',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '時間正則',
 			'torrentSourceJsonPath' => 'JSON 路徑',
 			'torrentSourceTitleField' => '標題欄位',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceMagnetField' => '磁力欄位',
 			'torrentSourceHashField' => '雜湊欄位',
 			'torrentSourceSizeField' => '體積欄位',
@@ -6573,6 +6595,28 @@ extension on TranslationsZhTw {
 			'hostsSortedFastest' => ({required Object latency}) => '已依速度排序，最快 ${latency} ms',
 			'hostsSortedWithUnreachable' => ({required Object count}) => '已依速度排序（${count} 個連不上，排到最後）',
 			'hostsAllUnreachable' => '這些 IP 現在都連不上，建議重新自動解析',
+			'aiOpenAiProvider' => 'ChatGPT（OpenAI）',
+			'aiBuiltInProviders' => '內建服務商',
+			'aiProviderSummary' => ({required Object enabled, required Object total}) => '已啟用 ${enabled} / ${total} 個服務商',
+			'aiProviderConnection' => '連線',
+			'aiProviderAdvanced' => '進階',
+			'aiProtocolChatCompletions' => 'OpenAI · Chat Completions',
+			'aiProtocolResponses' => 'OpenAI · Responses',
+			'aiProtocolGemini' => 'Gemini · 原生介面',
+			'aiProtocolClaude' => 'Claude · Messages',
+			'aiProviderInvalidUrl' => '請輸入有效的 HTTP 或 HTTPS 網址',
+			'aiProviderModelRequired' => '請選擇或填寫預設模型',
+			'aiProviderBaseUrlHint' => '填寫 API 基礎網址，也可填寫完整的聊天介面網址；介面路徑會自動處理。',
+			'aiProviderOptionalKeyHint' => '本機或免驗證服務可留空。',
+			'aiProviderDefaultModelHint' => '可以直接填寫模型 ID，也可以從下方模型清單中選擇。',
+			'aiProviderModelCount' => ({required Object count}) => '已新增 ${count} 個模型',
+			'aiProviderModelsUrlHint' => '留空使用預設模型介面，支援完整網址或相對路徑。',
+			'aiProviderQueryBalance' => '測試餘額查詢',
+			'aiProviderShowKey' => '顯示 API Key',
+			'aiProviderHideKey' => '隱藏 API Key',
+			'aiProviderEnabledHint' => '儲存後啟用此服務商',
+			'aiProviderDisabledHint' => '保留設定，暫停使用此服務商',
+			'aiProviderEmptyResponse' => '服務商傳回了空回應',
 			_ => null,
 		};
 	}

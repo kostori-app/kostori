@@ -4,6 +4,7 @@ import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
+import 'package:kostori/foundation/ai_service/ai_provider_settings.dart';
 import 'package:kostori/foundation/ai_service/balance_helper.dart';
 import 'package:kostori/foundation/ai_service/claude_responses_ai.dart';
 import 'package:kostori/foundation/ai_service/gemini_ai.dart';
@@ -27,6 +28,11 @@ typedef ProviderMeta = ({
 class OpenAiProviderRegistry {
   static const _builtinProviders =
       <String, ({String name, String defaultModel, String baseUrl})>{
+        'openai': (
+          name: 'OpenAI',
+          defaultModel: 'gpt-4.1-mini',
+          baseUrl: 'https://api.openai.com/v1',
+        ),
         'siliconFlow': (
           name: 'SiliconFlow',
           defaultModel: 'THUDM/GLM-4-9B-0414',
@@ -73,12 +79,23 @@ class OpenAiProviderRegistry {
         isCustom: false,
         supportsVision: true,
         supportsTools: true,
-        apiFormat: 'openai',
+        apiFormat: defaultApiFormat(e.key),
       ),
   };
 
   /// 内置 + 已启用自定义服务商的合并表（创建自定义服务商后需调用 [refreshCustomProviders]）
   static Map<String, ProviderMeta> get allProviders => _allProviders;
+
+  static Map<String, ProviderMeta> get builtinProviders => {
+    for (final entry in _allProviders.entries)
+      if (!entry.value.isCustom) entry.key: entry.value,
+  };
+
+  static String defaultApiFormat(String source) => switch (source) {
+    'gemini' => 'gemini',
+    'openai' || 'openrouter' => 'openai_responses',
+    _ => 'openai',
+  };
 
   /// 自定义服务商的 source key：`custom_<provider>`
   static String customSourceKey(String provider) => 'custom_$provider';
@@ -91,8 +108,9 @@ class OpenAiProviderRegistry {
   static bool isCustomSource(String source) => source.startsWith('custom_');
 
   /// 从数据库加载启用的自定义服务商并合并进缓存
-  static Future<void> refreshCustomProviders() async {
-    final customs = await AiDatabase.instance.aiCustomProviderDao.getEnabled();
+  static Future<void> refreshCustomProviders({AiDatabase? database}) async {
+    final customs = await (database ?? AiDatabase.instance).aiCustomProviderDao
+        .getEnabled();
     final next = <String, ProviderMeta>{
       for (final e in _allProviders.entries)
         if (!e.value.isCustom) e.key: e.value,
@@ -116,11 +134,11 @@ class OpenAiProviderRegistry {
   /// 内置服务商的接口格式缓存（从 AiApiKeys 读取，启动/保存 Key 后刷新）
   static final Map<String, String> _keyApiFormats = {};
 
-  static Future<void> refreshKeyFormats() async {
+  static Future<void> refreshKeyFormats({AiDatabase? database}) async {
     _keyApiFormats.clear();
-    final keys = await AiDatabase.instance.aiApiKeyDao.getAll();
+    final keys = await (database ?? AiDatabase.instance).aiApiKeyDao.getAll();
     for (final k in keys) {
-      _keyApiFormats[k.provider] = k.apiFormat ?? 'openai';
+      _keyApiFormats[k.provider] = k.apiFormat ?? defaultApiFormat(k.provider);
     }
   }
 
@@ -168,7 +186,7 @@ class OpenAiProviderRegistry {
       };
     }
     // 内置 OpenAI 服务商也可在 Key 编辑页选择接口格式
-    return switch (_keyApiFormats[source] ?? 'openai') {
+    return switch (_keyApiFormats[source] ?? meta.apiFormat) {
       'gemini' => GeminiAi(
         providerKey: source,
         sourceName: meta.name,
@@ -535,15 +553,16 @@ class OpenAiCompatibleAi extends AiBase {
   Map<String, String> buildHeaders(AiProviderConfig config) {
     final oc = config is OpenAiCompatibleConfig ? config : null;
     return {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${config.apiKey}',
+      ...AiProviderApi.headers('openai', config.apiKey),
       if (oc != null) ...oc.customHeaders,
     };
   }
 
   @override
-  String buildUrl(AiProviderConfig config) =>
-      '${config.baseUrl}/chat/completions';
+  String buildUrl(AiProviderConfig config) => AiProviderApi.endpoint(
+    config.baseUrl ?? defaultBaseUrl,
+    'chat/completions',
+  );
 
   @override
   Future<Res<String>> queryBalance() async {
@@ -608,25 +627,4 @@ class CustomProviderAi extends OpenAiCompatibleAi {
     super.supportsVision,
     super.supportsTools,
   });
-
-  @override
-  Future<AiApiKey?> getKeyRow() async {
-    final provider = OpenAiProviderRegistry.customProviderOf(providerKey);
-    final c = await AiDatabase.instance.aiCustomProviderDao.getByProvider(
-      provider,
-    );
-    if (c == null || !c.isEnabled) return null;
-    return AiApiKey(
-      provider: providerKey,
-      apiKey: c.apiKey ?? '',
-      model: c.defaultModel,
-      baseUrl: c.baseUrl,
-      balanceUrl: c.balanceUrl,
-      balanceKey: c.balanceKey,
-      apiFormat: c.apiFormat ?? 'openai',
-      modelsUrl: c.modelsUrl,
-      isEnabled: true,
-      updatedAt: c.updatedAt,
-    );
-  }
 }

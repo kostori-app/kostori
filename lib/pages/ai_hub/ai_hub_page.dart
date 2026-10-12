@@ -27,6 +27,7 @@ import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/ai_image_service.dart';
+import 'package:kostori/foundation/ai_service/ai_provider_credentials.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_card_creator.dart';
@@ -50,6 +51,7 @@ import 'package:kostori/init.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
+import 'package:kostori/repositories/ai_provider_settings_repository.dart';
 import 'package:kostori/skills/skill_registry.dart';
 import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/utils/io.dart';
@@ -2087,7 +2089,7 @@ class _ModelSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<AiApiKey?>(
-      stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(provider),
+      stream: watchAiProviderKey(provider),
       builder: (ctx, keySnap) {
         final providerName =
             OpenAiProviderRegistry.allProviders[provider]?.name ?? provider;
