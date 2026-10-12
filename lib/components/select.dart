@@ -455,6 +455,10 @@ class SlidingSegmentedBar extends StatefulWidget {
   /// 选中项变化时自动滚动到可视区（仅 [scrollable] 生效）
   final bool autoScroll;
 
+  /// 长按选中项打开搜索选择面板；默认在传入 tab 动画时开启。
+  /// 要求 children 均为带 text 的 CapsuleOption。
+  final bool? quickSelect;
+
   const SlidingSegmentedBar({
     super.key,
     required this.children,
@@ -471,6 +475,7 @@ class SlidingSegmentedBar extends StatefulWidget {
     this.scrollable = false,
     this.wrap = false,
     this.autoScroll = true,
+    this.quickSelect,
   });
 
   @override
@@ -501,6 +506,56 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
   int _lastScrolledIndex = -1;
 
   ScrollPosition? _lastPosition;
+  bool _pickerOpen = false;
+
+  bool get _canQuickSelect =>
+      (widget.quickSelect ?? widget.progress != null) &&
+      widget.children.length > 1 &&
+      widget.children.every(
+        (child) => child is CapsuleOption && child.text != null,
+      );
+
+  int get _quickSelectIndex {
+    final progress = widget.progress;
+    if (progress == null || widget.children.isEmpty) {
+      return widget.selectedIndex;
+    }
+    // 仅传动画的调用也需识别当前 tab，不能依赖 CapsuleOption.isSelected。
+    return progress.value.round().clamp(0, widget.children.length - 1);
+  }
+
+  Future<void> _showQuickSelect() async {
+    if (_pickerOpen || !_canQuickSelect) return;
+    _pickerOpen = true;
+    final options = widget.children.cast<CapsuleOption>().toList();
+    try {
+      final index = await context.toSheet<int>(
+        () => _CapsuleTabPickerSheet(
+          labels: options.map((option) => option.text!).toList(),
+          icons: options.map((option) => option.quickSelectIcon).toList(),
+          badges: options.map((option) => option.quickSelectBadge).toList(),
+          enabled: options.map((option) => option.onTap != null).toList(),
+          selectedIndex: _quickSelectIndex,
+        ),
+      );
+      if (!mounted || index == null || !_canQuickSelect) return;
+      final currentOptions = widget.children.cast<CapsuleOption>();
+      // 弹层期间选项可能更新；仅在键和标题仍匹配时调用最新选项回调。
+      if (!listEquals(
+            options.map((option) => option.key).toList(),
+            currentOptions.map((option) => option.key).toList(),
+          ) ||
+          !listEquals(
+            options.map((option) => option.text).toList(),
+            currentOptions.map((option) => option.text).toList(),
+          )) {
+        return;
+      }
+      currentOptions[index].onTap?.call();
+    } finally {
+      _pickerOpen = false;
+    }
+  }
 
   @override
   void initState() {
@@ -650,6 +705,8 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
       animation: animation,
       builder: (context, _) {
         final value = animation.value;
+        final canQuickSelect = _canQuickSelect;
+        final quickSelectIndex = _quickSelectIndex;
         WidgetsBinding.instance.addPostFrameCallback((_) => _syncLayout(value));
         return Stack(
           key: _stackKey,
@@ -667,6 +724,9 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
                     child: _SegmentedItemScope(
                       index: i,
                       value: value,
+                      onLongPress: canQuickSelect && quickSelectIndex == i
+                          ? _showQuickSelect
+                          : null,
                       child: widget.children[i],
                     ),
                   ),
@@ -717,18 +777,22 @@ class _SegmentedItemScope extends InheritedWidget {
   const _SegmentedItemScope({
     required this.index,
     required this.value,
+    this.onLongPress,
     required super.child,
   });
 
   final int index;
   final double value;
+  final VoidCallback? onLongPress;
 
   static _SegmentedItemScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_SegmentedItemScope>();
 
   @override
   bool updateShouldNotify(_SegmentedItemScope oldWidget) =>
-      oldWidget.index != index || oldWidget.value != value;
+      oldWidget.index != index ||
+      oldWidget.value != value ||
+      oldWidget.onLongPress != onLongPress;
 }
 
 /// 胶囊分段条：外层一条轨道，选中项为浮起的胶囊。
@@ -751,6 +815,9 @@ class CapsuleOptions extends StatelessWidget {
   /// 超过一行时换行展示（不横向滚动）
   final bool wrap;
 
+  /// 默认在传入 tab 动画时支持长按选中项搜索跳转。
+  final bool? quickSelect;
+
   const CapsuleOptions({
     super.key,
     required this.children,
@@ -760,6 +827,7 @@ class CapsuleOptions extends StatelessWidget {
     this.actionButton,
     this.scrollable = false,
     this.wrap = false,
+    this.quickSelect,
   });
 
   @override
@@ -779,6 +847,7 @@ class CapsuleOptions extends StatelessWidget {
       actionButton: actionButton,
       scrollable: scrollable,
       wrap: wrap,
+      quickSelect: quickSelect,
       padding: padding,
       alignment: alignment,
       trackDecoration: BoxDecoration(
@@ -803,6 +872,7 @@ class CapsuleOptions extends StatelessWidget {
 
 /// 分段胶囊 tab 栏：可作为 `Appbar.bottom`（PreferredSizeWidget）或普通组件，
 /// 与 [TabController] 同步；不传 controller 时用最近的 [DefaultTabController]。
+/// 长按当前选中的 tab 可在带搜索的 Sheet 中快速跳转。
 class CapsuleTabBar extends StatelessWidget implements PreferredSizeWidget {
   const CapsuleTabBar({
     super.key,
@@ -873,8 +943,11 @@ class CapsuleTabBar extends StatelessWidget implements PreferredSizeWidget {
     }
     final scheme = Theme.of(context).colorScheme;
     return CapsuleOption(
+      text: labels[i],
       isSelected: selected,
       onTap: () => c.animateTo(i),
+      quickSelectIcon: icon,
+      quickSelectBadge: badge,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -900,6 +973,146 @@ class CapsuleTabBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+class _CapsuleTabPickerSheet extends StatefulWidget {
+  const _CapsuleTabPickerSheet({
+    required this.labels,
+    this.icons,
+    this.badges,
+    required this.enabled,
+    required this.selectedIndex,
+  });
+
+  final List<String> labels;
+  final List<IconData?>? icons;
+  final List<int>? badges;
+  final List<bool> enabled;
+  final int selectedIndex;
+
+  @override
+  State<_CapsuleTabPickerSheet> createState() => _CapsuleTabPickerSheetState();
+}
+
+class _CapsuleTabPickerSheetState extends State<_CapsuleTabPickerSheet> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final query = _query.trim().toLowerCase();
+    final indices = [
+      for (var i = 0; i < widget.labels.length; i++)
+        if (query.isEmpty || widget.labels[i].toLowerCase().contains(query)) i,
+    ];
+    final fullHeight = MediaQuery.sizeOf(context).height;
+    final availableHeight =
+        fullHeight - MediaQuery.viewInsetsOf(context).bottom;
+    final initialSize = fullHeight <= 0
+        ? 0.7
+        : ((availableHeight.clamp(0.0, fullHeight) * 0.7) / fullHeight)
+              .toDouble();
+    // 保持路由原有的高度约束；内容缩小并上移到键盘上方。
+    return Transform.translate(
+      offset: Offset(0, -MediaQuery.viewInsetsOf(context).bottom),
+      child: Sheet(
+        title: t.quickSelect,
+        icon: Icons.tab_rounded,
+        initialSize: initialSize,
+        builder: (context, sc) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                textInputAction: TextInputAction.search,
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
+                onChanged: (value) {
+                  setState(() => _query = value);
+                  if (sc.hasClients) sc.jumpTo(0);
+                },
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: t.search,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: t.clear,
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                            if (sc.hasClients) sc.jumpTo(0);
+                          },
+                        ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: indices.isEmpty
+                  ? SingleChildScrollView(
+                      child: EmptyState(message: t.noSearchResultsFound),
+                    )
+                  : ListView.builder(
+                      controller: sc,
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        4,
+                        16,
+                        16 + MediaQuery.paddingOf(context).bottom,
+                      ),
+                      itemCount: indices.length,
+                      itemBuilder: (context, position) {
+                        final index = indices[position];
+                        final selected = index == widget.selectedIndex;
+                        final icon =
+                            widget.icons != null && index < widget.icons!.length
+                            ? widget.icons![index]
+                            : null;
+                        final badge =
+                            widget.badges != null &&
+                                index < widget.badges!.length
+                            ? widget.badges![index]
+                            : 0;
+                        return SelectCard(
+                          title: widget.labels[index],
+                          selected: selected,
+                          leading: icon == null ? null : Icon(icon, size: 20),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (badge > 0) ...[
+                                Text('$badge'),
+                                const SizedBox(width: 8),
+                              ],
+                              if (selected)
+                                Icon(Icons.check_rounded, color: cs.primary),
+                            ],
+                          ),
+                          onChanged: widget.enabled[index]
+                              ? (_) => context.pop(index)
+                              : null,
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// CapsuleOptions 内的单个选项（浮起胶囊由 CapsuleOptions 统一绘制并滑动）。
 /// 默认渲染 [text]；需要图标/计数等自定义内容时传 [child]（文字与图标会
 /// 继承选中态的主题色插值）。
@@ -908,6 +1121,11 @@ class CapsuleOption extends StatelessWidget {
   final Widget? child;
   final bool isSelected;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  /// 快速选择面板中的图标与计数，不改变胶囊本身的内容。
+  final IconData? quickSelectIcon;
+  final int quickSelectBadge;
   final EdgeInsetsGeometry padding;
 
   const CapsuleOption({
@@ -916,6 +1134,9 @@ class CapsuleOption extends StatelessWidget {
     this.child,
     required this.isSelected,
     this.onTap,
+    this.onLongPress,
+    this.quickSelectIcon,
+    this.quickSelectBadge = 0,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
   }) : assert(text != null || child != null);
 
@@ -937,6 +1158,7 @@ class CapsuleOption extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
+      onLongPress: onLongPress ?? scope?.onLongPress,
       child: Padding(
         padding: padding,
         child: DefaultTextStyle.merge(

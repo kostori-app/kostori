@@ -79,15 +79,18 @@ class DownloadFilterBar extends StatelessWidget {
       child: CapsuleOptions(
         alignment: alignment,
         scrollable: true,
+        quickSelect: true,
         children: [
           for (final b in builtins)
             CapsuleOption(
+              key: ValueKey(b.key),
               text: b.label,
               isSelected: selected == b.key,
               onTap: () => onSelected(b.key),
             ),
           for (final name in groups)
             CapsuleOption(
+              key: ValueKey('$kDownloadGroupPrefix$name'),
               text: _groupLabel(name),
               isSelected: selected == '$kDownloadGroupPrefix$name',
               onTap: () => onSelected('$kDownloadGroupPrefix$name'),

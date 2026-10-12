@@ -270,9 +270,14 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       final label = isUnassignedFolder(name) ? t.kDefault : name;
 
       return CapsuleOption(
+        key: ValueKey(name),
         text: label,
         isSelected: controller?.index == index,
         onTap: () => controller?.animateTo(index),
+        quickSelectIcon: icon,
+        quickSelectBadge: searchAllMode
+            ? (searchResults[name]?.length ?? 0)
+            : count,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Row(
           mainAxisSize: MainAxisSize.min,

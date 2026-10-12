@@ -21,6 +21,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:kostori/components/animated.dart';
 export 'package:kostori/components/animated.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/qr_code.dart';
 export 'package:kostori/components/qr_code.dart';
 import 'package:kostori/components/bangumi_widget.dart';

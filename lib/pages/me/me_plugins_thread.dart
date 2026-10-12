@@ -1447,6 +1447,7 @@ class _CapsuleBar extends StatelessWidget {
 
       return SlidingSegmentedBar(
         scrollable: true,
+        quickSelect: true,
         selectedIndex: selectedIndex,
         progress: animation,
         trackDecoration: BoxDecoration(
@@ -1466,33 +1467,33 @@ class _CapsuleBar extends StatelessWidget {
         ),
         children: [
           for (var i = 0; i < keys.length; i++)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
+            CapsuleOption(
+              key: ValueKey(keys[i]),
+              text: titles[i],
+              isSelected: selectedIndex == i,
               onTap: () => onChanged(i),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icons != null && icons![i].isNotEmpty) ...[
-                      Icon(_navIcon(icons![i]), size: 13, color: fg(i)),
-                      const SizedBox(width: 4),
-                    ],
-                    Text(
-                      titles[i],
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: (value - i).abs() < 0.5
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: fg(i),
-                      ),
-                    ),
+              quickSelectIcon: icons != null && icons![i].isNotEmpty
+                  ? _navIcon(icons![i])
+                  : null,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icons != null && icons![i].isNotEmpty) ...[
+                    Icon(_navIcon(icons![i]), size: 13, color: fg(i)),
+                    const SizedBox(width: 4),
                   ],
-                ),
+                  Text(
+                    titles[i],
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: (value - i).abs() < 0.5
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: fg(i),
+                    ),
+                  ),
+                ],
               ),
             ),
         ],

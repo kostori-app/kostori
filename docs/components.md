@@ -52,6 +52,8 @@
 
 **选择/表单**：`Select`、`SlidingSegmentedBar`、`CapsuleOptions`、`CapsuleOption`、`CapsuleTabBar`、`CapsuleChipGroup`、`CapsuleChip`、`OptionChip`、`FilterChipFixedWidth`、`AnimatedCheckIcon`（select.dart）；`SelectCard`（select_card.dart）；`CustomSwitch`（animated.dart）；`CodeEditor`（code.dart）；`ColorPickPage`（color_pick_page.dart）。
 
+`CapsuleTabBar` 长按当前选中项可打开带实时搜索的快速选择 Sheet。自定义 tab 使用 `CapsuleOptions` / `SlidingSegmentedBar` + `CapsuleOption` 时，传入 tab 动画 `progress` 自动启用；没有动画则设置 `quickSelect: true`，可用 `quickSelect: false` 关闭。各项应传可检索的 `text`（可与 `child` 同时传入），`onLongPress` 自定义回调优先于快速选择；`quickSelectIcon` / `quickSelectBadge` 可提供面板图标和计数。
+
 **滚动/布局/图片**：`SmoothCustomScrollView`、`SmoothScrollProvider`、`AppScrollBar`（scroll.dart）；`SliverGridViewWithFixedItemHeight`、`SliverGridDelegateWithFixedHeight`、`SliverGridDelegateWithAnimes`、`SliverGridDelegateWithBangumiItems`、`SliverLazyToBoxAdapter`（layout.dart）；`AnimatedImage`、`KostoriHero`、`HeroShuttleScope`、`ImagePart`、`ImagePainter`（image.dart）；`ImagePreviewWidget`（image_preview_widget.dart）；`KostoriQrCode`、`KostoriQrCard`（qr_code.dart）；`KostoriWatermark`（watermark.dart）；`EmptyState`、`ErrorState`（empty_state.dart）。
 
 **反馈/加载**：`PolygonRefreshIndicator`、`CustomSwitch`、`AnimatedPlayIconWave`（animated.dart）；`ListLoadingIndicator`、`SliverListLoadingIndicator`、`FiveDotLoadingAnimation`、`NetworkError`、`LoadingState<T,S>`、`MultiPageLoadingState<T,S>`（loading.dart）；`KostoriRefreshIndicator`、`FloatingMenu`、`tabPagePhysics`（ui_components.dart）。
