@@ -2447,6 +2447,10 @@ playerVolumeGesture: Volume swipe control
 playerVolumeGestureDesc: Swipe up/down on the right side to adjust volume
 playerCache: Player cache
 playerCacheDesc: Larger cache means smoother playback but more memory (takes effect after reopening the player)
+playerPanelAutoHide: Auto-hide controls
+playerPanelAutoHideDesc: Choose how long the controls stay visible. 0 seconds keeps them visible.
+playerPanelAutoHideSeconds: ${seconds} sec
+playerPanelAutoHideNever: Stay visible
 cacheLow: Low
 cacheMedium: Medium
 cacheHigh: High

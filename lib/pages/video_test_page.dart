@@ -13,6 +13,7 @@ import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
+import 'package:kostori/pages/watcher/player_panel_settings.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
@@ -394,7 +395,10 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
   }
 
   void _startHideTimer() {
-    _hideTimer = Timer(const Duration(seconds: 4), () {
+    _hideTimer?.cancel();
+    final seconds = playerPanelHideDelaySeconds;
+    if (seconds == 0) return;
+    _hideTimer = Timer(Duration(seconds: seconds), () {
       if (mounted) {
         _animCtrl.reverse();
         _showControlsDirect(false);

@@ -2429,6 +2429,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get playerVolumeGestureDesc => '在播放器右侧上下滑动调节音量';
 	@override String get playerCache => '播放器缓存';
 	@override String get playerCacheDesc => '缓存越大播放越流畅，占用内存也越多（重开播放器后生效）';
+	@override String get playerPanelAutoHide => '控制栏自动收起';
+	@override String get playerPanelAutoHideDesc => '设置控制栏显示多久后自动收起，0 秒表示不自动收起';
+	@override String playerPanelAutoHideSeconds({required Object seconds}) => '${seconds} 秒';
+	@override String get playerPanelAutoHideNever => '不自动收起';
 	@override String get cacheLow => '低';
 	@override String get cacheMedium => '中';
 	@override String get cacheHigh => '高';
@@ -5751,6 +5755,10 @@ extension on TranslationsZhCn {
 			'playerVolumeGestureDesc' => '在播放器右侧上下滑动调节音量',
 			'playerCache' => '播放器缓存',
 			'playerCacheDesc' => '缓存越大播放越流畅，占用内存也越多（重开播放器后生效）',
+			'playerPanelAutoHide' => '控制栏自动收起',
+			'playerPanelAutoHideDesc' => '设置控制栏显示多久后自动收起，0 秒表示不自动收起',
+			'playerPanelAutoHideSeconds' => ({required Object seconds}) => '${seconds} 秒',
+			'playerPanelAutoHideNever' => '不自动收起',
 			'cacheLow' => '低',
 			'cacheMedium' => '中',
 			'cacheHigh' => '高',

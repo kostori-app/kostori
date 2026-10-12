@@ -6,6 +6,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/watcher/player_cache.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/player_panel_settings.dart';
 
 /// 播放器设置卡片（图标 + 标题 + 任意内容），用于倍速 / 超分辨率等。
 /// 「更多」sheet、「视频详情」tab 与本地播放器共用，避免重复实现。
@@ -327,6 +328,72 @@ class _PlayerCacheCardState extends State<PlayerCacheCard> {
             style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 控制播放器控制栏在交互后保持显示的时长。
+class PlayerPanelHideDelayCard extends StatefulWidget {
+  const PlayerPanelHideDelayCard({super.key, this.onChanged});
+
+  final VoidCallback? onChanged;
+
+  @override
+  State<PlayerPanelHideDelayCard> createState() =>
+      _PlayerPanelHideDelayCardState();
+}
+
+class _PlayerPanelHideDelayCardState extends State<PlayerPanelHideDelayCard> {
+  late int _seconds = playerPanelHideDelaySeconds;
+
+  @override
+  Widget build(BuildContext context) {
+    return PlayerSettingCard(
+      icon: Icons.timer_outlined,
+      title: t.playerPanelAutoHide,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t.playerPanelAutoHideDesc,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Slider(
+            value: _seconds.toDouble(),
+            min: 0,
+            max: kMaxPlayerPanelHideDelaySeconds.toDouble(),
+            divisions: kMaxPlayerPanelHideDelaySeconds,
+            label: _seconds == 0
+                ? t.playerPanelAutoHideNever
+                : t.playerPanelAutoHideSeconds(seconds: _seconds),
+            onChanged: (value) {
+              final seconds = value.round();
+              if (seconds == _seconds) return;
+              setState(() => _seconds = seconds);
+              appdata.implicitData[kPlayerPanelHideDelayKey] = seconds;
+            },
+            onChangeEnd: (_) {
+              appdata.writeImplicitData();
+              widget.onChanged?.call();
+            },
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              _seconds == 0
+                  ? t.playerPanelAutoHideNever
+                  : t.playerPanelAutoHideSeconds(seconds: _seconds),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],

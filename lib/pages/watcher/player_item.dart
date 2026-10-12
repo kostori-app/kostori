@@ -18,6 +18,7 @@ import 'package:kostori/pages/watcher/player_item_base_panel.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_portrait_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
+import 'package:kostori/pages/watcher/player_panel_settings.dart';
 import 'package:kostori/pages/watcher/player_settings_cards.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -151,7 +152,10 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void startHideTimer() {
-    hideTimer = Timer(const Duration(seconds: 4), () {
+    hideTimer?.cancel();
+    final seconds = playerPanelHideDelaySeconds;
+    if (seconds == 0) return;
+    hideTimer = Timer(Duration(seconds: seconds), () {
       if (mounted && playerController.canHidePlayerPanel) {
         playerController.showVideoController = false;
         animationController?.reverse();
@@ -269,6 +273,7 @@ class _PlayerItemState extends State<PlayerItem>
               ),
             ),
             // 设置卡片：与「视频详情」tab 共用同一组件
+            PlayerPanelHideDelayCard(onChanged: startHideTimer),
             PlayerSettingsCards(playerController: playerController),
           ],
         ),

@@ -13,6 +13,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
 import 'package:kostori/pages/watcher/player_cache.dart';
 import 'package:kostori/pages/watcher/player_hud.dart';
+import 'package:kostori/pages/watcher/player_panel_settings.dart';
 import 'package:kostori/pages/watcher/player_settings_cards.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:kostori/utils/remote.dart';
@@ -250,7 +251,10 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   }
 
   void startHideTimer() {
-    hideTimer = Timer(const Duration(seconds: 4), () {
+    hideTimer?.cancel();
+    final seconds = playerPanelHideDelaySeconds;
+    if (seconds == 0) return;
+    hideTimer = Timer(Duration(seconds: seconds), () {
       if (mounted) {
         ctrl.showControlsDirect(false);
         animationController.reverse();
@@ -754,6 +758,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         value: state.superResolutionType,
         onChanged: ctrl.setSuperResolution,
       ),
+      PlayerPanelHideDelayCard(onChanged: startHideTimer),
       const PlayerCommonToggles(showCache: false),
       // 本地播放器独立缓存挡位（不复用主播放器设置）
       PlayerCacheCard(

@@ -7210,6 +7210,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Larger cache means smoother playback but more memory (takes effect after reopening the player)'
 	String get playerCacheDesc => 'Larger cache means smoother playback but more memory (takes effect after reopening the player)';
 
+	/// en: 'Auto-hide controls'
+	String get playerPanelAutoHide => 'Auto-hide controls';
+
+	/// en: 'Choose how long the controls stay visible. 0 seconds keeps them visible.'
+	String get playerPanelAutoHideDesc => 'Choose how long the controls stay visible. 0 seconds keeps them visible.';
+
+	/// en: '${seconds} sec'
+	String playerPanelAutoHideSeconds({required Object seconds}) => '${seconds} sec';
+
+	/// en: 'Stay visible'
+	String get playerPanelAutoHideNever => 'Stay visible';
+
 	/// en: 'Low'
 	String get cacheLow => 'Low';
 
@@ -12238,6 +12250,10 @@ extension on Translations {
 			'playerVolumeGestureDesc' => 'Swipe up/down on the right side to adjust volume',
 			'playerCache' => 'Player cache',
 			'playerCacheDesc' => 'Larger cache means smoother playback but more memory (takes effect after reopening the player)',
+			'playerPanelAutoHide' => 'Auto-hide controls',
+			'playerPanelAutoHideDesc' => 'Choose how long the controls stay visible. 0 seconds keeps them visible.',
+			'playerPanelAutoHideSeconds' => ({required Object seconds}) => '${seconds} sec',
+			'playerPanelAutoHideNever' => 'Stay visible',
 			'cacheLow' => 'Low',
 			'cacheMedium' => 'Medium',
 			'cacheHigh' => 'High',
