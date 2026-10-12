@@ -25,8 +25,25 @@ class BangumiPage extends ConsumerStatefulWidget {
   ConsumerState<BangumiPage> createState() => _BangumiPageState();
 }
 
+class _BangumiTrendingSnapshot {
+  const _BangumiTrendingSnapshot({
+    required this.items,
+    required this.pageCount,
+    required this.cachedAt,
+  });
+
+  final List<BangumiItem> items;
+  final int pageCount;
+  final DateTime cachedAt;
+}
+
 class _BangumiPageState extends ConsumerState<BangumiPage>
     with SingleTickerProviderStateMixin {
+  static const _trendingCacheDuration = Duration(minutes: 30);
+  static _BangumiTrendingSnapshot? _trendingSnapshot;
+  static final Map<int, Future<List<BangumiItem>>> _trendingRequests = {};
+  static int _trendingCacheGeneration = 0;
+
   final ScrollController scrollController = ScrollController();
   List<BangumiItem> bangumiItems = [];
   bool isLoadingMore = false;
@@ -34,6 +51,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   int count = 0;
+  int _queryGeneration = 0;
 
   /// 页面级图片缓存保持：跳转到详情页/返回时图片不因 ImageCache 逐出而重载
   final BangumiPageImageCache _imageCache = BangumiPageImageCache();
@@ -55,8 +73,41 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     scrollController.addListener(scrollListener);
     scrollController.addListener(onScroll);
 
-    if (bangumiItems.isEmpty) {
+    final snapshot = _readTrendingSnapshot();
+    if (snapshot == null) {
       queryBangumiByTrend();
+    } else {
+      bangumiItems.addAll(snapshot.items);
+      count = snapshot.pageCount;
+    }
+  }
+
+  static _BangumiTrendingSnapshot? _readTrendingSnapshot() {
+    final snapshot = _trendingSnapshot;
+    if (snapshot == null) return null;
+    if (DateTime.now().difference(snapshot.cachedAt) >=
+        _trendingCacheDuration) {
+      _trendingSnapshot = null;
+      return null;
+    }
+    return snapshot;
+  }
+
+  static Future<List<BangumiItem>> _loadTrendingPage(
+    int page, {
+    bool forceRefresh = false,
+  }) async {
+    final pending = _trendingRequests[page];
+    if (!forceRefresh && pending != null) return pending;
+
+    final request = Bangumi.instance.getBangumiTrendsList(offset: page * 24);
+    _trendingRequests[page] = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_trendingRequests[page], request)) {
+        _trendingRequests.remove(page);
+      }
     }
   }
 
@@ -102,43 +153,63 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     }
   }
 
-  Future<void> queryBangumiByTrend() async {
+  Future<void> queryBangumiByTrend({bool forceRefresh = false}) async {
     // 防止并发/重复请求
-    if (isLoadingMore) return;
+    if (isLoadingMore && !forceRefresh) return;
+    final queryGeneration = ++_queryGeneration;
+    final cacheGeneration = _trendingCacheGeneration;
+    final page = count;
     isLoadingMore = true;
-    setState(() {});
-    var result = await Bangumi.instance.getBangumiTrendsList(
-      offset: count * 24,
-    );
-    count += 1;
-    bangumiItems.addAll(result);
-    // 保持本页所有条目封面，避免跳详情页加载新图后逐出列表页缓存
-    if (mounted) {
-      // 卡片真实内容宽必须与 BangumiBriefCard 内 constraints.maxWidth 一致，
-      // 否则 ResizeImage key 失配、预热白做：
-      // SliverPadding 水平 8*2 + crossSpacing 4*(列-1)，卡片 Padding 2*2
-      final columns = _getFixedCrossAxisCount() ?? _resolveMasonryColumns();
-      final cardW =
-          (MediaQuery.sizeOf(context).width - 16 - 4 * (columns - 1)) /
-              columns -
-          4;
-      // 只预热本页新增（此前全量重刷，还会触发 _maxKeep 逐出抖动）；
-      // 用 large 高清档（见 BangumiItem.cardImage），与卡片显示一致
-      _imageCache.precacheAll(
-        context,
-        result.map((e) => e.cardImage).where((u) => u.isNotEmpty),
-        sourceKey: 'bangumi',
-        cacheWidth: (cardW * MediaQuery.devicePixelRatioOf(context)).round(),
-      );
-    }
-    isLoadingMore = false;
     if (mounted) setState(() {});
+    try {
+      final result = await _loadTrendingPage(page, forceRefresh: forceRefresh);
+      if (queryGeneration != _queryGeneration) return;
+
+      count = page + 1;
+      if (result.isNotEmpty) {
+        bangumiItems.addAll(result);
+        if (cacheGeneration == _trendingCacheGeneration) {
+          _trendingSnapshot = _BangumiTrendingSnapshot(
+            items: List.unmodifiable(bangumiItems),
+            pageCount: count,
+            cachedAt: DateTime.now(),
+          );
+        }
+        _precacheTrendingImages(result);
+      }
+    } finally {
+      if (queryGeneration == _queryGeneration) {
+        isLoadingMore = false;
+        if (mounted) setState(() {});
+      }
+    }
+  }
+
+  void _precacheTrendingImages(List<BangumiItem> items) {
+    // 预热新增封面，减少详情页图片请求挤出列表页缓存的情况。
+    if (!mounted) return;
+    // 预热宽度需与 BangumiBriefCard 的内容宽一致，否则 ResizeImage 缓存键不同。
+    // 内容宽 = 屏幕宽 - SliverPadding(16) - 相邻列间距(4) - 卡片水平内边距(4)。
+    final columns = _getFixedCrossAxisCount() ?? _resolveMasonryColumns();
+    final cardW =
+        (MediaQuery.sizeOf(context).width - 16 - 4 * (columns - 1)) / columns -
+        4;
+    _imageCache.precacheAll(
+      context,
+      items.map((e) => e.cardImage).where((u) => u.isNotEmpty),
+      sourceKey: 'bangumi',
+      cacheWidth: (cardW * MediaQuery.devicePixelRatioOf(context)).round(),
+    );
   }
 
   Future<void> resetBangumiTrend() async {
+    _trendingCacheGeneration++;
+    _trendingSnapshot = null;
+    _trendingRequests.clear();
+    _queryGeneration++;
     bangumiItems.clear();
     count = 0;
-    await queryBangumiByTrend();
+    await queryBangumiByTrend(forceRefresh: true);
   }
 
   int? _getFixedCrossAxisCount() {
