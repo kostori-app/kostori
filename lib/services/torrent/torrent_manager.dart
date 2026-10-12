@@ -376,8 +376,8 @@ class TorrentManager extends Notifier<TorrentState> {
   /// 元数据发现失败后的固定重试间隔。
   static const Duration _metadataRetryInterval = Duration(seconds: 60);
 
-  /// 自动重试抓取元数据的次数上限，超过即判定为不可用。
-  static const int _maxMetadataAttempts = 3;
+  /// 元数据解析失败时最多再抓取一次；手动重试会重置预算。
+  static const int _maxMetadataAttempts = 1;
 
   /// 元数据发现重试的最长间隔（秒）。
   static int get metadataRetryCeilingSeconds =>
