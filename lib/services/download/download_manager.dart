@@ -16,9 +16,15 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:pointycastle/api.dart';
+import 'package:pointycastle/block/aes.dart';
+import 'package:pointycastle/block/modes/cbc.dart';
+import 'package:pointycastle/padded_block_cipher/padded_block_cipher_impl.dart';
+import 'package:pointycastle/paddings/pkcs7.dart';
 import 'package:kostori/services/download/download_file_writer.dart';
 import 'package:kostori/services/download/download_keep_alive.dart';
 import 'package:kostori/services/download/download_task.dart';
+import 'package:kostori/services/download/hls_download_progress.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
 import 'package:path/path.dart' as p;
 
@@ -64,6 +70,121 @@ bool isTruncatedHlsPlaylist(String content) {
     return false;
   }
   return !content.contains('#EXT-X-ENDLIST');
+}
+
+/// 播放列表是否声明了任意加密方式。
+bool hasEncryptedHlsKey(String content) {
+  final methodPattern = RegExp(
+    r'(?:^|,)\s*METHOD\s*=\s*"?([^",\s]+)',
+    caseSensitive: false,
+  );
+  bool isEncryptedKeyTag(String line, String tagName) {
+    if (!line.startsWith(tagName)) return false;
+    final method = methodPattern
+        .firstMatch(line.substring(tagName.length))
+        ?.group(1)
+        ?.toUpperCase();
+    return method != null && method != 'NONE';
+  }
+
+  if (content
+      .split('\n')
+      .any((line) => isEncryptedKeyTag(line.trim(), '#EXT-X-SESSION-KEY:'))) {
+    return true;
+  }
+  var encrypted = false;
+  for (final line in content.split('\n')) {
+    final trimmed = line.trim();
+    if (trimmed.startsWith('#EXT-X-KEY:')) {
+      encrypted = isEncryptedKeyTag(trimmed, '#EXT-X-KEY:');
+    } else if (encrypted && trimmed.isNotEmpty && !trimmed.startsWith('#')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// 解密 HLS AES-128-CBC 分片。没有显式 IV 时按媒体序号生成 128-bit IV。
+Uint8List decryptHlsAes128Segment({
+  required List<int> encryptedBytes,
+  required List<int> key,
+  required int sequence,
+  String? explicitIv,
+}) {
+  if (key.length != 16) {
+    throw const FormatException('HLS AES-128 key must be 16 bytes');
+  }
+  if (encryptedBytes.isEmpty || encryptedBytes.length % 16 != 0) {
+    throw const FormatException('Invalid HLS AES-128 ciphertext length');
+  }
+
+  final iv = Uint8List(16);
+  if (explicitIv != null && explicitIv.trim().isNotEmpty) {
+    var hex = explicitIv.trim().replaceFirst(
+      RegExp(r'^0x', caseSensitive: false),
+      '',
+    );
+    if (hex.isEmpty || hex.length > 32 || hex.length.isOdd) {
+      throw const FormatException('Invalid HLS AES-128 IV');
+    }
+    hex = hex.padLeft(32, '0');
+    for (var i = 0; i < 16; i++) {
+      iv[i] = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);
+    }
+  } else {
+    if (sequence < 0) {
+      throw const FormatException('Invalid HLS sequence number');
+    }
+    var value = sequence;
+    for (var i = 15; i >= 0 && value > 0; i--) {
+      iv[i] = value & 0xff;
+      value >>= 8;
+    }
+  }
+
+  final cipher =
+      PaddedBlockCipherImpl(PKCS7Padding(), CBCBlockCipher(AESEngine()))..init(
+        false,
+        PaddedBlockCipherParameters(
+          ParametersWithIV(KeyParameter(Uint8List.fromList(key)), iv),
+          null,
+        ),
+      );
+  return cipher.process(Uint8List.fromList(encryptedBytes));
+}
+
+class _HlsKey {
+  final String url;
+  final String? iv;
+
+  const _HlsKey(this.url, this.iv);
+}
+
+class _HlsSegment {
+  final String url;
+  final _HlsKey? key;
+  final int sequence;
+
+  const _HlsSegment({required this.url, this.key, required this.sequence});
+}
+
+Map<String, String> _parseHlsAttributes(String value) {
+  final attributes = <String, String>{};
+  final pattern = RegExp(r'([A-Za-z0-9-]+)\s*=\s*("[^"]*"|[^,]*)');
+  for (final match in pattern.allMatches(value)) {
+    var attribute = match.group(2)!.trim();
+    if (attribute.startsWith('"') && attribute.endsWith('"')) {
+      attribute = attribute.substring(1, attribute.length - 1);
+    }
+    attributes[match.group(1)!.toUpperCase()] = attribute;
+  }
+  return attributes;
+}
+
+class _FfmpegHlsRequired implements Exception {
+  final bool useProxy;
+
+  const _FfmpegHlsRequired({this.useProxy = true});
 }
 
 /// 视频下载管理器：任务队列 + 并发控制 + 进度通知 + 本地持久化。
@@ -597,10 +718,9 @@ class DownloadManager extends ChangeNotifier {
     _tasks.insert(afterRunning + 1, task);
   }
 
-  /// 每个任务的“自动续传”次数（临时性错误失败后自动重新排队）
+  /// 不自动重排整个任务，避免叠加直链 / HLS 分片自身的一次重试。
   final Map<String, int> _autoRetryCounts = {};
-
-  static const int _maxAutoRetries = 3;
+  static const int _maxAutoRetries = 0;
 
   /// 自动续传退避截止时间：在此之前 _schedule 不启动该任务，
   /// 避免 finally 里的补调度把指数退避抵消成“立即重试”
@@ -745,7 +865,7 @@ class DownloadManager extends ChangeNotifier {
           task.error = 'cancelled';
         }
       } else if (_isTransient(e)) {
-        // 临时性失败（断线/超时）：自动重新排队续传，避免用户反复手动重试
+        // 临时性失败（断线/超时）直接失败，用户明确点击重试。
         final n = (_autoRetryCounts[task.id] ?? 0) + 1;
         if (n <= _maxAutoRetries && _tasks.contains(task)) {
           _autoRetryCounts[task.id] = n;
@@ -771,7 +891,7 @@ class DownloadManager extends ChangeNotifier {
           task.status = DownloadStatus.failed;
           task.error = e.toString();
         }
-        Log.error('DownloadManager', '下载重试失败 ${task.title}: $e\n$s');
+        Log.error('DownloadManager', '下载失败 ${task.title}: $e\n$s');
         _notifyDownloadFailed(task, e);
       } else {
         Log.error('DownloadManager', '下载失败 ${task.title}: $e\n$s');
@@ -945,18 +1065,26 @@ class DownloadManager extends ChangeNotifier {
   Future<void> _downloadViaFfmpeg(
     DownloadTask task,
     FfmpegCancelToken cancelToken,
-    String tmpPath,
-  ) async {
+    String tmpPath, {
+    bool proxyHls = true,
+  }) async {
     await _refreshTaskCookie(task);
     var input = task.url;
     var headers = task.headers;
-    if (task.isHls) {
+    if (task.isHls && proxyHls) {
       input = await M3u8ProxyServer.instance.proxyUrl(task.url, task.headers);
       headers = const {};
     }
     task.progress = 0;
     task.downloadedBytes = 0;
     task.downloadSpeed = 0;
+    // FFmpeg 接管后按媒体时间计算，不再沿用手动下载的分片计数。
+    task.segDone = -1;
+    task.segTotal = -1;
+    if (task.isHls && appdata.settings['m3u8AdFilterEnabled'] == true) {
+      // 代理过滤广告后时长会变化，改由 FFmpeg 读取实际输入时长。
+      task.mediaDurationMs = 0;
+    }
     _clearSpeedSamples(task.id);
     final output = File(tmpPath);
     if (await output.exists()) await output.delete();
@@ -968,9 +1096,9 @@ class DownloadManager extends ChangeNotifier {
         final bytes = await output.length();
         if (cancelToken.isCancelled || !_tasks.contains(task)) return;
         task.downloadedBytes = bytes;
-        if (task.totalBytes > 0) {
-          final progress = (bytes / task.totalBytes).clamp(0.0, 0.99);
-          if (progress > task.progress) task.progress = progress;
+        final progress = task.byteProgress?.clamp(0.0, 0.99);
+        if (progress != null && progress > task.progress) {
+          task.progress = progress;
         }
         _updateDownloadProgress(task);
       } on FileSystemException {
@@ -988,6 +1116,7 @@ class DownloadManager extends ChangeNotifier {
           outputPath: tmpPath,
           headers: headers,
           outputFormat: 'mp4',
+          totalMs: task.mediaDurationMs,
           cancelToken: cancelToken,
           onProgress: (progress) {
             if (cancelToken.isCancelled || !_tasks.contains(task)) return;
@@ -1033,7 +1162,8 @@ class DownloadManager extends ChangeNotifier {
     bool useHttp2 = false,
   }) async {
     final tmp = File(tmpPath);
-    const maxAttempts = 5;
+    // 一个下载任务最多重试一次直链请求；断点文件保留给用户手动继续。
+    const maxAttempts = 2;
     final dio = AppDio();
     // 后台写盘 isolate（不可用则为 null，走直写兜底）
     final writer = await DownloadFileWriter.instance();
@@ -1047,7 +1177,6 @@ class DownloadManager extends ChangeNotifier {
       var downloaded = await tmp.exists() ? await tmp.length() : 0;
       task.downloadedBytes = downloaded;
       var received = 0;
-      var total = -1;
       // 服务端给出的完整文件大小；-1 表示未知（无法校验完整性）
       var expectedFull = -1;
       var interrupted = false;
@@ -1165,10 +1294,15 @@ class DownloadManager extends ChangeNotifier {
         expectedFull = range.total > 0
             ? range.total
             : (status == 200 && contentLength > 0 ? contentLength : -1);
-        total = contentLength;
         if (expectedFull > 0) {
           task.totalBytes = expectedFull;
+        } else if (contentLength > 0) {
+          task.totalBytes = downloaded + contentLength;
+        } else if (downloaded == 0) {
+          task.totalBytes = 0;
         }
+        task.progress = task.byteProgress ?? 0;
+        _updateDownloadProgress(task);
         final stream = res.data!.stream;
         final sink = await _openSink(writer, tmpPath, append: true);
         try {
@@ -1180,10 +1314,8 @@ class DownloadManager extends ChangeNotifier {
             final backpressure = sink.add(chunk);
             received += chunk.length;
             task.downloadedBytes = downloaded + received;
-            if (total > 0) {
-              task.progress = ((downloaded + received) / (downloaded + total))
-                  .clamp(0.0, 1.0);
-            }
+            // 分块响应可能没有 Content-Length，但 Content-Range 已给出总大小。
+            task.progress = task.byteProgress ?? 0;
             _updateDownloadProgress(task);
             if (backpressure != null) await backpressure;
           }
@@ -1276,17 +1408,63 @@ class DownloadManager extends ChangeNotifier {
     // 上千分片逐个 await File.length() 会霸占 UI isolate，改到后台 isolate 统计
     final existingBytes = await Isolate.run(_segDirBytesRunner(segDir));
     task.downloadedBytes = existingBytes;
+    task.totalBytes = 0;
 
     // 1. 解析 m3u8（含变体选择）
-    final segUrls = await _resolveHlsSegments(dio, task, useHttp2: useHttp2);
-    task.segTotal = segUrls.length;
+    List<_HlsSegment> segments;
+    try {
+      segments = await _resolveHlsSegments(dio, task, useHttp2: useHttp2);
+    } on _FfmpegHlsRequired catch (e) {
+      // AES 等加密分片必须由 HLS 解复用器按播放列表逐片解密，不能字节拼接。
+      await _downloadViaFfmpeg(
+        task,
+        cancelToken,
+        tmpPath,
+        proxyHls: e.useProxy,
+      );
+      return;
+    }
+    task.segTotal = segments.length;
     task.segDone = 0;
+    task.progress = 0;
+    _updateDownloadProgress(task);
 
     // 2. 并发下载分片（固定 worker 池；已存在的跳过实现断点）。相比「每分片一个
     //    Future + 信号量」，worker 池不会一次性创建上千个 Future/闭包。
-    final total = segUrls.length;
+    final total = segments.length;
     final segPaths = List<String>.filled(total, '');
-    var completed = 0;
+    final hlsProgress = HlsDownloadProgress(total);
+    final keyCache = <String, Future<Uint8List>>{};
+    Future<Uint8List> loadKey(String url) async {
+      final keyFuture = keyCache.putIfAbsent(url, () async {
+        final response = await dio.get<List<int>>(
+          url,
+          options: Options(
+            headers: task.headers,
+            responseType: ResponseType.bytes,
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
+            extra: useHttp2
+                ? const {'noLog': true}
+                : const {'httpVersion11': true, 'noLog': true},
+          ),
+        );
+        final bytes = response.data ?? const <int>[];
+        if (bytes.length != 16) {
+          throw FormatException(
+            'HLS AES-128 key must be 16 bytes, got ${bytes.length}',
+          );
+        }
+        return Uint8List.fromList(bytes);
+      });
+      try {
+        return await keyFuture;
+      } catch (_) {
+        if (identical(keyCache[url], keyFuture)) keyCache.remove(url);
+        rethrow;
+      }
+    }
+
     final errors = <String>[];
     var nextIndex = 0;
     final workerCount = total == 0 ? 0 : _segmentConcurrent.clamp(1, total);
@@ -1301,18 +1479,15 @@ class DownloadManager extends ChangeNotifier {
           );
           if (await segFile.exists() && await segFile.length() > 0) {
             segPaths[i] = segFile.path;
-            completed++;
+            hlsProgress.completeSegment(i);
           } else {
             final partial = File('${segFile.path}.part');
             if (await segFile.exists()) await _deleteQuiet(segFile);
-            // 分片下载带重试：签名 CDN（如 beeg）偶发 403/断连，重试可缓解。
-            // 部分 CDN 会把分片连接挂住（不发数据也不断开），rhttp 不认 dio 的
-            // receiveTimeout；对「请求」和「取块」都套 stall 超时主动判停并重试。
+            // 每个分片最多重试一次。失败时保留已完成分片，用户手动重试即可续传。
+            // 部分 CDN 会让分片请求长期挂起，而 rhttp 不遵循 Dio 的 receiveTimeout。
+            // 因此分别为请求建立和分片读取设置停滞超时，及时终止无响应操作。
             var received = 0;
-            for (var attempt = 0; attempt < 3; attempt++) {
-              if (attempt > 0) {
-                await Future.delayed(Duration(seconds: attempt));
-              }
+            for (var attempt = 0; attempt < 2; attempt++) {
               if (cancelToken.isCancelled) throw FfmpegCancelledException();
               final segCancel = CancelToken();
               // 全局暂停/取消转发到本段请求，保证能及时中断
@@ -1329,7 +1504,7 @@ class DownloadManager extends ChangeNotifier {
               try {
                 final resp = await dio
                     .get<ResponseBody>(
-                      segUrls[i],
+                      segments[i].url,
                       options: Options(
                         headers: task.headers,
                         responseType: ResponseType.stream,
@@ -1362,6 +1537,12 @@ class DownloadManager extends ChangeNotifier {
                     final backpressure = sink.add(chunk);
                     got += chunk.length;
                     task.downloadedBytes += chunk.length;
+                    hlsProgress.updateSegment(
+                      i,
+                      receivedBytes: got,
+                      totalBytes: expect,
+                    );
+                    task.progress = hlsProgress.progress;
                     _updateDownloadProgress(task);
                     if (backpressure != null) await backpressure;
                   }
@@ -1385,6 +1566,17 @@ class DownloadManager extends ChangeNotifier {
                 // 落盘校验：close 后文件元数据即准确，对不上说明写入丢了
                 //（无 fsync，崩溃/断电可能丢尾），重试而非将坏片送去合并
                 if (await partial.length() != got) continue;
+                final key = segments[i].key;
+                if (key != null) {
+                  final encrypted = await partial.readAsBytes();
+                  final clear = decryptHlsAes128Segment(
+                    encryptedBytes: encrypted,
+                    key: await loadKey(key.url),
+                    sequence: segments[i].sequence,
+                    explicitIv: key.iv,
+                  );
+                  await partial.writeAsBytes(clear, flush: true);
+                }
                 await partial.rename(segFile.path);
                 received = got;
                 accepted = true;
@@ -1392,20 +1584,20 @@ class DownloadManager extends ChangeNotifier {
               } on TimeoutException {
                 segCancel.cancel();
                 if (cancelToken.isCancelled) throw FfmpegCancelledException();
-                // 停滞：前两次直接重试，最后一次抛「中断」类错误，
-                // 让上层 _runTask 自动续传（重跑只会补缺失分片）
-                if (attempt >= 2) {
+                if (attempt >= 1) {
                   throw Exception('下载中断：分片 $i 连接停滞超时');
                 }
               } catch (e) {
                 if (cancelToken.isCancelled) throw FfmpegCancelledException();
                 if (e is FfmpegCancelledException) rethrow;
                 if (e is DioException) _throwIfCloudflare(e);
-                if (attempt >= 2) rethrow;
+                if (attempt >= 1) rethrow;
               } finally {
                 forward.cancel();
                 if (!accepted) {
                   task.downloadedBytes -= got;
+                  hlsProgress.discardSegment(i);
+                  task.progress = hlsProgress.progress;
                   await _deleteQuiet(partial);
                   _updateDownloadProgress(task);
                 }
@@ -1415,10 +1607,10 @@ class DownloadManager extends ChangeNotifier {
               throw Exception('分片 $i 下载为空');
             }
             segPaths[i] = segFile.path;
-            completed++;
+            hlsProgress.completeSegment(i);
           }
-          task.progress = segUrls.isEmpty ? 1 : completed / segUrls.length;
-          task.segDone = completed;
+          task.progress = hlsProgress.progress;
+          task.segDone = hlsProgress.completedSegments;
           _updateDownloadProgress(task);
         } catch (e) {
           if (e is CloudflareException) rethrow;
@@ -1437,8 +1629,9 @@ class DownloadManager extends ChangeNotifier {
       throw Exception('部分分片下载失败（${errors.length} 个）：\n${errors.join('\n')}');
     }
     // 下载计数不一致时拒绝合并，避免生成缺片的视频并显示成功。
-    if (completed != segUrls.length) {
-      throw Exception('分片计数异常（$completed/${segUrls.length}），请重试');
+    final completed = hlsProgress.completedSegments;
+    if (completed != segments.length) {
+      throw Exception('分片计数异常（$completed/${segments.length}），请重试');
     }
 
     // 3. ffmpeg 合并 ts → mp4（合并进度实时反映到 task.progress）。
@@ -1514,8 +1707,8 @@ class DownloadManager extends ChangeNotifier {
   /// 直链下载停滞超时：两块数据之间超过该时长即判为断流，走 Range 续传。
   static const Duration _kDirectStallTimeout = Duration(seconds: 30);
 
-  /// 解析 m3u8：选择最高码率变体，返回分片 URL 列表
-  Future<List<String>> _resolveHlsSegments(
+  /// 解析 m3u8：选择最高码率变体，并记录每段适用的 AES-128 key。
+  Future<List<_HlsSegment>> _resolveHlsSegments(
     Dio dio,
     DownloadTask task, {
     bool useHttp2 = false,
@@ -1543,6 +1736,36 @@ class DownloadManager extends ChangeNotifier {
       rethrow;
     }
     content = root.data ?? '';
+    _HlsKey? sessionKey;
+
+    _HlsKey? parseKeyTag(String line, String baseUrl) {
+      final colon = line.indexOf(':');
+      final attributes = _parseHlsAttributes(
+        colon < 0 ? '' : line.substring(colon + 1),
+      );
+      final method = attributes['METHOD']?.toUpperCase();
+      if (method == null || method == 'NONE') return null;
+      final keyFormat = attributes['KEYFORMAT'];
+      final keyUri = attributes['URI'];
+      if (method == 'AES-128' &&
+          (keyFormat == null || keyFormat == 'identity') &&
+          keyUri != null &&
+          keyUri.isNotEmpty) {
+        return _HlsKey(
+          Uri.parse(baseUrl).resolve(keyUri).toString(),
+          attributes['IV'],
+        );
+      }
+      throw _FfmpegHlsRequired(
+        useProxy: appdata.settings['m3u8AdFilterEnabled'] == true,
+      );
+    }
+
+    for (final line in content.split('\n')) {
+      if (line.trim().startsWith('#EXT-X-SESSION-KEY:')) {
+        sessionKey = parseKeyTag(line.trim(), targetUrl);
+      }
+    }
 
     if (content.contains('#EXT-X-STREAM-INF')) {
       final base = _baseOf(targetUrl);
@@ -1589,23 +1812,49 @@ class DownloadManager extends ChangeNotifier {
       throw Exception('m3u8 播放列表下载中断（缺少 #EXT-X-ENDLIST），请重试');
     }
 
-    final segBase = _baseOf(targetUrl);
-    final segs = <String>[];
-    // fMP4（av1/hevc）流的 init segment：由 #EXT-X-MAP 提供 moov，
-    // 必须放在分片最前面，否则合并时缺初始化信息无法解析
-    final mapMatch = RegExp(r'#EXT-X-MAP:URI="([^"]+)"').firstMatch(content);
-    if (mapMatch != null) {
-      final initUri = mapMatch.group(1)!;
-      segs.add(initUri.startsWith('http') ? initUri : '$segBase$initUri');
-    }
+    task.mediaDurationMs = hlsPlaylistDurationMs(content);
+    var mediaSequence = 0;
+    var activeKey = sessionKey;
+    final segments = <_HlsSegment>[];
+    final adFilterEnabled = appdata.settings['m3u8AdFilterEnabled'] == true;
+    String resolveUri(String uri) =>
+        Uri.parse(targetUrl).resolve(uri).toString();
+
     for (final line in content.split('\n')) {
       final l = line.trim();
-      if (l.isNotEmpty && !l.startsWith('#')) {
-        segs.add(l.startsWith('http') ? l : '$segBase$l');
+      if (l.startsWith('#EXT-X-MEDIA-SEQUENCE:')) {
+        mediaSequence =
+            int.tryParse(l.substring(l.indexOf(':') + 1).trim()) ?? 0;
+      } else if (l.startsWith('#EXT-X-KEY:')) {
+        activeKey = parseKeyTag(l, targetUrl);
+      } else if (l.startsWith('#EXT-X-BYTERANGE:')) {
+        // 当前分片下载器按 URI 获取完整资源，不支持同一 URI 的 byte range。
+        throw _FfmpegHlsRequired(useProxy: adFilterEnabled);
+      } else if (l.startsWith('#EXT-X-MAP:')) {
+        final attributes = _parseHlsAttributes(l.substring(l.indexOf(':') + 1));
+        final uri = attributes['URI'];
+        if (uri != null && uri.isNotEmpty) {
+          segments.add(
+            _HlsSegment(
+              url: resolveUri(uri),
+              key: activeKey,
+              sequence: mediaSequence,
+            ),
+          );
+        }
+      } else if (l.isNotEmpty && !l.startsWith('#')) {
+        segments.add(
+          _HlsSegment(
+            url: resolveUri(l),
+            key: activeKey,
+            sequence: mediaSequence,
+          ),
+        );
+        mediaSequence++;
       }
     }
-    if (segs.isEmpty) throw Exception('m3u8 没有可用分片');
-    return segs;
+    if (segments.isEmpty) throw Exception('m3u8 没有可用分片');
+    return segments;
   }
 
   static String _baseOf(String url) {

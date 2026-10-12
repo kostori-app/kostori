@@ -4,6 +4,18 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/m3u8_ad_rule.dart';
 
+class _M3u8ProxySession {
+  final String m3u8Url;
+  final Map<String, String> headers;
+  final DateTime createdAt;
+
+  const _M3u8ProxySession({
+    required this.m3u8Url,
+    required this.headers,
+    required this.createdAt,
+  });
+}
+
 class M3u8ProxyServer {
   static M3u8ProxyServer? _instance;
 
@@ -14,8 +26,9 @@ class M3u8ProxyServer {
   HttpServer? _server;
   int _port = 0;
 
-  String? _currentM3u8Url;
-  Map<String, String>? _headers;
+  final Map<String, _M3u8ProxySession> _sessions = {};
+  String? _lastSessionId;
+  int _nextSessionId = 0;
 
   final _dio = AppDio();
 
@@ -29,26 +42,61 @@ class M3u8ProxyServer {
   Future<void> stop() async {
     await _server?.close(force: true);
     _server = null;
+    _sessions.clear();
+    _lastSessionId = null;
   }
 
   Future<String> proxyUrl(String m3u8Url, Map<String, String>? headers) async {
     await start();
-    _currentM3u8Url = m3u8Url;
-    _headers = headers;
-    return 'http://127.0.0.1:$_port/playlist.m3u8';
+    final now = DateTime.now();
+    _sessions.removeWhere(
+      (_, session) =>
+          now.difference(session.createdAt) > const Duration(hours: 12),
+    );
+    final sessionId = '${now.microsecondsSinceEpoch}-${_nextSessionId++}';
+    _sessions[sessionId] = _M3u8ProxySession(
+      m3u8Url: m3u8Url,
+      headers: Map<String, String>.unmodifiable(headers ?? const {}),
+      createdAt: now,
+    );
+    _lastSessionId = sessionId;
+    return 'http://127.0.0.1:$_port/playlist/$sessionId.m3u8';
   }
 
-  /// Get current proxy URL if server is running
+  /// 返回当前可用的代理播放列表地址；服务未启动或会话不存在时返回 null。
   String? get currentProxyUrl {
-    if (_server == null || _currentM3u8Url == null) return null;
-    return 'http://127.0.0.1:$_port/playlist.m3u8';
+    final sessionId = _lastSessionId;
+    if (_server == null ||
+        sessionId == null ||
+        !_sessions.containsKey(sessionId)) {
+      return null;
+    }
+    return 'http://127.0.0.1:$_port/playlist/$sessionId.m3u8';
   }
 
   void _serve() {
     _server!.listen((request) async {
       try {
-        if (request.uri.path == '/playlist.m3u8') {
-          final cleaned = await _fetchAndFilter(_currentM3u8Url!, _headers);
+        final path = request.uri.pathSegments;
+        final isLegacyPlaylist = request.uri.path == '/playlist.m3u8';
+        final playlistSessionId = isLegacyPlaylist
+            ? _lastSessionId
+            : path.length == 2 && path.first == 'playlist'
+            ? path.last.replaceFirst(RegExp(r'\.m3u8$'), '')
+            : null;
+        if (playlistSessionId != null) {
+          final session = _sessions[playlistSessionId];
+          if (session == null) {
+            request.response
+              ..statusCode = 404
+              ..close();
+            return;
+          }
+          final cleaned = await _fetchAndFilter(
+            session.m3u8Url,
+            session.headers,
+            playlistSessionId,
+          );
           request.response
             ..statusCode = 200
             ..headers.contentType = ContentType(
@@ -57,17 +105,21 @@ class M3u8ProxyServer {
             )
             ..write(cleaned)
             ..close();
-        } else if (request.uri.path == '/proxy' ||
-            request.uri.path.startsWith('/proxy/')) {
+        } else if (path.length >= 2 && path.first == 'proxy') {
           // 代理分片 / KEY / init 分片请求
+          final session = _sessions[path[1]];
           final segUrl = request.uri.queryParameters['url'];
-          if (segUrl != null) {
+          if (session != null && segUrl != null) {
             final isPlaylist =
                 Uri.tryParse(segUrl)?.path.endsWith('.m3u8') == true ||
                 segUrl.contains('mpegurl');
             if (isPlaylist) {
               // 变体/嵌套播放列表：递归过滤后再返回
-              final cleaned = await _fetchAndFilter(segUrl, _headers);
+              final cleaned = await _fetchAndFilter(
+                segUrl,
+                session.headers,
+                path[1],
+              );
               request.response
                 ..statusCode = 200
                 ..headers.contentType = ContentType(
@@ -81,7 +133,7 @@ class M3u8ProxyServer {
                 segUrl,
                 options: Options(
                   responseType: ResponseType.bytes,
-                  headers: _headers,
+                  headers: session.headers,
                   connectTimeout: const Duration(seconds: 20),
                   receiveTimeout: const Duration(seconds: 20),
                   extra: const {'noLog': true},
@@ -137,6 +189,7 @@ class M3u8ProxyServer {
   Future<String> _fetchAndFilter(
     String url,
     Map<String, String>? headers,
+    String sessionId,
   ) async {
     final resp = await _dio.get<String>(
       url,
@@ -152,7 +205,7 @@ class M3u8ProxyServer {
 
     if (content.contains('#EXT-X-STREAM-INF')) {
       final subUrl = _parseMasterFirst(url, content);
-      if (subUrl != null) return _fetchAndFilter(subUrl, headers);
+      if (subUrl != null) return _fetchAndFilter(subUrl, headers, sessionId);
     }
 
     // 先过滤广告（此时分片仍是原始 URL，域名/正则规则能正确匹配），
@@ -160,13 +213,13 @@ class M3u8ProxyServer {
     if (appdata.settings['m3u8AdFilterEnabled'] == true) {
       content = _filterAds(url, content);
     }
-    return _convertToProxyUrls(url, content);
+    return _convertToProxyUrls(url, content, sessionId);
   }
 
   /// 将 m3u8 中的相对路径转换为代理 URL。
   /// 除分片外，还会重写 `#EXT-X-KEY` / `#EXT-X-MAP` 的 URI，
   /// 否则 AES-128 加密流 / fMP4 的 KEY 与 init 分片会按本地相对路径请求而失败。
-  String _convertToProxyUrls(String baseUrl, String content) {
+  String _convertToProxyUrls(String baseUrl, String content, String sessionId) {
     final basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
 
     String proxyFor(String uri) {
@@ -184,7 +237,7 @@ class M3u8ProxyServer {
         scheme: 'http',
         host: '127.0.0.1',
         port: _port,
-        path: name.isEmpty ? '/proxy' : '/proxy/$name',
+        path: name.isEmpty ? '/proxy/$sessionId' : '/proxy/$sessionId/$name',
         queryParameters: {'url': resolved},
       );
       return proxy.toString();

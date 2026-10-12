@@ -7,7 +7,8 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/i18n/strings.g.dart'
+    hide BuildContextTranslationsExtension;
 import 'package:kostori/pages/download/download_filter.dart';
 import 'package:kostori/pages/download/download_settings_sheet.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
@@ -1205,7 +1206,11 @@ class _DownloadTile extends StatelessWidget {
                 else ...[
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
-                    value: task.progress,
+                    value:
+                        task.status == DownloadStatus.downloading &&
+                            !task.hasKnownProgress
+                        ? null
+                        : task.progress,
                     borderRadius: BorderRadius.circular(4),
                     minHeight: 4,
                   ),
@@ -1543,10 +1548,12 @@ class _DownloadTile extends StatelessWidget {
       var pctValue = (task.progress * 100).clamp(0.0, 100.0);
       if (task.segTotal > 0 &&
           task.segDone < task.segTotal &&
-          pctValue >= 100) {
+          pctValue >= 99.5) {
         pctValue = 99;
       }
-      final pct = pctValue.toStringAsFixed(0);
+      final pct = task.hasKnownProgress
+          ? '${pctValue.toStringAsFixed(0)}%'
+          : context.t.downloading;
       // 速度始终显示：为 0（含极小值）时显示 0 B/s，而不是隐藏
       final speed = formatSpeed(task.downloadSpeed);
       final res = task.resolution?.trim();
@@ -1569,12 +1576,16 @@ class _DownloadTile extends StatelessWidget {
               child: PolygonRefreshIndicator(size: 16),
             ),
             const SizedBox(width: 6),
-            Text(
-              '$pct%',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: colorScheme.primary,
+            Flexible(
+              child: Text(
+                pct,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.primary,
+                ),
               ),
             ),
           ],
@@ -1592,13 +1603,12 @@ class _DownloadTile extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
-          pctBox,
+          Flexible(child: pctBox),
           const SizedBox(width: 6),
           Text(
             '·  $speed',
             style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
           ),
-          const Spacer(),
         ],
       );
     }

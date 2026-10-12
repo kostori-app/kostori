@@ -12,6 +12,7 @@ import 'package:ffmpeg_kit_flutter_new_min_gpl/ffprobe_kit.dart'
     if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffprobe_kit.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/utils/ffmpeg_progress.dart';
 import 'package:path/path.dart' as p;
 
 /// 编码参数
@@ -129,6 +130,9 @@ class FfmpegDownloadArgs {
   /// 超时（秒），0 表示不限制。
   final int timeoutSeconds;
 
+  /// 已确认的输入总时长（毫秒）；未知时从 FFmpeg 日志读取。
+  final int totalMs;
+
   final void Function(double progress)? onProgress;
 
   /// 取消句柄：调用 cancel() 后 ffmpeg 进程会被终止。
@@ -144,6 +148,7 @@ class FfmpegDownloadArgs {
     this.videoOnly = false,
     this.reconnect = 5,
     this.timeoutSeconds = 0,
+    this.totalMs = 0,
     this.onProgress,
     this.cancelToken,
   });
@@ -206,6 +211,15 @@ class FfmpegEncoder {
   final FfmpegEncodeArgs args;
 
   FfmpegEncoder(this.args);
+
+  static String _diagnosticExcerpt(String value, {required int maxLength}) {
+    if (value.length <= maxLength) return value;
+    final headLength = maxLength * 2 ~/ 3;
+    final tailLength = maxLength - headLength;
+    return '${value.substring(0, headLength)}\n'
+        '... ${value.length - maxLength} characters omitted ...\n'
+        '${value.substring(value.length - tailLength)}';
+  }
 
   static Future<void> encode(FfmpegEncodeArgs args) async {
     final encoder = FfmpegEncoder(args);
@@ -407,11 +421,11 @@ class FfmpegEncoder {
     final cmd = buf.toString();
     Log.info('FfmpegEncoder', 'Download: $cmd');
 
-    // 输入时长由执行器从日志提取，流复制也能按媒体时间报告进度。
+    // 优先使用播放列表的已知时长，未知时由执行器从日志提取。
     if (Platform.isWindows) {
       await _runWindows(
         cmd,
-        totalMs: 0,
+        totalMs: args.totalMs,
         isDownload: true,
         outputPath: safeOutput,
         onProgress: args.onProgress,
@@ -420,7 +434,7 @@ class FfmpegEncoder {
     } else {
       await _runMobile(
         cmd,
-        totalMs: 0,
+        totalMs: args.totalMs,
         isDownload: true,
         outputPath: safeOutput,
         onProgress: args.onProgress,
@@ -929,7 +943,10 @@ class FfmpegEncoder {
     }
 
     double lastProgress = 0;
-    var expectedMs = totalMs;
+    final progressTracker = FfmpegProgressTracker(
+      totalMs: totalMs,
+      inferDuration: isDownload,
+    );
     final stderrBuffer = StringBuffer();
 
     void report(double p) {
@@ -939,18 +956,18 @@ class FfmpegEncoder {
       }
     }
 
-    process.stderr.transform(const SystemEncoding().decoder).listen((data) {
-      stderrBuffer.write(data);
-      if (isDownload && expectedMs <= 0) {
-        expectedMs = _logTimestampMs(data, 'Duration:') ?? 0;
-      }
-      final currentMs = _logTimestampMs(data, 'time=');
-      if (currentMs != null && expectedMs > 0) {
-        report((currentMs / expectedMs).clamp(0.0, 0.99));
-      }
-    });
+    final stderrDone = process.stderr
+        .transform(const SystemEncoding().decoder)
+        .listen((data) {
+          stderrBuffer.write(data);
+          progressTracker.addLog(data);
+          final progress = progressTracker.progress;
+          if (progress != null) report(progress);
+        })
+        .asFuture<void>();
 
     final exitCode = await process.exitCode;
+    await stderrDone;
     cancelTimer?.cancel();
     if (cancelToken != null && cancelToken.isCancelled) {
       throw FfmpegCancelledException();
@@ -961,16 +978,6 @@ class FfmpegEncoder {
       );
     }
     onProgress?.call(1.0);
-  }
-
-  static int? _logTimestampMs(String text, String prefix) {
-    final match = RegExp(
-      '${RegExp.escape(prefix)}\\s*(\\d+):(\\d+):(\\d+(?:\\.\\d+)?)',
-    ).firstMatch(text);
-    if (match == null) return null;
-    return int.parse(match.group(1)!) * 3600000 +
-        int.parse(match.group(2)!) * 60000 +
-        (double.parse(match.group(3)!) * 1000).round();
   }
 
   /// 移动端执行。
@@ -985,7 +992,18 @@ class FfmpegEncoder {
     Log.info('FfmpegEncoder', 'Mobile FFmpeg command: $cmd');
 
     double lastProgress = 0;
-    var expectedMs = totalMs;
+    final progressTracker = FfmpegProgressTracker(
+      totalMs: totalMs,
+      inferDuration: isDownload,
+    );
+
+    void reportProgress() {
+      final progress = progressTracker.progress;
+      if (progress != null && progress > lastProgress + 0.01) {
+        lastProgress = progress;
+        onProgress?.call(progress);
+      }
+    }
 
     final completer = Completer<void>();
     FFmpegSession? completedSession;
@@ -1001,19 +1019,12 @@ class FfmpegEncoder {
           }
         },
         (log) {
-          if (isDownload && expectedMs <= 0) {
-            expectedMs = _logTimestampMs(log.getMessage(), 'Duration:') ?? 0;
-          }
+          progressTracker.addLog(log.getMessage());
+          reportProgress();
         },
         (stats) {
-          final t = stats.getTime();
-          if (t > 0 && expectedMs > 0) {
-            double p = (t / expectedMs).clamp(0.0, 0.99);
-            if (p > lastProgress + 0.01) {
-              lastProgress = p;
-              onProgress?.call(p);
-            }
-          }
+          progressTracker.updateTime(stats.getTime().toDouble());
+          reportProgress();
         },
       );
 
@@ -1051,9 +1062,9 @@ class FfmpegEncoder {
         Log.error('FfmpegEncoder', 'All logs: $allLogs');
         throw Exception(
           'FFmpeg encoding failed: return code is null. '
-          'Command: $cmd. '
-          'Output: $output. '
-          'Logs: $allLogs',
+          'Logs: ${_diagnosticExcerpt(allLogs ?? '', maxLength: 6000)}. '
+          'Output: ${_diagnosticExcerpt(output.toString(), maxLength: 2000)}. '
+          'Command: ${_diagnosticExcerpt(cmd, maxLength: 1200)}',
         );
       }
 
@@ -1063,9 +1074,9 @@ class FfmpegEncoder {
         Log.error('FfmpegEncoder', 'All logs: $allLogs');
         throw Exception(
           'FFmpeg encoding failed: $returnCode. '
-          'Command: $cmd. '
-          'Output: $output. '
-          'Logs: $allLogs',
+          'Logs: ${_diagnosticExcerpt(allLogs ?? '', maxLength: 6000)}. '
+          'Output: ${_diagnosticExcerpt(output.toString(), maxLength: 2000)}. '
+          'Command: ${_diagnosticExcerpt(cmd, maxLength: 1200)}',
         );
       }
       onProgress?.call(1.0);

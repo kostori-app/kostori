@@ -68,6 +68,9 @@ class DownloadTask {
   /// m3u8 总分片数（运行时；非 m3u8 恒为 -1）
   int segTotal;
 
+  /// 媒体总时长（毫秒），未知为 0；HLS 回退 FFmpeg 时用于计算进度。
+  int mediaDurationMs;
+
   /// 下载完成后的文件路径
   String? filePath;
 
@@ -102,6 +105,7 @@ class DownloadTask {
     this.downloadSpeed = 0,
     this.segDone = -1,
     this.segTotal = -1,
+    this.mediaDurationMs = 0,
     this.filePath,
     this.error,
     required this.createdAt,
@@ -111,6 +115,19 @@ class DownloadTask {
     final lower = url.toLowerCase();
     return lower.contains('.m3u8') || lower.contains('m3u8');
   }
+
+  /// 总大小已知时按字节计算进度；未知时交给分片数或媒体时长。
+  double? get byteProgress =>
+      totalBytes > 0 ? (downloadedBytes / totalBytes).clamp(0.0, 1.0) : null;
+
+  /// 未拿到总大小、分片数或媒体时长时，不显示虚假的 0%。
+  bool get hasKnownProgress =>
+      totalBytes > 0 ||
+      segTotal > 0 ||
+      mediaDurationMs > 0 ||
+      progress > 0 ||
+      isMerging ||
+      status == DownloadStatus.completed;
 
   bool get isActive =>
       status == DownloadStatus.queued || status == DownloadStatus.downloading;
@@ -135,6 +152,7 @@ class DownloadTask {
     'status': status.name,
     'progress': progress,
     'totalBytes': totalBytes,
+    'mediaDurationMs': mediaDurationMs,
     'filePath': filePath,
     'error': error,
     'createdAt': createdAt.toIso8601String(),
@@ -167,6 +185,7 @@ class DownloadTask {
     ),
     progress: (json['progress'] as num?)?.toDouble() ?? 0,
     totalBytes: (json['totalBytes'] as num?)?.toInt() ?? 0,
+    mediaDurationMs: (json['mediaDurationMs'] as num?)?.toInt() ?? 0,
     filePath: json['filePath'] as String?,
     error: json['error'] as String?,
     createdAt:
