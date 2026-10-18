@@ -224,50 +224,94 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                 ),
                                                 const SizedBox(width: 16),
                                                 Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        characterFullItem.name,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .headlineSmall
-                                                            ?.copyWith(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              color:
-                                                                  Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .colorScheme
-                                                                      .tertiary,
-                                                            ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        maxLines: 2,
-                                                      ),
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets.only(
-                                                              top: 4.0,
-                                                            ),
-                                                        child: Text(
+                                                  child: SizedBox(
+                                                    height: 210,
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
                                                           characterFullItem
-                                                              .nameCN,
+                                                              .name,
                                                           style:
                                                               Theme.of(context)
                                                                   .textTheme
-                                                                  .titleMedium
+                                                                  .headlineSmall
                                                                   ?.copyWith(
-                                                                    color: Colors
-                                                                        .grey[700],
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color: Theme.of(
+                                                                      context,
+                                                                    ).colorScheme.tertiary,
                                                                   ),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          maxLines: 2,
                                                         ),
-                                                      ),
-                                                    ],
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets.only(
+                                                                top: 4.0,
+                                                              ),
+                                                          child: Text(
+                                                            characterFullItem
+                                                                .nameCN,
+                                                            style:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .textTheme
+                                                                    .titleMedium
+                                                                    ?.copyWith(
+                                                                      color: Colors
+                                                                          .grey[700],
+                                                                    ),
+                                                          ),
+                                                        ),
+                                                        const Spacer(),
+                                                        Align(
+                                                          alignment: Alignment
+                                                              .bottomRight,
+                                                          child: CapsuleButton(
+                                                            text: t.share,
+                                                            leading: const Icon(
+                                                              Icons.share,
+                                                            ),
+                                                            onTap: () {
+                                                              showPopUpWidget(
+                                                                App.rootContext,
+                                                                ShareWidget(
+                                                                  characterFullItem:
+                                                                      characterFullItem,
+                                                                  isCharacter:
+                                                                      true,
+                                                                ),
+                                                              );
+                                                            },
+                                                            onLongPress: () {
+                                                              showKostoriShareSheet(
+                                                                context,
+                                                                ref,
+                                                                type: KostoriRouteType
+                                                                    .character,
+                                                                payload:
+                                                                    '${characterFullItem.id}',
+                                                                title:
+                                                                    characterFullItem
+                                                                        .nameCN,
+                                                                backgroundImagePath:
+                                                                    characterFullItem
+                                                                        .image,
+                                                                subtitle: t
+                                                                    .personSubtitle,
+                                                              );
+                                                            },
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -334,63 +378,6 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                   ],
                 );
               },
-            ),
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  showPopUpWidget(
-                    App.rootContext,
-                    StatefulBuilder(
-                      builder: (context, setState) {
-                        return ShareWidget(
-                          characterFullItem: characterFullItem,
-                          isCharacter: true,
-                        );
-                      },
-                    ),
-                  );
-                },
-                onLongPress: () {
-                  final type = KostoriRouteType.character;
-                  final id = '${characterFullItem.id}';
-                  showKostoriShareSheet(
-                    context,
-                    ref,
-                    type: type,
-                    payload: id,
-                    title: characterFullItem.nameCN,
-                    backgroundImagePath: characterFullItem.image,
-                    subtitle: t.personSubtitle,
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Icon(
-                    Icons.share,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                ),
-              ),
             ),
           ),
         ),

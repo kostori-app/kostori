@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/bbcode/bbcode_precache.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
@@ -44,14 +48,20 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   static final Map<int, Future<List<BangumiItem>>> _trendingRequests = {};
   static int _trendingCacheGeneration = 0;
 
-  final ScrollController scrollController = ScrollController();
+  // 趋势数据异步加载，恢复旧的长列表偏移会让空列表首次布局时超出范围，
+  // RenderViewport 可能在修正偏移前尝试绘制尚未完成布局的 Sliver。
+  final ScrollController scrollController = ScrollController(
+    keepScrollOffset: false,
+  );
   List<BangumiItem> bangumiItems = [];
   bool isLoadingMore = false;
+  bool _trendHasMore = true;
   bool showFB = false;
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   int count = 0;
   int _queryGeneration = 0;
+  bool _loadMoreScheduled = false;
 
   /// 页面级图片缓存保持：跳转到详情页/返回时图片不因 ImageCache 逐出而重载
   final BangumiPageImageCache _imageCache = BangumiPageImageCache();
@@ -124,11 +134,20 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   void scrollListener() {
     // 列表为空时不触发（首次加载由 initState 负责）：
     // 否则布局/窗口尺寸变化也会命中"接近底部"而重复请求
-    if (bangumiItems.isEmpty) return;
+    if (!scrollController.hasClients || bangumiItems.isEmpty) return;
     if (scrollController.position.pixels >=
             scrollController.position.maxScrollExtent - 200 &&
-        !isLoadingMore) {
-      queryBangumiByTrend();
+        !isLoadingMore &&
+        _trendHasMore &&
+        !_loadMoreScheduled) {
+      // RenderViewport 恢复滚动偏移期间可能触发监听器。此时同步重建 Sliver
+      // 会导致子项尚未完成布局就进入绘制阶段。
+      _loadMoreScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadMoreScheduled = false;
+        if (!mounted || !scrollController.hasClients || isLoadingMore) return;
+        unawaited(queryBangumiByTrend());
+      });
     }
   }
 
@@ -155,7 +174,8 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
 
   Future<void> queryBangumiByTrend({bool forceRefresh = false}) async {
     // 防止并发/重复请求
-    if (isLoadingMore && !forceRefresh) return;
+    if ((isLoadingMore || !_trendHasMore) && !forceRefresh) return;
+    if (forceRefresh) _trendHasMore = true;
     final queryGeneration = ++_queryGeneration;
     final cacheGeneration = _trendingCacheGeneration;
     final page = count;
@@ -165,24 +185,58 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
       final result = await _loadTrendingPage(page, forceRefresh: forceRefresh);
       if (queryGeneration != _queryGeneration) return;
 
-      count = page + 1;
-      if (result.isNotEmpty) {
-        bangumiItems.addAll(result);
-        if (cacheGeneration == _trendingCacheGeneration) {
-          _trendingSnapshot = _BangumiTrendingSnapshot(
-            items: List.unmodifiable(bangumiItems),
-            pageCount: count,
-            cachedAt: DateTime.now(),
-          );
-        }
-        _precacheTrendingImages(result);
-      }
+      await _commitTrendingResult(
+        result,
+        page: page,
+        queryGeneration: queryGeneration,
+        cacheGeneration: cacheGeneration,
+      );
     } finally {
       if (queryGeneration == _queryGeneration) {
         isLoadingMore = false;
         if (mounted) setState(() {});
       }
     }
+  }
+
+  Future<void> _commitTrendingResult(
+    List<BangumiItem> result, {
+    required int page,
+    required int queryGeneration,
+    required int cacheGeneration,
+  }) async {
+    void commit() {
+      if (!mounted || queryGeneration != _queryGeneration) return;
+      if (result.isEmpty) {
+        _trendHasMore = false;
+        return;
+      }
+      count = page + 1;
+      bangumiItems.addAll(result);
+      if (cacheGeneration == _trendingCacheGeneration) {
+        _trendingSnapshot = _BangumiTrendingSnapshot(
+          items: List.unmodifiable(bangumiItems),
+          pageCount: count,
+          cachedAt: DateTime.now(),
+        );
+      }
+      _precacheTrendingImages(result);
+    }
+
+    // 请求可能在布局或绘制期间完成。将列表变更延迟到当前帧结束，避免
+    // RenderViewport 绘制结构不完整的 Sliver 子项。
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.idle) {
+      commit();
+      return;
+    }
+    final completer = Completer<void>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      commit();
+      completer.complete();
+    });
+    WidgetsBinding.instance.scheduleFrame();
+    await completer.future;
   }
 
   void _precacheTrendingImages(List<BangumiItem> items) {
@@ -203,35 +257,40 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   }
 
   Future<void> resetBangumiTrend() async {
+    if (scrollController.hasClients && scrollController.offset != 0) {
+      scrollController.jumpTo(0);
+    }
     _trendingCacheGeneration++;
     _trendingSnapshot = null;
     _trendingRequests.clear();
     _queryGeneration++;
     bangumiItems.clear();
     count = 0;
+    _trendHasMore = true;
     await queryBangumiByTrend(forceRefresh: true);
   }
 
   int? _getFixedCrossAxisCount() {
     final perRow = appdata.implicitData['bangumiCardPerRow'];
     if (perRow != null && perRow.toString().isNotEmpty) {
-      return int.tryParse(perRow.toString());
+      final parsed = int.tryParse(perRow.toString());
+      return parsed != null && parsed > 0 ? parsed : null;
     }
     return null;
   }
 
   /// bangumi 趋势列表瀑布流（统一封面比例，与简洁布局一致）
-  Widget _buildMasonryGrid() {
+  Widget _buildMasonryGrid(List<BangumiItem> items) {
     final perRow = _getFixedCrossAxisCount();
     final columns = perRow ?? _resolveMasonryColumns();
     return SliverMasonryGrid.count(
       crossAxisCount: columns,
       mainAxisSpacing: 4,
       crossAxisSpacing: 4,
-      childCount: bangumiItems.length,
+      childCount: items.length,
       itemBuilder: (context, index) {
         return BangumiBriefCard(
-          bangumiItem: bangumiItems[index],
+          bangumiItem: items[index],
           heroTag: 'Trending$index',
           masonryFactor: 1.35,
         );
@@ -247,6 +306,9 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   }
 
   List<Widget> buildBangumiTrendingSlivers(BuildContext context) {
+    // Sliver 构建时使用同一份不可变快照提供 childCount 和子项数据，避免
+    // 请求完成替换源列表后，在布局过程中读到不一致的数据。
+    final items = List<BangumiItem>.of(bangumiItems);
     return [
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -267,7 +329,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
                     color: Theme.of(context).colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text('${bangumiItems.length}', style: ts.s12),
+                  child: Text('${items.length}', style: ts.s12),
                 ),
                 const Spacer(),
                 IconButton(
@@ -281,20 +343,38 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
           ),
         ),
       ),
-      // Grid 部分
+      // 状态区和网格使用稳定的独立 Sliver，避免返回页面恢复偏移时切换
+      // Sliver 类型造成旧 RenderSliver 暂时缺少几何信息。
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverToBoxAdapter(
+          child: items.isEmpty
+              ? SizedBox(
+                  height: 220,
+                  child: Center(
+                    child: isLoadingMore
+                        ? const PolygonRefreshIndicator(size: 32)
+                        : ErrorState(
+                            message: t.noData,
+                            retry: () =>
+                                queryBangumiByTrend(forceRefresh: true),
+                          ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ),
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: appdata.implicitData['bangumiDisplayMode'] == 'masonry'
-            ? _buildMasonryGrid()
+            ? _buildMasonryGrid(items)
             : SliverGrid(
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  return bangumiItems.isNotEmpty
-                      ? BangumiBriefCard(
-                          bangumiItem: bangumiItems[index],
-                          heroTag: 'Trending$index',
-                        )
-                      : null;
-                }, childCount: bangumiItems.length),
+                  return BangumiBriefCard(
+                    bangumiItem: items[index],
+                    heroTag: 'Trending$index',
+                  );
+                }, childCount: items.length),
                 gridDelegate: SliverGridDelegateWithBangumiItems(
                   true,
                   fixedCrossAxisCount: _getFixedCrossAxisCount(),
@@ -307,7 +387,9 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
         child: SizedBox(
           height: 64,
           child: Center(
-            child: isLoadingMore
+            // 首次加载时空状态区域已经显示加载指示器；底部仅用于翻页，
+            // 避免页面初次打开同时出现两个加载提示。
+            child: bangumiItems.isNotEmpty && isLoadingMore
                 ? const PolygonRefreshIndicator(size: 32)
                 : const SizedBox.shrink(),
           ),

@@ -1344,8 +1344,12 @@ joinedEvent: 加入了
 leftEvent: 離開了
 newRoom: 新房間
 portAndBindMode: 連接埠與綁定模式
-seekForward: 快進 ${s} 秒
-seekBackward: 快退 ${s} 秒
+seekForward: 快進 ${s}
+seekBackward: 快退 ${s}
+seekSeconds: ${s}秒
+playerTimeSeconds: ${s}秒
+playerTimeMinutes: ${m}分${s}秒
+playerTimeHours: ${h}小時${m}分${s}秒
 notBroadcast: 尚未播出
 items: 項
 wsBotConnections: WS 機器人連線
@@ -2199,6 +2203,8 @@ currentEpisode: 目前集數
 playbackRoute: 播放線路
 progress: 進度
 playbackSpeed: 播放倍率
+playerSeekSensitivity: 滑動快進倍率
+playerSeekSensitivityDesc: 1.0x 保持目前速度（全螢幕寬度對應 180 秒）
 otherSettings: 其他設定
 audioLowLatency: "音訊: 低延遲"
 audioCompatibility: "音訊: 相容模式"
@@ -2645,7 +2651,7 @@ inheritGlobalLibraryHint: 關閉時只使用下方勾選的世界書與提示注
 profileLibraryHint: 勾選的條目僅對目前助手生效；是否沿用全域啟用項見上方開關。
 userNickname: 使用者暱稱
 userNicknameHint: 聊天中顯示的使用者名稱，並注入 {{user_nickname}}
-animeRecognize: 動漫識別
+animeRecognize: 番劇識別
 chooseImageToRecognize: 選擇一張圖片，識別動漫來源
 chooseImage: 選擇圖片
 recognizing: 識別中...
@@ -2654,7 +2660,7 @@ chooseAnotherImage: 換一張圖片試試
 recognizeResult: 識別結果
 episodeLabel: "第"
 unknownEpisode: 未知集數
-openVideoPreview: 影片預覽
+openVideoPreview: 跳轉到本地播放器
 discussInAi: AI 討論
 dropImageToRecognize: 放開即可識別圖片
 dropFileToImport: 放開即可匯入 .js 來源檔
@@ -3007,6 +3013,7 @@ button: "按鈕"
 requestFailedDetail: "請求失敗: ${error}"
 play: "播放"
 nextEpisode: "下一集"
+playerNextEpisodeCountdown: "下一集 · ${s}秒"
 trackN: "第 ${n} 軌"
 deviceInfo: "設備資訊"
 conversationInterrupted: "對話流意外中斷"

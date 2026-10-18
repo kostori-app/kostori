@@ -3925,11 +3925,23 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Port & Bind Mode'
 	String get portAndBindMode => 'Port & Bind Mode';
 
-	/// en: 'Forward ${s} s'
-	String seekForward({required Object s}) => 'Forward ${s} s';
+	/// en: 'Forward ${s}'
+	String seekForward({required Object s}) => 'Forward ${s}';
 
-	/// en: 'Backward ${s} s'
-	String seekBackward({required Object s}) => 'Backward ${s} s';
+	/// en: 'Backward ${s}'
+	String seekBackward({required Object s}) => 'Backward ${s}';
+
+	/// en: '${s}s'
+	String seekSeconds({required Object s}) => '${s}s';
+
+	/// en: '00:${s}'
+	String playerTimeSeconds({required Object s}) => '00:${s}';
+
+	/// en: '${m}:${s}'
+	String playerTimeMinutes({required Object m, required Object s}) => '${m}:${s}';
+
+	/// en: '${h}:${m}:${s}'
+	String playerTimeHours({required Object h, required Object m, required Object s}) => '${h}:${m}:${s}';
 
 	/// en: 'Not yet aired'
 	String get notBroadcast => 'Not yet aired';
@@ -6475,6 +6487,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Playback Speed'
 	String get playbackSpeed => 'Playback Speed';
 
+	/// en: 'Swipe seek sensitivity'
+	String get playerSeekSensitivity => 'Swipe seek sensitivity';
+
+	/// en: '1.0x keeps the current rate (180 seconds across the full screen)'
+	String get playerSeekSensitivityDesc => '1.0x keeps the current rate (180 seconds across the full screen)';
+
 	/// en: 'Other Settings'
 	String get otherSettings => 'Other Settings';
 
@@ -7816,8 +7834,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Unknown episode'
 	String get unknownEpisode => 'Unknown episode';
 
-	/// en: 'Video preview'
-	String get openVideoPreview => 'Video preview';
+	/// en: 'Open local player'
+	String get openVideoPreview => 'Open local player';
 
 	/// en: 'Discuss in AI'
 	String get discussInAi => 'Discuss in AI';
@@ -8865,6 +8883,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Next episode'
 	String get nextEpisode => 'Next episode';
+
+	/// en: 'Next episode · ${s}s'
+	String playerNextEpisodeCountdown({required Object s}) => 'Next episode · ${s}s';
 
 	/// en: 'Track ${n}'
 	String trackN({required Object n}) => 'Track ${n}';
@@ -11220,8 +11241,12 @@ extension on Translations {
 			'leftEvent' => 'left',
 			'newRoom' => 'New room',
 			'portAndBindMode' => 'Port & Bind Mode',
-			'seekForward' => ({required Object s}) => 'Forward ${s} s',
-			'seekBackward' => ({required Object s}) => 'Backward ${s} s',
+			'seekForward' => ({required Object s}) => 'Forward ${s}',
+			'seekBackward' => ({required Object s}) => 'Backward ${s}',
+			'seekSeconds' => ({required Object s}) => '${s}s',
+			'playerTimeSeconds' => ({required Object s}) => '00:${s}',
+			'playerTimeMinutes' => ({required Object m, required Object s}) => '${m}:${s}',
+			'playerTimeHours' => ({required Object h, required Object m, required Object s}) => '${h}:${m}:${s}',
 			'notBroadcast' => 'Not yet aired',
 			'items' => 'items',
 			'wsBotConnections' => 'WS Bot Connections',
@@ -11415,12 +11440,12 @@ extension on Translations {
 			'leaveEmptyForDefault' => 'Leave empty for default',
 			'publicBaseUrl' => 'Public Base URL',
 			'publicBaseUrlHint' => 'External base address for uploaded images (public IPv4/IPv6 or domain); leave empty to use connection address',
+			_ => null,
+		} ?? switch (path) {
 			'publicIpDetected' => 'Public IP detected',
 			'publicIpDetectFailed' => 'Failed to detect public IP',
 			'notConfiguredWillUseServerOrBase64' => 'Not configured · will use server or base64',
 			'imageTooLargeToSend' => 'Image too large to send',
-			_ => null,
-		} ?? switch (path) {
 			'pleaseConfigureServerUploadOrClientOss' => 'Please configure server upload or client OSS.',
 			'stopTheServerToChangeUploadMode' => 'Stop the server to change upload mode',
 			'enableClientOss' => 'Enable Client OSS',
@@ -11929,12 +11954,12 @@ extension on Translations {
 			'connectionDisconnected' => 'Connection to server disconnected',
 			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
+			_ => null,
+		} ?? switch (path) {
 			'noConfigurationsFound' => 'No configurations found',
 			'noData' => 'No data',
 			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
 			'cannotBeEmpty' => 'Cannot be empty',
-			_ => null,
-		} ?? switch (path) {
 			'invalidCookies' => 'Invalid cookies',
 			'webviewIsNotAvailable' => 'Webview is not available',
 			'sources' => 'Sources',
@@ -12074,6 +12099,8 @@ extension on Translations {
 			'playbackRoute' => 'Playback Route',
 			'progress' => 'Progress',
 			'playbackSpeed' => 'Playback Speed',
+			'playerSeekSensitivity' => 'Swipe seek sensitivity',
+			'playerSeekSensitivityDesc' => '1.0x keeps the current rate (180 seconds across the full screen)',
 			'otherSettings' => 'Other Settings',
 			'audioLowLatency' => 'Audio: Low Latency',
 			'audioCompatibility' => 'Audio: Compatibility',
@@ -12441,14 +12468,14 @@ extension on Translations {
 			'stdio' => 'stdio',
 			'http' => 'HTTP',
 			'sse' => 'SSE',
+			_ => null,
+		} ?? switch (path) {
 			'command' => 'Command',
 			'args' => 'Arguments (JSON)',
 			'env' => 'Environment (JSON)',
 			'serverUrl' => 'Server URL',
 			'headers' => 'Headers (JSON)',
 			'noSkillsYet' => 'No skills yet',
-			_ => null,
-		} ?? switch (path) {
 			'skillName' => 'Skill Name',
 			'skillKey' => 'Skill Key',
 			'builtin' => 'Built-in',
@@ -12523,7 +12550,7 @@ extension on Translations {
 			'recognizeResult' => 'Recognition results',
 			'episodeLabel' => 'EP',
 			'unknownEpisode' => 'Unknown episode',
-			'openVideoPreview' => 'Video preview',
+			'openVideoPreview' => 'Open local player',
 			'discussInAi' => 'Discuss in AI',
 			'dropImageToRecognize' => 'Drop an image to recognize',
 			'dropFileToImport' => 'Drop a .js file to import',
@@ -12873,6 +12900,7 @@ extension on Translations {
 			'requestFailedDetail' => ({required Object error}) => 'Request failed: ${error}',
 			'play' => 'Play',
 			'nextEpisode' => 'Next episode',
+			'playerNextEpisodeCountdown' => ({required Object s}) => 'Next episode · ${s}s',
 			'trackN' => ({required Object n}) => 'Track ${n}',
 			'deviceInfo' => 'Device info',
 			'conversationInterrupted' => 'Conversation stream interrupted unexpectedly',
@@ -12954,6 +12982,8 @@ extension on Translations {
 			'torrentSources' => 'BT sources',
 			'torrentSourceName' => 'Name',
 			'torrentSourceType' => 'Type',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceUrl' => 'Search URL (with {query})',
 			'torrentSourceProvider' => 'Provider (empty = all)',
 			'torrentSourceItemRegex' => 'Item regex',
@@ -12961,8 +12991,6 @@ extension on Translations {
 			'torrentSourceTitleRegex' => 'Title regex',
 			'torrentSourceSizeRegex' => 'Size regex',
 			'torrentSourceGroupRegex' => 'Group regex',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceHashRegex' => 'Hash regex',
 			'torrentSourceMagnetTemplate' => 'Magnet template ({hash})',
 			'torrentSourceDateRegex' => 'Date regex',

@@ -1333,8 +1333,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get leftEvent => '离开了';
 	@override String get newRoom => '新房间';
 	@override String get portAndBindMode => '端口与绑定模式';
-	@override String seekForward({required Object s}) => '快进 ${s} 秒';
-	@override String seekBackward({required Object s}) => '快退 ${s} 秒';
+	@override String seekForward({required Object s}) => '快进 ${s}';
+	@override String seekBackward({required Object s}) => '快退 ${s}';
+	@override String seekSeconds({required Object s}) => '${s}秒';
+	@override String playerTimeSeconds({required Object s}) => '${s}秒';
+	@override String playerTimeMinutes({required Object m, required Object s}) => '${m}分${s}秒';
+	@override String playerTimeHours({required Object h, required Object m, required Object s}) => '${h}小时${m}分${s}秒';
 	@override String get notBroadcast => '尚未播出';
 	@override String get items => '项';
 	@override String get wsBotConnections => 'WS 机器人连接';
@@ -2186,6 +2190,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get playbackRoute => '播放线路';
 	@override String get progress => '进度';
 	@override String get playbackSpeed => '播放倍率';
+	@override String get playerSeekSensitivity => '滑动快进倍率';
+	@override String get playerSeekSensitivityDesc => '1.0x 保持当前速度（全屏宽度对应 180 秒）';
 	@override String get otherSettings => '其他设置';
 	@override String get audioLowLatency => '音频: 低延迟';
 	@override String get audioCompatibility => '音频: 兼容模式';
@@ -2622,7 +2628,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileLibraryHint => '勾选的条目仅对当前助手生效；是否沿用全局启用项见上方开关。';
 	@override String get userNickname => '用户昵称';
 	@override String get userNicknameHint => '聊天中显示的用户名称，并注入 {{user_nickname}}';
-	@override String get animeRecognize => '动漫识别';
+	@override String get animeRecognize => '番剧识别';
 	@override String get chooseImageToRecognize => '选择一张图片，识别动漫来源';
 	@override String get chooseImage => '选择图片';
 	@override String get recognizing => '识别中...';
@@ -2631,7 +2637,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get recognizeResult => '识别结果';
 	@override String get episodeLabel => '第';
 	@override String get unknownEpisode => '未知集数';
-	@override String get openVideoPreview => '视频预览';
+	@override String get openVideoPreview => '跳转到本地播放器';
 	@override String get discussInAi => 'AI 讨论';
 	@override String get dropImageToRecognize => '松开即可识别图片';
 	@override String get dropFileToImport => '松开即可导入 .js 源文件';
@@ -2981,6 +2987,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String requestFailedDetail({required Object error}) => '请求失败: ${error}';
 	@override String get play => '播放';
 	@override String get nextEpisode => '下一集';
+	@override String playerNextEpisodeCountdown({required Object s}) => '下一集 · ${s}秒';
 	@override String trackN({required Object n}) => '第 ${n} 轨';
 	@override String get deviceInfo => '设备信息';
 	@override String get conversationInterrupted => '对话流意外中断';
@@ -4678,8 +4685,12 @@ extension on TranslationsZhCn {
 			'leftEvent' => '离开了',
 			'newRoom' => '新房间',
 			'portAndBindMode' => '端口与绑定模式',
-			'seekForward' => ({required Object s}) => '快进 ${s} 秒',
-			'seekBackward' => ({required Object s}) => '快退 ${s} 秒',
+			'seekForward' => ({required Object s}) => '快进 ${s}',
+			'seekBackward' => ({required Object s}) => '快退 ${s}',
+			'seekSeconds' => ({required Object s}) => '${s}秒',
+			'playerTimeSeconds' => ({required Object s}) => '${s}秒',
+			'playerTimeMinutes' => ({required Object m, required Object s}) => '${m}分${s}秒',
+			'playerTimeHours' => ({required Object h, required Object m, required Object s}) => '${h}小时${m}分${s}秒',
 			'notBroadcast' => '尚未播出',
 			'items' => '项',
 			'wsBotConnections' => 'WS 机器人连接',
@@ -4874,12 +4885,12 @@ extension on TranslationsZhCn {
 			'publicBaseUrl' => '公网基础地址',
 			'publicBaseUrlHint' => '上传图片的外网可访问地址（公网 IPv4/IPv6 或域名时填写）；留空则使用连接地址',
 			'publicIpDetected' => '已探测到公网 IP',
+			_ => null,
+		} ?? switch (path) {
 			'publicIpDetectFailed' => '公网 IP 探测失败',
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 将使用服务器或 Base64',
 			'imageTooLargeToSend' => '图片太大，无法发送',
 			'pleaseConfigureServerUploadOrClientOss' => '请配置服务器上传或客户端 OSS。',
-			_ => null,
-		} ?? switch (path) {
 			'stopTheServerToChangeUploadMode' => '停止服务器以修改上传模式',
 			'enableClientOss' => '启用客户端 OSS',
 			'uploadImagesDirectlyFromClientToOss' => '从客户端直接上传图片到 OSS',
@@ -5388,12 +5399,12 @@ extension on TranslationsZhCn {
 			'enterServerAddress' => '输入服务器地址',
 			'tapToShare' => '点击分享',
 			'noConfigurationsFound' => '未找到配置',
+			_ => null,
+		} ?? switch (path) {
 			'noData' => '没有数据',
 			'loginWithPasswordIsDisabled' => '密码登录已禁用',
 			'cannotBeEmpty' => '不能为空',
 			'invalidCookies' => '无效的 Cookies',
-			_ => null,
-		} ?? switch (path) {
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '数据源',
 			'translationFailedPleaseTryAgainLater' => '翻译失败，请稍后重试',
@@ -5535,6 +5546,8 @@ extension on TranslationsZhCn {
 			'playbackRoute' => '播放线路',
 			'progress' => '进度',
 			'playbackSpeed' => '播放倍率',
+			'playerSeekSensitivity' => '滑动快进倍率',
+			'playerSeekSensitivityDesc' => '1.0x 保持当前速度（全屏宽度对应 180 秒）',
 			'otherSettings' => '其他设置',
 			'audioLowLatency' => '音频: 低延迟',
 			'audioCompatibility' => '音频: 兼容模式',
@@ -5900,14 +5913,14 @@ extension on TranslationsZhCn {
 			'stdio' => 'stdio',
 			'http' => 'HTTP',
 			'sse' => 'SSE',
+			_ => null,
+		} ?? switch (path) {
 			'command' => '命令',
 			'args' => '参数（JSON）',
 			'env' => '环境变量（JSON）',
 			'serverUrl' => '服务器地址',
 			'headers' => '请求头（JSON）',
 			'noSkillsYet' => '暂无技能',
-			_ => null,
-		} ?? switch (path) {
 			'skillName' => '技能名称',
 			'skillKey' => '技能 Key',
 			'builtin' => '内置',
@@ -5973,7 +5986,7 @@ extension on TranslationsZhCn {
 			'profileLibraryHint' => '勾选的条目仅对当前助手生效；是否沿用全局启用项见上方开关。',
 			'userNickname' => '用户昵称',
 			'userNicknameHint' => '聊天中显示的用户名称，并注入 {{user_nickname}}',
-			'animeRecognize' => '动漫识别',
+			'animeRecognize' => '番剧识别',
 			'chooseImageToRecognize' => '选择一张图片，识别动漫来源',
 			'chooseImage' => '选择图片',
 			'recognizing' => '识别中...',
@@ -5982,7 +5995,7 @@ extension on TranslationsZhCn {
 			'recognizeResult' => '识别结果',
 			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集数',
-			'openVideoPreview' => '视频预览',
+			'openVideoPreview' => '跳转到本地播放器',
 			'discussInAi' => 'AI 讨论',
 			'dropImageToRecognize' => '松开即可识别图片',
 			'dropFileToImport' => '松开即可导入 .js 源文件',
@@ -6332,6 +6345,7 @@ extension on TranslationsZhCn {
 			'requestFailedDetail' => ({required Object error}) => '请求失败: ${error}',
 			'play' => '播放',
 			'nextEpisode' => '下一集',
+			'playerNextEpisodeCountdown' => ({required Object s}) => '下一集 · ${s}秒',
 			'trackN' => ({required Object n}) => '第 ${n} 轨',
 			'deviceInfo' => '设备信息',
 			'conversationInterrupted' => '对话流意外中断',
@@ -6413,6 +6427,8 @@ extension on TranslationsZhCn {
 			'torrentSources' => 'BT 资源站',
 			'torrentSourceName' => '名称',
 			'torrentSourceType' => '类型',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceUrl' => '搜索地址（含 {query}）',
 			'torrentSourceProvider' => '聚合来源（留空表示全部）',
 			'torrentSourceItemRegex' => '条目正则',
@@ -6420,8 +6436,6 @@ extension on TranslationsZhCn {
 			'torrentSourceTitleRegex' => '标题正则',
 			'torrentSourceSizeRegex' => '体积正则',
 			'torrentSourceGroupRegex' => '分组正则',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceHashRegex' => '哈希正则',
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '时间正则',

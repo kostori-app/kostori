@@ -192,7 +192,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     // 当前详情条目（id 与 anime 一致），系列模式下其单集卡片显示在顶部
     final currentIndex = series.indexWhere((a) => a.id == state.anime.id);
     // Observer：监听 playerController 状态，正在播放/暂停切换时实时刷新卡片
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: state.playerController,
       builder: (context) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -624,7 +625,9 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                   ),
                                   child: Row(
                                     children: [
-                                      Observer(
+                                      PlayerControllerBuilder(
+                                        playerController:
+                                            state.playerController,
                                         builder: (context) {
                                           final isCurrent =
                                               state

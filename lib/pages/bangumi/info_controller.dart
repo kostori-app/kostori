@@ -107,8 +107,6 @@ class InfoController extends Notifier<InfoState> {
     state = InfoState(bangumiItem: item, bangumiId: item.id);
   }
 
-  // ── 兼容旧访问的 getter/setter 转发（消费者通过 ref.read(notifier) 获取实例） ──
-
   List<History> get bangumiHistory => state.bangumiHistory;
 
   set bangumiHistory(List<History> value) =>
@@ -202,20 +200,20 @@ class InfoController extends Notifier<InfoState> {
   }
 
   Future<void> queryBangumiInfoByID(int id, {bool defaultToDb = false}) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, bangumiId: id);
     try {
+      BangumiItem? item;
       if (defaultToDb) {
-        BangumiItem? bangumiBind = await Bangumi.instance.bindFind(id);
-        if (bangumiBind != null) {
-          state = state.copyWith(bangumiItem: bangumiBind, isLoading: false);
-        } else {
-          final item = (await Bangumi.instance.getBangumiInfoByID(id))!;
-          state = state.copyWith(bangumiItem: item, isLoading: false);
-        }
+        item = await Bangumi.instance.bindFind(id);
       } else {
-        final item = (await Bangumi.instance.getBangumiInfoByID(id))!;
-        state = state.copyWith(bangumiItem: item, isLoading: false);
+        item = await Bangumi.instance.getBangumiInfoByID(id);
       }
+      // 详情接口失败时保持可渲染的空状态，不再用 ! 触发整页异常。
+      if (item == null) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+      state = state.copyWith(bangumiItem: item, isLoading: false);
       final sri = await Bangumi.instance.getBangumiSRIByID(id);
       state = state.copyWith(bangumiSRI: List<BangumiSRI>.of(sri));
     } catch (e) {
@@ -243,10 +241,9 @@ class InfoController extends Notifier<InfoState> {
 
       // 加载完直接计算
       if (result.isNotEmpty) {
-        final week = await BangumiUtils.findCurrentWeekEpisode(
-          result,
-          bangumiItem,
-        );
+        final item = bangumiItemOrNull;
+        if (item == null) return;
+        final week = await BangumiUtils.findCurrentWeekEpisode(result, item);
         state = state.copyWith(currentWeekEp: week);
       }
     } catch (e) {

@@ -8,6 +8,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/database/search_history.dart';
 import 'package:kostori/foundation/ai_service/anime_recognize_service.dart';
 import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
@@ -15,8 +16,8 @@ import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+import 'package:kostori/pages/download/local_player_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
-import 'package:kostori/pages/video_test_page.dart';
 import 'package:kostori/i18n/strings.g.dart';
 
 class AnimeRecognizePage extends StatefulWidget {
@@ -188,13 +189,16 @@ class _AnimeRecognizePageState extends State<AnimeRecognizePage> {
     if (mounted) context.to(() => AiChatPage());
   }
 
-  /// 视频预览：跳转软件内视频测试模块并自动播放该地址
+  /// 视频预览：交给本地播放器播放识别服务返回的视频地址。
   void _openVideoPreview(String url) {
-    context.to(() => VideoTestPage(url: url));
+    context.to(() => LocalPlayerPage(filePath: url));
   }
 
   /// 按识别标题跳转到 Bangumi 搜索页搜索
   void _openBangumi(AnimeRecognizeResult r) {
+    if (r.title.trim().isNotEmpty) {
+      unawaited(SearchHistoryManager().addSearch(r.title.trim()));
+    }
     context.to(() => BangumiSearchPage(keyword: r.title));
   }
 

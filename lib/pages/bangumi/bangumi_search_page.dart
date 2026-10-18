@@ -101,7 +101,8 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     useBriefMode = layoutMode == 'brief';
     final perRow = appdata.implicitData['bangumiCardPerRow'];
     if (perRow != null && perRow.toString().isNotEmpty) {
-      fixedCrossAxisCount = int.tryParse(perRow.toString());
+      final parsed = int.tryParse(perRow.toString());
+      fixedCrossAxisCount = parsed != null && parsed > 0 ? parsed : null;
     }
     if (widget.keyword.isNotEmpty) {
       keyword = widget.keyword;

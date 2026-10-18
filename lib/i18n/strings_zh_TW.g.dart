@@ -1334,8 +1334,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get leftEvent => '離開了';
 	@override String get newRoom => '新房間';
 	@override String get portAndBindMode => '連接埠與綁定模式';
-	@override String seekForward({required Object s}) => '快進 ${s} 秒';
-	@override String seekBackward({required Object s}) => '快退 ${s} 秒';
+	@override String seekForward({required Object s}) => '快進 ${s}';
+	@override String seekBackward({required Object s}) => '快退 ${s}';
+	@override String seekSeconds({required Object s}) => '${s}秒';
+	@override String playerTimeSeconds({required Object s}) => '${s}秒';
+	@override String playerTimeMinutes({required Object m, required Object s}) => '${m}分${s}秒';
+	@override String playerTimeHours({required Object h, required Object m, required Object s}) => '${h}小時${m}分${s}秒';
 	@override String get notBroadcast => '尚未播出';
 	@override String get items => '項';
 	@override String get wsBotConnections => 'WS 機器人連線';
@@ -2185,6 +2189,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get playbackRoute => '播放線路';
 	@override String get progress => '進度';
 	@override String get playbackSpeed => '播放倍率';
+	@override String get playerSeekSensitivity => '滑動快進倍率';
+	@override String get playerSeekSensitivityDesc => '1.0x 保持目前速度（全螢幕寬度對應 180 秒）';
 	@override String get otherSettings => '其他設定';
 	@override String get audioLowLatency => '音訊: 低延遲';
 	@override String get audioCompatibility => '音訊: 相容模式';
@@ -2621,7 +2627,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileLibraryHint => '勾選的條目僅對目前助手生效；是否沿用全域啟用項見上方開關。';
 	@override String get userNickname => '使用者暱稱';
 	@override String get userNicknameHint => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}';
-	@override String get animeRecognize => '動漫識別';
+	@override String get animeRecognize => '番劇識別';
 	@override String get chooseImageToRecognize => '選擇一張圖片，識別動漫來源';
 	@override String get chooseImage => '選擇圖片';
 	@override String get recognizing => '識別中...';
@@ -2630,7 +2636,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get recognizeResult => '識別結果';
 	@override String get episodeLabel => '第';
 	@override String get unknownEpisode => '未知集數';
-	@override String get openVideoPreview => '影片預覽';
+	@override String get openVideoPreview => '跳轉到本地播放器';
 	@override String get discussInAi => 'AI 討論';
 	@override String get dropImageToRecognize => '放開即可識別圖片';
 	@override String get dropFileToImport => '放開即可匯入 .js 來源檔';
@@ -2980,6 +2986,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String requestFailedDetail({required Object error}) => '請求失敗: ${error}';
 	@override String get play => '播放';
 	@override String get nextEpisode => '下一集';
+	@override String playerNextEpisodeCountdown({required Object s}) => '下一集 · ${s}秒';
 	@override String trackN({required Object n}) => '第 ${n} 軌';
 	@override String get deviceInfo => '設備資訊';
 	@override String get conversationInterrupted => '對話流意外中斷';
@@ -4678,8 +4685,12 @@ extension on TranslationsZhTw {
 			'leftEvent' => '離開了',
 			'newRoom' => '新房間',
 			'portAndBindMode' => '連接埠與綁定模式',
-			'seekForward' => ({required Object s}) => '快進 ${s} 秒',
-			'seekBackward' => ({required Object s}) => '快退 ${s} 秒',
+			'seekForward' => ({required Object s}) => '快進 ${s}',
+			'seekBackward' => ({required Object s}) => '快退 ${s}',
+			'seekSeconds' => ({required Object s}) => '${s}秒',
+			'playerTimeSeconds' => ({required Object s}) => '${s}秒',
+			'playerTimeMinutes' => ({required Object m, required Object s}) => '${m}分${s}秒',
+			'playerTimeHours' => ({required Object h, required Object m, required Object s}) => '${h}小時${m}分${s}秒',
 			'notBroadcast' => '尚未播出',
 			'items' => '項',
 			'wsBotConnections' => 'WS 機器人連線',
@@ -4873,12 +4884,12 @@ extension on TranslationsZhTw {
 			'leaveEmptyForDefault' => '留空則使用預設值',
 			'publicBaseUrl' => '公網基礎網址',
 			'publicBaseUrlHint' => '上傳圖片的外網可存取網址（公網 IPv4/IPv6 或網域時填寫）；留空則使用連線網址',
+			_ => null,
+		} ?? switch (path) {
 			'publicIpDetected' => '已偵測到公網 IP',
 			'publicIpDetectFailed' => '公網 IP 偵測失敗',
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
 			'imageTooLargeToSend' => '圖片太大，無法發送',
-			_ => null,
-		} ?? switch (path) {
 			'pleaseConfigureServerUploadOrClientOss' => '請設定伺服器上傳或用戶端 OSS。',
 			'stopTheServerToChangeUploadMode' => '停止伺服器以更改上傳模式',
 			'enableClientOss' => '啟用用戶端 OSS',
@@ -5387,12 +5398,12 @@ extension on TranslationsZhTw {
 			'connectionDisconnected' => '連線已斷開',
 			'enterServerAddress' => '輸入伺服器位址',
 			'tapToShare' => '點擊分享',
+			_ => null,
+		} ?? switch (path) {
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '沒有資料',
 			'loginWithPasswordIsDisabled' => '密碼登入已停用',
 			'cannotBeEmpty' => '不能為空',
-			_ => null,
-		} ?? switch (path) {
 			'invalidCookies' => '無效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '資料源',
@@ -5533,6 +5544,8 @@ extension on TranslationsZhTw {
 			'playbackRoute' => '播放線路',
 			'progress' => '進度',
 			'playbackSpeed' => '播放倍率',
+			'playerSeekSensitivity' => '滑動快進倍率',
+			'playerSeekSensitivityDesc' => '1.0x 保持目前速度（全螢幕寬度對應 180 秒）',
 			'otherSettings' => '其他設定',
 			'audioLowLatency' => '音訊: 低延遲',
 			'audioCompatibility' => '音訊: 相容模式',
@@ -5899,14 +5912,14 @@ extension on TranslationsZhTw {
 			'http' => 'HTTP',
 			'sse' => 'SSE',
 			'command' => '命令',
+			_ => null,
+		} ?? switch (path) {
 			'args' => '參數（JSON）',
 			'env' => '環境變數（JSON）',
 			'serverUrl' => '伺服器位址',
 			'headers' => '請求標頭（JSON）',
 			'noSkillsYet' => '暫無技能',
 			'skillName' => '技能名稱',
-			_ => null,
-		} ?? switch (path) {
 			'skillKey' => '技能 Key',
 			'builtin' => '內建',
 			'skillMarkdownHint' => '技能支援 Markdown 格式',
@@ -5971,7 +5984,7 @@ extension on TranslationsZhTw {
 			'profileLibraryHint' => '勾選的條目僅對目前助手生效；是否沿用全域啟用項見上方開關。',
 			'userNickname' => '使用者暱稱',
 			'userNicknameHint' => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}',
-			'animeRecognize' => '動漫識別',
+			'animeRecognize' => '番劇識別',
 			'chooseImageToRecognize' => '選擇一張圖片，識別動漫來源',
 			'chooseImage' => '選擇圖片',
 			'recognizing' => '識別中...',
@@ -5980,7 +5993,7 @@ extension on TranslationsZhTw {
 			'recognizeResult' => '識別結果',
 			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集數',
-			'openVideoPreview' => '影片預覽',
+			'openVideoPreview' => '跳轉到本地播放器',
 			'discussInAi' => 'AI 討論',
 			'dropImageToRecognize' => '放開即可識別圖片',
 			'dropFileToImport' => '放開即可匯入 .js 來源檔',
@@ -6330,6 +6343,7 @@ extension on TranslationsZhTw {
 			'requestFailedDetail' => ({required Object error}) => '請求失敗: ${error}',
 			'play' => '播放',
 			'nextEpisode' => '下一集',
+			'playerNextEpisodeCountdown' => ({required Object s}) => '下一集 · ${s}秒',
 			'trackN' => ({required Object n}) => '第 ${n} 軌',
 			'deviceInfo' => '設備資訊',
 			'conversationInterrupted' => '對話流意外中斷',
@@ -6412,6 +6426,8 @@ extension on TranslationsZhTw {
 			'torrentSourceName' => '名稱',
 			'torrentSourceType' => '類型',
 			'torrentSourceUrl' => '搜尋位址（含 {query}）',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceProvider' => '聚合來源（留空表示全部）',
 			'torrentSourceItemRegex' => '條目正則',
 			'torrentSourceMagnetRegex' => '磁力正則',
@@ -6419,8 +6435,6 @@ extension on TranslationsZhTw {
 			'torrentSourceSizeRegex' => '體積正則',
 			'torrentSourceGroupRegex' => '分組正則',
 			'torrentSourceHashRegex' => '雜湊正則',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '時間正則',
 			'torrentSourceJsonPath' => 'JSON 路徑',

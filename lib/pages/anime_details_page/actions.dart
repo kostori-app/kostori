@@ -8,10 +8,14 @@ abstract mixin class _AnimePageActions {
   InfoController get infoController =>
       providerContainer.read(infoControllerProvider.notifier);
 
-  final PlayerController playerController = PlayerController();
+  late final String playerControllerScopeKey =
+      'anime-${identityHashCode(this)}';
+  late final PlayerController playerController = providerContainer.read(
+    playerControllerProvider(playerControllerScopeKey).notifier,
+  );
 
   WatcherController get watcherController =>
-      providerContainer.read(watcherControllerProvider);
+      providerContainer.read(watcherControllerProvider.notifier);
 
   void update();
 
@@ -32,8 +36,14 @@ abstract mixin class _AnimePageActions {
       return;
     }
     try {
+      final manager = Bangumi.instance.manager;
+      if (!manager.isInitialized) await manager.init();
       final item = await Bangumi.instance.bindFind(id);
-      bangumiBindInfo = item;
+      // 网络/本地详情暂时不可用时保留当前页已有对象，避免绑定成功后
+      // 因一次空响应重新显示为 null。
+      if (item != null) {
+        bangumiBindInfo = item;
+      }
       update();
     } catch (e) {
       // 网络失败等：保留旧值，仅刷新
@@ -458,12 +468,20 @@ abstract mixin class _AnimePageActions {
                   if (history != null) {
                     history!.bangumiId = item.id;
                     await HistoryManager().addHistory(history!);
+                    // 先写入绑定表并更新当前页对象，数据库流刷新前页面也能立即显示。
+                    final manager = Bangumi.instance.manager;
+                    if (!manager.isInitialized) await manager.init();
+                    await manager.addBangumiBinding(item);
+                    bangumiBindInfo = item;
+                    infoController.setBangumiItem(item);
+                    watcherController.history = history;
                     WatcherPlayer.currentState?.bangumiId = item.id;
                     infoController.bangumiId = item.id;
-                    BottomInfoState.currentState?.queryBangumiInfoByID(item.id);
-                    BottomInfoState.currentState?.queryBangumiEpisodeByID(
-                      item.id,
-                    );
+                    final bottomInfo = BottomInfoState.currentState;
+                    if (bottomInfo?.mounted ?? false) {
+                      unawaited(bottomInfo!.queryBangumiInfoByID(item.id));
+                      unawaited(bottomInfo.queryBangumiEpisodeByID(item.id));
+                    }
                     StatsManager().updateStats(
                       id: history!.id,
                       type: history!.type.value,
@@ -498,10 +516,10 @@ abstract mixin class _AnimePageActions {
       StatefulBuilder(
         builder: (context, setState) {
           if (bangumiId == null) {
-            return ShareWidget(anime: anime);
+            return ShareWidget(anime: anime, singleImage: true);
           }
 
-          return ShareWidget(id: bangumiId);
+          return ShareWidget(id: bangumiId, singleImage: true);
         },
       ),
     );

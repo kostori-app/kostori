@@ -1344,8 +1344,12 @@ joinedEvent: joined
 leftEvent: left
 newRoom: New room
 portAndBindMode: Port & Bind Mode
-seekForward: Forward ${s} s
-seekBackward: Backward ${s} s
+seekForward: Forward ${s}
+seekBackward: Backward ${s}
+seekSeconds: ${s}s
+playerTimeSeconds: 00:${s}
+playerTimeMinutes: ${m}:${s}
+playerTimeHours: ${h}:${m}:${s}
 notBroadcast: Not yet aired
 items: items
 wsBotConnections: WS Bot Connections
@@ -2198,6 +2202,8 @@ currentEpisode: Current Episode
 playbackRoute: Playback Route
 progress: Progress
 playbackSpeed: Playback Speed
+playerSeekSensitivity: Swipe seek sensitivity
+playerSeekSensitivityDesc: 1.0x keeps the current rate (180 seconds across the full screen)
 otherSettings: Other Settings
 audioLowLatency: "Audio: Low Latency"
 audioCompatibility: "Audio: Compatibility"
@@ -2653,7 +2659,7 @@ chooseAnotherImage: Try another image
 recognizeResult: Recognition results
 episodeLabel: "EP"
 unknownEpisode: Unknown episode
-openVideoPreview: Video preview
+openVideoPreview: Open local player
 discussInAi: Discuss in AI
 dropImageToRecognize: Drop an image to recognize
 dropFileToImport: Drop a .js file to import
@@ -3006,6 +3012,7 @@ button: "Button"
 requestFailedDetail: "Request failed: ${error}"
 play: "Play"
 nextEpisode: "Next episode"
+playerNextEpisodeCountdown: "Next episode · ${s}s"
 trackN: "Track ${n}"
 deviceInfo: "Device info"
 conversationInterrupted: "Conversation stream interrupted unexpectedly"
