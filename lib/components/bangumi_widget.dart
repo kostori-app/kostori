@@ -630,7 +630,7 @@ class _ExpandableTextState extends State<ExpandableText>
   }
 }
 
-class ExpandableTags extends StatelessWidget {
+class ExpandableTags extends StatefulWidget {
   final List<dynamic> tags;
   final bool fullTag;
   final VoidCallback onToggle;
@@ -646,193 +646,184 @@ class ExpandableTags extends StatelessWidget {
 
   static const int previewCount = 12;
 
-  static const _animationCurve = Curves.easeInOutCubic;
+  @override
+  State<ExpandableTags> createState() => _ExpandableTagsState();
+}
 
-  Duration get _animationDuration => Duration(
-    milliseconds: 250 + max(tags.length - ExpandableTags.previewCount, 0) * 30,
+class _ExpandableTagsState extends State<ExpandableTags>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _isAnimating = false;
+
+  int get _extraTagCount =>
+      max(widget.tags.length - ExpandableTags.previewCount, 0);
+
+  Duration get _animationDuration =>
+      Duration(milliseconds: 250 + _extraTagCount * 40);
+
+  Duration get _tagStepDuration => Duration(
+    milliseconds: _extraTagCount == 0
+        ? 250
+        : _animationDuration.inMilliseconds ~/ _extraTagCount,
   );
 
-  Widget _buildTagWrap(BuildContext context, bool expanded) {
-    return _ExpandableTagWrap(
-      key: ValueKey(expanded),
-      tags: tags,
-      expanded: expanded,
-      onToggle: onToggle,
-      onTagTap: onTagTap,
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: _animationDuration,
+      value: widget.fullTag ? 1 : 0,
+    )..addStatusListener(_handleAnimationStatus);
+  }
+
+  @override
+  void didUpdateWidget(covariant ExpandableTags oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tags.length != oldWidget.tags.length) {
+      _controller.duration = _animationDuration;
+    }
+
+    if (widget.fullTag == oldWidget.fullTag) return;
+
+    if (_extraTagCount == 0) {
+      _controller.value = widget.fullTag ? 1 : 0;
+      _isAnimating = false;
+      return;
+    }
+
+    _isAnimating = true;
+    if (widget.fullTag) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  void _handleAnimationStatus(AnimationStatus status) {
+    if ((status == AnimationStatus.completed && !widget.fullTag) ||
+        (status == AnimationStatus.dismissed && widget.fullTag) ||
+        (status != AnimationStatus.completed &&
+            status != AnimationStatus.dismissed)) {
+      return;
+    }
+    if (!mounted) return;
+
+    setState(() {
+      _isAnimating = false;
+    });
+  }
+
+  double _tagProgress(int index) {
+    final extraCount = _extraTagCount;
+    if (extraCount == 0) return 1;
+
+    final staggerIndex = index - ExpandableTags.previewCount;
+    final start = staggerIndex / extraCount;
+    final end = (staggerIndex + 1) / extraCount;
+    final intervalProgress = ((_controller.value - start) / (end - start))
+        .clamp(0.0, 1.0)
+        .toDouble();
+    return Curves.easeInOutCubic.transform(intervalProgress);
+  }
+
+  int get _visibleTagCount {
+    if (!_isAnimating) {
+      return widget.fullTag
+          ? widget.tags.length
+          : min(widget.tags.length, ExpandableTags.previewCount);
+    }
+
+    final visibleExtraTags = (_controller.value * _extraTagCount).ceil().clamp(
+      0,
+      _extraTagCount,
+    );
+    return min(
+      widget.tags.length,
+      ExpandableTags.previewCount + visibleExtraTags,
+    );
+  }
+
+  Widget _buildTag(BuildContext context, int index) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final progress = index < ExpandableTags.previewCount || !_isAnimating
+        ? 1.0
+        : _tagProgress(index);
+    final tag = CapsuleChip(
+      key: ValueKey('bangumi-tag-$index'),
+      isSelected: false,
+      onTap: () => widget.onTagTap(index),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('${widget.tags[index].name}'),
+          const SizedBox(width: 4),
+          Text(
+            '${widget.tags[index].count}',
+            style: TextStyle(color: colorScheme.primary),
+          ),
+        ],
+      ),
+    );
+
+    if (progress == 1) return tag;
+    return Opacity(
+      opacity: progress,
+      child: Transform.scale(
+        alignment: Alignment.topLeft,
+        scale: 0.9 + progress * 0.1,
+        child: tag,
+      ),
+    );
+  }
+
+  Widget _buildToggle() {
+    if (widget.tags.length < ExpandableTags.previewCount || _isAnimating) {
+      return const SizedBox.shrink();
+    }
+
+    return CapsuleChip(
+      isSelected: true,
+      onTap: widget.onToggle,
+      text: widget.fullTag ? t.showLess : t.showMore,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return CapsuleChipGroup(
-      // 装饰层置于尺寸动画外，背景框随标签内容同步过渡。
       children: [
         AnimatedSize(
-          duration: _animationDuration,
-          curve: _animationCurve,
+          duration: _tagStepDuration,
+          curve: Curves.easeInOutCubic,
           alignment: Alignment.topLeft,
-          child: AnimatedSwitcher(
-            duration: _animationDuration,
-            switchInCurve: _animationCurve,
-            switchOutCurve: _animationCurve,
-            layoutBuilder: (currentChild, previousChildren) {
-              return Stack(
-                alignment: Alignment.topLeft,
-                clipBehavior: Clip.none,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Wrap(
+                spacing: 2,
+                runSpacing: 2,
                 children: [
-                  ...previousChildren.map(
-                    (child) => Positioned(top: 0, left: 0, child: child),
+                  ...List.generate(
+                    _visibleTagCount,
+                    (index) => _buildTag(context, index),
                   ),
-                  if (currentChild != null) currentChild,
+                  _buildToggle(),
                 ],
               );
             },
-            transitionBuilder: (child, animation) {
-              final curved = CurvedAnimation(
-                parent: animation,
-                curve: _animationCurve,
-                reverseCurve: _animationCurve,
-              );
-              return _ExpandableTagAnimationScope(
-                animation: curved,
-                child: child,
-              );
-            },
-            child: _buildTagWrap(context, fullTag),
           ),
         ),
       ],
     );
   }
-}
-
-class _ExpandableTagAnimationScope extends InheritedWidget {
-  const _ExpandableTagAnimationScope({
-    required this.animation,
-    required super.child,
-  });
-
-  final Animation<double> animation;
-
-  static Animation<double>? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_ExpandableTagAnimationScope>()
-        ?.animation;
-  }
 
   @override
-  bool updateShouldNotify(_ExpandableTagAnimationScope oldWidget) {
-    return animation != oldWidget.animation;
-  }
-}
-
-class _ExpandableTagWrap extends StatelessWidget {
-  const _ExpandableTagWrap({
-    super.key,
-    required this.tags,
-    required this.expanded,
-    required this.onToggle,
-    required this.onTagTap,
-  });
-
-  final List<dynamic> tags;
-  final bool expanded;
-  final VoidCallback onToggle;
-  final Function(int index) onTagTap;
-
-  Widget _buildTag(BuildContext context, int index) {
-    final cs = Theme.of(context).colorScheme;
-    final tag = CapsuleChip(
-      isSelected: false,
-      onTap: () => onTagTap(index),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('${tags[index].name}'),
-          const SizedBox(width: 4),
-          Text('${tags[index].count}', style: TextStyle(color: cs.primary)),
-        ],
-      ),
-    );
-    final transition = _ExpandableTagAnimationScope.maybeOf(context);
-    if (transition == null || index < ExpandableTags.previewCount) {
-      return tag;
-    }
-
-    final start = ((index - ExpandableTags.previewCount) * 0.05).clamp(
-      0.0,
-      0.6,
-    );
-    final end = min(start + 0.4, 1.0);
-    final tagAnimation = CurvedAnimation(
-      parent: transition,
-      curve: Interval(start, end, curve: Curves.easeOut),
-      reverseCurve: Interval(start, end, curve: Curves.easeOut),
-    );
-    return AnimatedBuilder(
-      animation: tagAnimation,
-      builder: (context, child) {
-        return Opacity(
-          opacity: tagAnimation.value,
-          child: Transform.scale(
-            alignment: Alignment.topLeft,
-            scale: 0.9 + tagAnimation.value * 0.1,
-            child: child,
-          ),
-        );
-      },
-      child: tag,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final showingTagsCount = expanded
-        ? tags.length
-        : min(tags.length, ExpandableTags.previewCount);
-    return Wrap(
-      spacing: 2,
-      runSpacing: 2,
-      children: [
-        ...List.generate(showingTagsCount, (index) {
-          return _buildTag(context, index);
-        }),
-        if (tags.length >= ExpandableTags.previewCount)
-          _buildToggle(context, expanded),
-      ],
-    );
-  }
-
-  Widget _buildToggle(BuildContext context, bool expanded) {
-    final chip = CapsuleChip(
-      isSelected: true,
-      onTap: onToggle,
-      text: expanded ? t.showLess : t.showMore,
-    );
-    final animation = _ExpandableTagAnimationScope.maybeOf(context);
-    if (animation == null) return chip;
-
-    final scale = Tween<double>(begin: 0.1, end: 1).animate(
-      CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeInOut,
-        reverseCurve: Curves.easeInOut,
-      ),
-    );
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            alignment: Alignment.centerLeft,
-            scale: scale,
-            child: child,
-          ),
-        );
-      },
-      child: chip,
-    );
+  void dispose() {
+    _controller
+      ..removeStatusListener(_handleAnimationStatus)
+      ..dispose();
+    super.dispose();
   }
 }
 
