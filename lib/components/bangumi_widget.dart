@@ -653,6 +653,7 @@ class ExpandableTags extends StatefulWidget {
 class _ExpandableTagsState extends State<ExpandableTags>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  late int _showingTagCount;
   bool _isAnimating = false;
 
   int get _extraTagCount =>
@@ -661,20 +662,31 @@ class _ExpandableTagsState extends State<ExpandableTags>
   Duration get _animationDuration =>
       Duration(milliseconds: 250 + _extraTagCount * 40);
 
-  Duration get _tagStepDuration => Duration(
-    milliseconds: _extraTagCount == 0
-        ? 250
-        : _animationDuration.inMilliseconds ~/ _extraTagCount,
-  );
+  double get _tagWindow => _extraTagCount == 0
+      ? 1
+      : max(
+          1 / _extraTagCount,
+          min(1.0, 80 / _animationDuration.inMilliseconds),
+        );
+
+  double _tagStart(int staggerIndex) => _extraTagCount == 1
+      ? 0
+      : staggerIndex * (1 - _tagWindow) / (_extraTagCount - 1);
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: _animationDuration,
-      value: widget.fullTag ? 1 : 0,
-    )..addStatusListener(_handleAnimationStatus);
+    _showingTagCount = widget.fullTag
+        ? widget.tags.length
+        : min(widget.tags.length, ExpandableTags.previewCount);
+    _controller =
+        AnimationController(
+            vsync: this,
+            duration: _animationDuration,
+            value: widget.fullTag ? 1 : 0,
+          )
+          ..addStatusListener(_handleAnimationStatus)
+          ..addListener(_handleAnimationTick);
   }
 
   @override
@@ -682,18 +694,26 @@ class _ExpandableTagsState extends State<ExpandableTags>
     super.didUpdateWidget(oldWidget);
     if (widget.tags.length != oldWidget.tags.length) {
       _controller.duration = _animationDuration;
+      _showingTagCount = _visibleTagCountForProgress();
     }
 
     if (widget.fullTag == oldWidget.fullTag) return;
 
     if (_extraTagCount == 0) {
       _controller.value = widget.fullTag ? 1 : 0;
+      _showingTagCount = widget.fullTag
+          ? widget.tags.length
+          : min(widget.tags.length, ExpandableTags.previewCount);
       _isAnimating = false;
       return;
     }
 
     _isAnimating = true;
     if (widget.fullTag) {
+      _showingTagCount = min(
+        widget.tags.length,
+        ExpandableTags.previewCount + 1,
+      );
       _controller.forward();
     } else {
       _controller.reverse();
@@ -711,6 +731,18 @@ class _ExpandableTagsState extends State<ExpandableTags>
 
     setState(() {
       _isAnimating = false;
+      _showingTagCount = status == AnimationStatus.completed
+          ? widget.tags.length
+          : min(widget.tags.length, ExpandableTags.previewCount);
+    });
+  }
+
+  void _handleAnimationTick() {
+    if (!_isAnimating) return;
+    final nextCount = _visibleTagCountForProgress();
+    if (nextCount == _showingTagCount) return;
+    setState(() {
+      _showingTagCount = nextCount;
     });
   }
 
@@ -719,8 +751,8 @@ class _ExpandableTagsState extends State<ExpandableTags>
     if (extraCount == 0) return 1;
 
     final staggerIndex = index - ExpandableTags.previewCount;
-    final start = staggerIndex / extraCount;
-    final end = (staggerIndex + 1) / extraCount;
+    final start = _tagStart(staggerIndex);
+    final end = start + _tagWindow;
     final intervalProgress = ((_controller.value - start) / (end - start))
         .clamp(0.0, 1.0)
         .toDouble();
@@ -728,16 +760,23 @@ class _ExpandableTagsState extends State<ExpandableTags>
   }
 
   int get _visibleTagCount {
+    return _showingTagCount;
+  }
+
+  int _visibleTagCountForProgress() {
     if (!_isAnimating) {
       return widget.fullTag
           ? widget.tags.length
           : min(widget.tags.length, ExpandableTags.previewCount);
     }
 
-    final visibleExtraTags = (_controller.value * _extraTagCount).ceil().clamp(
-      0,
-      _extraTagCount,
-    );
+    final extraCount = _extraTagCount;
+    var visibleExtraTags = 0;
+    for (var index = 0; index < extraCount; index++) {
+      final start = _tagStart(index);
+      if (_controller.value >= start) visibleExtraTags++;
+    }
+
     return min(
       widget.tags.length,
       ExpandableTags.previewCount + visibleExtraTags,
@@ -746,9 +785,6 @@ class _ExpandableTagsState extends State<ExpandableTags>
 
   Widget _buildTag(BuildContext context, int index) {
     final colorScheme = Theme.of(context).colorScheme;
-    final progress = index < ExpandableTags.previewCount || !_isAnimating
-        ? 1.0
-        : _tagProgress(index);
     final tag = CapsuleChip(
       key: ValueKey('bangumi-tag-$index'),
       isSelected: false,
@@ -766,14 +802,31 @@ class _ExpandableTagsState extends State<ExpandableTags>
       ),
     );
 
-    if (progress == 1) return tag;
-    return Opacity(
-      opacity: progress,
-      child: Transform.scale(
-        alignment: Alignment.topLeft,
-        scale: 0.9 + progress * 0.1,
-        child: tag,
-      ),
+    if (!_isAnimating || index < ExpandableTags.previewCount) return tag;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      child: tag,
+      builder: (context, child) {
+        final progress = _tagProgress(index);
+        if (progress >= 1) return child!;
+
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topLeft,
+            widthFactor: progress,
+            heightFactor: progress,
+            child: Opacity(
+              opacity: progress,
+              child: Transform.scale(
+                alignment: Alignment.topLeft,
+                scale: 0.9 + progress * 0.1,
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -793,26 +846,15 @@ class _ExpandableTagsState extends State<ExpandableTags>
   Widget build(BuildContext context) {
     return CapsuleChipGroup(
       children: [
-        AnimatedSize(
-          duration: _tagStepDuration,
-          curve: Curves.easeInOutCubic,
-          alignment: Alignment.topLeft,
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return Wrap(
-                spacing: 2,
-                runSpacing: 2,
-                children: [
-                  ...List.generate(
-                    _visibleTagCount,
-                    (index) => _buildTag(context, index),
-                  ),
-                  _buildToggle(),
-                ],
-              );
-            },
-          ),
+        Wrap(
+          spacing: 2,
+          runSpacing: 2,
+          children: [
+            ...List.generate(_visibleTagCount, (index) {
+              return _buildTag(context, index);
+            }),
+            _buildToggle(),
+          ],
         ),
       ],
     );
@@ -822,6 +864,7 @@ class _ExpandableTagsState extends State<ExpandableTags>
   void dispose() {
     _controller
       ..removeStatusListener(_handleAnimationStatus)
+      ..removeListener(_handleAnimationTick)
       ..dispose();
     super.dispose();
   }
