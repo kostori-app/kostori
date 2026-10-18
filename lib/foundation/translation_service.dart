@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
@@ -9,6 +10,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/foundation/provider_container.dart';
 import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/foundation/translation/translation_models.dart';
 import 'package:kostori/foundation/translation/translation_source.dart';
@@ -426,43 +428,63 @@ class TranslationService {
   }
 }
 
-class TranslationController extends ChangeNotifier {
-  bool _isTranslating = false;
-  String? _translatedText;
-  String? _rawTranslatedText;
-  bool _isTranslationComplete = false;
+@immutable
+class TranslationState {
+  final bool isTranslating;
+  final String? translatedText;
+  final String? rawTranslatedText;
+  final bool isTranslationComplete;
 
-  bool get isTranslating => _isTranslating;
+  const TranslationState({
+    this.isTranslating = false,
+    this.translatedText,
+    this.rawTranslatedText,
+    this.isTranslationComplete = false,
+  });
 
-  String? get translatedText => _translatedText;
+  bool get hasTranslation => translatedText != null;
 
-  String? get rawTranslatedText => _rawTranslatedText;
+  TranslationState copyWith({
+    bool? isTranslating,
+    Object? translatedText = _unset,
+    Object? rawTranslatedText = _unset,
+    bool? isTranslationComplete,
+  }) => TranslationState(
+    isTranslating: isTranslating ?? this.isTranslating,
+    translatedText: identical(translatedText, _unset)
+        ? this.translatedText
+        : translatedText as String?,
+    rawTranslatedText: identical(rawTranslatedText, _unset)
+        ? this.rawTranslatedText
+        : rawTranslatedText as String?,
+    isTranslationComplete: isTranslationComplete ?? this.isTranslationComplete,
+  );
+}
 
-  bool get isTranslationComplete => _isTranslationComplete;
+const _unset = Object();
 
-  bool get hasTranslation => _translatedText != null;
+class TranslationNotifier extends Notifier<TranslationState> {
+  TranslationNotifier(this.scopeKey);
 
-  // 服务
+  final String scopeKey;
   final TranslationService _translationService = TranslationService();
 
-  void _setState(VoidCallback fn) {
-    fn();
-    notifyListeners();
-  }
+  @override
+  TranslationState build() => const TranslationState();
 
   Future<void> translate(String text, {String? targetLanguage}) async {
     Log.info('TranslationController', '开始翻译，文本长度: ${text.length}');
-    if (_isTranslating) {
+    if (state.isTranslating) {
       Log.warning('TranslationController', '翻译正在进行中，忽略此次请求');
       return;
     }
 
-    _setState(() {
-      _isTranslating = true;
-      _isTranslationComplete = false;
-      _rawTranslatedText = null;
-      _translatedText = null;
-    });
+    state = state.copyWith(
+      isTranslating: true,
+      isTranslationComplete: false,
+      rawTranslatedText: null,
+      translatedText: null,
+    );
 
     final textToTranslate = text;
     Log.info('TranslationController', '待翻译文本: $textToTranslate');
@@ -476,29 +498,67 @@ class TranslationController extends ChangeNotifier {
       '普通翻译结果: ${result.success ? "成功" : "失败"}, 数据长度: ${result.success ? result.data.length : result.errorMessage?.length}',
     );
     if (result.success) {
-      _setState(() {
-        _rawTranslatedText = result.data;
-        _translatedText = _rawTranslatedText;
-        _isTranslating = false;
-        _isTranslationComplete = true;
-      });
+      state = state.copyWith(
+        rawTranslatedText: result.data,
+        translatedText: result.data,
+        isTranslating: false,
+        isTranslationComplete: true,
+      );
     } else {
       Log.error('TranslationController', '翻译失败: ${result.errorMessage}');
-      _setState(() {
-        _rawTranslatedText =
-            result.errorMessage ?? t.translationFailedPleaseTryAgainLater;
-        _translatedText = _rawTranslatedText;
-        _isTranslating = false;
-        _isTranslationComplete = true;
-      });
+      final errorText =
+          result.errorMessage ?? t.translationFailedPleaseTryAgainLater;
+      state = state.copyWith(
+        rawTranslatedText: errorText,
+        translatedText: errorText,
+        isTranslating: false,
+        isTranslationComplete: true,
+      );
     }
   }
 
   void clearTranslation() {
-    _setState(() {
-      _translatedText = null;
-      _rawTranslatedText = null;
-      _isTranslationComplete = false;
-    });
+    state = state.copyWith(
+      translatedText: null,
+      rawTranslatedText: null,
+      isTranslationComplete: false,
+    );
   }
+}
+
+final translationControllerProvider =
+    NotifierProvider.family<TranslationNotifier, TranslationState, String>(
+      TranslationNotifier.new,
+    );
+
+class TranslationController {
+  TranslationController([String? scopeKey])
+    : scopeKey = scopeKey ?? 'translation-${_nextScope++}';
+
+  static int _nextScope = 0;
+  final String scopeKey;
+
+  TranslationState get state =>
+      providerContainer.read(translationControllerProvider(scopeKey));
+
+  bool get isTranslating => state.isTranslating;
+
+  String? get translatedText => state.translatedText;
+
+  String? get rawTranslatedText => state.rawTranslatedText;
+
+  bool get isTranslationComplete => state.isTranslationComplete;
+
+  bool get hasTranslation => state.hasTranslation;
+
+  TranslationNotifier get _notifier =>
+      providerContainer.read(translationControllerProvider(scopeKey).notifier);
+
+  Future<void> translate(String text, {String? targetLanguage}) =>
+      _notifier.translate(text, targetLanguage: targetLanguage);
+
+  void clearTranslation() => _notifier.clearTranslation();
+
+  void dispose() =>
+      providerContainer.invalidate(translationControllerProvider(scopeKey));
 }

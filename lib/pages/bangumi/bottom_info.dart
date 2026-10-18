@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -28,7 +29,7 @@ import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 
-class BottomInfo extends StatefulWidget {
+class BottomInfo extends ConsumerStatefulWidget {
   const BottomInfo({
     super.key,
     required this.bangumiId,
@@ -39,10 +40,10 @@ class BottomInfo extends StatefulWidget {
   final InfoController infoController;
 
   @override
-  State<BottomInfo> createState() => BottomInfoState();
+  ConsumerState<BottomInfo> createState() => BottomInfoState();
 }
 
-class BottomInfoState extends State<BottomInfo>
+class BottomInfoState extends ConsumerState<BottomInfo>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   static BottomInfoState? currentState;
   late TabController infoTabController;
@@ -122,6 +123,9 @@ class BottomInfoState extends State<BottomInfo>
 
   @override
   void dispose() {
+    if (identical(BottomInfoState.currentState, this)) {
+      BottomInfoState.currentState = null;
+    }
     infoTabController.dispose();
     _translationController.dispose();
     super.dispose();
@@ -138,7 +142,7 @@ class BottomInfoState extends State<BottomInfo>
   Future<void> queryBangumiInfoByID(int id) async {
     try {
       await infoController.queryBangumiInfoByID(id, defaultToDb: true);
-      setState(() {});
+      if (mounted) setState(() {});
     } catch (e) {
       Log.error('queryBangumiInfoByID', e.toString());
     }
@@ -147,7 +151,7 @@ class BottomInfoState extends State<BottomInfo>
   Future<void> queryBangumiEpisodeByID(int id) async {
     try {
       await infoController.queryBangumiEpisodeByID(id, defaultToDb: true);
-      setState(() {});
+      if (mounted) setState(() {});
     } catch (e) {
       Log.error('queryBangumiEpisodeByID', e.toString());
     }
@@ -476,9 +480,8 @@ class BottomInfoState extends State<BottomInfo>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ListenableBuilder(
-                    listenable: _translationController,
-                    builder: (context, _) {
+                  Builder(
+                    builder: (context) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -878,6 +881,7 @@ class BottomInfoState extends State<BottomInfo>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ref.watch(translationControllerProvider(_translationController.scopeKey));
     return DefaultTabController(
       length: 7,
       child: Scaffold(

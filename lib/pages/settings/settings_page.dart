@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:desktop_drop/desktop_drop.dart';
@@ -14,7 +15,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/ai_model_card.dart';
 import 'package:kostori/components/ai_provider_editor.dart';
@@ -675,14 +675,15 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
 // 翻译页（聚合入口 → 翻译）
 // ─────────────────────────────────────────────
 
-class ManualTranslationPage extends StatefulWidget {
+class ManualTranslationPage extends ConsumerStatefulWidget {
   const ManualTranslationPage({super.key});
 
   @override
-  State<ManualTranslationPage> createState() => _ManualTranslationPageState();
+  ConsumerState<ManualTranslationPage> createState() =>
+      _ManualTranslationPageState();
 }
 
-class _ManualTranslationPageState extends State<ManualTranslationPage> {
+class _ManualTranslationPageState extends ConsumerState<ManualTranslationPage> {
   final TextEditingController _inputController = TextEditingController();
   final TranslationController _translationController = TranslationController();
   late Sort _selectedLanguage;
@@ -865,6 +866,7 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(translationControllerProvider(_translationController.scopeKey));
     final scheme = Theme.of(context).colorScheme;
     return SmoothCustomScrollView(
       slivers: [
@@ -1010,9 +1012,8 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           sliver: SliverToBoxAdapter(
-            child: ListenableBuilder(
-              listenable: _translationController,
-              builder: (context, _) {
+            child: Builder(
+              builder: (context) {
                 final translating = _translationController.isTranslating;
                 return SizedBox(
                   width: double.infinity,
@@ -1039,9 +1040,8 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           sliver: SliverToBoxAdapter(
-            child: ListenableBuilder(
-              listenable: _translationController,
-              builder: (context, _) {
+            child: Builder(
+              builder: (context) {
                 final hasResult =
                     _translationController.hasTranslation &&
                     _translationController.translatedText != null;

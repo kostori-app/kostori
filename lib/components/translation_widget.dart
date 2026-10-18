@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
@@ -6,13 +7,14 @@ import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/provider_container.dart';
 import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class TranslatedContent extends StatefulWidget {
+class TranslatedContent extends ConsumerStatefulWidget {
   const TranslatedContent({
     super.key,
     required this.data,
@@ -23,10 +25,10 @@ class TranslatedContent extends StatefulWidget {
   final TranslationController? translationController;
 
   @override
-  State<TranslatedContent> createState() => _TranslatedContentState();
+  ConsumerState<TranslatedContent> createState() => _TranslatedContentState();
 }
 
-class _TranslatedContentState extends State<TranslatedContent> {
+class _TranslatedContentState extends ConsumerState<TranslatedContent> {
   TranslationService translationService = TranslationService();
   late TranslationController translationController;
 
@@ -49,6 +51,7 @@ class _TranslatedContentState extends State<TranslatedContent> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(translationControllerProvider(translationController.scopeKey));
     final poweredName = TranslationService.getPoweredName();
     return Container(
       decoration: BoxDecoration(
@@ -91,9 +94,8 @@ class _TranslatedContentState extends State<TranslatedContent> {
             ],
           ),
           const SizedBox(height: 8),
-          ListenableBuilder(
-            listenable: translationController,
-            builder: (context, _) {
+          Builder(
+            builder: (context) {
               if (translationController.isTranslating) {
                 return Skeletonizer.zone(child: Bone.multiText(lines: 3));
               }
@@ -111,17 +113,17 @@ class _TranslatedContentState extends State<TranslatedContent> {
   }
 }
 
-class TranslationWidget extends StatefulWidget {
+class TranslationWidget extends ConsumerStatefulWidget {
   const TranslationWidget({super.key, required this.data, required this.title});
 
   final String data;
   final Widget title;
 
   @override
-  State<TranslationWidget> createState() => _TranslationWidgetState();
+  ConsumerState<TranslationWidget> createState() => _TranslationWidgetState();
 }
 
-class _TranslationWidgetState extends State<TranslationWidget> {
+class _TranslationWidgetState extends ConsumerState<TranslationWidget> {
   final TranslationController translationController = TranslationController();
   late Sort selectedLanguage;
 
@@ -318,9 +320,9 @@ class _TranslationWidgetState extends State<TranslationWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: translationController,
-      builder: (context, _) {
+    ref.watch(translationControllerProvider(translationController.scopeKey));
+    return Builder(
+      builder: (context) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -368,7 +370,7 @@ class _TranslationWidgetState extends State<TranslationWidget> {
   }
 }
 
-class TranslateIconButton extends StatefulWidget {
+class TranslateIconButton extends ConsumerStatefulWidget {
   const TranslateIconButton({
     super.key,
     required this.data,
@@ -383,10 +385,11 @@ class TranslateIconButton extends StatefulWidget {
   final String? targetLanguage;
 
   @override
-  State<TranslateIconButton> createState() => _TranslateIconButtonState();
+  ConsumerState<TranslateIconButton> createState() =>
+      _TranslateIconButtonState();
 }
 
-class _TranslateIconButtonState extends State<TranslateIconButton> {
+class _TranslateIconButtonState extends ConsumerState<TranslateIconButton> {
   late Sort _selectedLanguage;
 
   @override
@@ -445,41 +448,44 @@ class _TranslateIconButtonState extends State<TranslateIconButton> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: widget.controller,
-      builder: (context, _) {
-        final isTranslating = widget.controller.isTranslating;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              tooltip: t.translationResult,
-              onPressed: isTranslating ? null : () => _translate(),
-              icon: isTranslating
-                  ? SizedBox(
-                      width: widget.iconSize,
-                      height: widget.iconSize,
-                      child: PolygonRefreshIndicator(),
-                    )
-                  : Icon(
-                      Icons.translate,
-                      size: widget.iconSize,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-            ),
-            if (widget.targetLanguage == null)
+    return UncontrolledProviderScope(
+      container: providerContainer,
+      child: Consumer(
+        builder: (context, ref, _) {
+          ref.watch(translationControllerProvider(widget.controller.scopeKey));
+          final isTranslating = widget.controller.isTranslating;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               IconButton(
-                tooltip: t.selectTranslationLanguage,
-                onPressed: isTranslating ? null : _showLanguageDialog,
-                icon: Icon(
-                  Icons.keyboard_double_arrow_down_rounded,
-                  size: widget.iconSize,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                tooltip: t.translationResult,
+                onPressed: isTranslating ? null : () => _translate(),
+                icon: isTranslating
+                    ? SizedBox(
+                        width: widget.iconSize,
+                        height: widget.iconSize,
+                        child: PolygonRefreshIndicator(),
+                      )
+                    : Icon(
+                        Icons.translate,
+                        size: widget.iconSize,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
               ),
-          ],
-        );
-      },
+              if (widget.targetLanguage == null)
+                IconButton(
+                  tooltip: t.selectTranslationLanguage,
+                  onPressed: isTranslating ? null : _showLanguageDialog,
+                  icon: Icon(
+                    Icons.keyboard_double_arrow_down_rounded,
+                    size: widget.iconSize,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -495,10 +501,26 @@ class TranslationOutput extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
+  Widget build(BuildContext context) => UncontrolledProviderScope(
+    container: providerContainer,
+    child: _TranslationOutputBody(controller: controller, padding: padding),
+  );
+}
+
+class _TranslationOutputBody extends ConsumerWidget {
+  const _TranslationOutputBody({
+    required this.controller,
+    required this.padding,
+  });
+
+  final TranslationController controller;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(translationControllerProvider(controller.scopeKey));
+    return Builder(
+      builder: (context) {
         if (!controller.isTranslating && !controller.hasTranslation) {
           return const SizedBox.shrink();
         }
