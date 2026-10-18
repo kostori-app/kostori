@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -24,14 +25,14 @@ const String _taskFilterKey = 'downloadTaskFilter';
 const String _recordGroupFilterKey = 'downloadRecordGroupFilter';
 
 /// 视频下载管理页
-class DownloadPage extends StatefulWidget {
+class DownloadPage extends ConsumerStatefulWidget {
   const DownloadPage({super.key});
 
   @override
-  State<DownloadPage> createState() => _DownloadPageState();
+  ConsumerState<DownloadPage> createState() => _DownloadPageState();
 }
 
-class _DownloadPageState extends State<DownloadPage>
+class _DownloadPageState extends ConsumerState<DownloadPage>
     with SingleTickerProviderStateMixin {
   String _taskFilter = readDownloadFilter(_taskFilterKey, 'all');
 
@@ -56,7 +57,7 @@ class _DownloadPageState extends State<DownloadPage>
   void initState() {
     super.initState();
     DownloadManager.instance.init();
-    DownloadManager.instance.addListener(_onChange);
+    ref.listenManual(downloadManagerProvider, (_, _) => _onChange());
     // 兼容旧版单维度筛选存下的值（如 ungrouped / 分组名）：无效值按「全部」处理
     if (!const ['all', 'exists', 'deleted'].contains(_recordExistsFilter)) {
       _recordExistsFilter = 'all';
@@ -121,7 +122,6 @@ class _DownloadPageState extends State<DownloadPage>
 
   @override
   void dispose() {
-    DownloadManager.instance.removeListener(_onChange);
     // 退出下载页时：全部任务已完成就自动关闭总进度条；
     // 还有未完成则保留（已落盘，下次进来恢复显示）。
     // dispose 在 element 树锁定阶段，dismissBatch 的通知须延后一帧。
@@ -574,17 +574,17 @@ class _BatchProgressBar extends StatelessWidget {
 }
 
 /// 下载记录 tab：已完成的下载（本地播放 / 外部播放 / 删除）
-class _RecordsTab extends StatefulWidget {
+class _RecordsTab extends ConsumerStatefulWidget {
   const _RecordsTab({super.key, required this.existsFilter});
 
   /// 存在的/已删除筛选（由 AppBar 底部那行控制）
   final String existsFilter;
 
   @override
-  State<_RecordsTab> createState() => _RecordsTabState();
+  ConsumerState<_RecordsTab> createState() => _RecordsTabState();
 }
 
-class _RecordsTabState extends State<_RecordsTab> {
+class _RecordsTabState extends ConsumerState<_RecordsTab> {
   List<Map<String, dynamic>> _records = [];
 
   /// filePath → 文件是否仍存在
@@ -612,7 +612,7 @@ class _RecordsTabState extends State<_RecordsTab> {
   @override
   void initState() {
     super.initState();
-    DownloadManager.instance.addListener(_scheduleReload);
+    ref.listenManual(downloadManagerProvider, (_, _) => _scheduleReload());
     _reload();
   }
 
@@ -631,7 +631,6 @@ class _RecordsTabState extends State<_RecordsTab> {
   @override
   void dispose() {
     _reloadTimer?.cancel();
-    DownloadManager.instance.removeListener(_scheduleReload);
     super.dispose();
   }
 

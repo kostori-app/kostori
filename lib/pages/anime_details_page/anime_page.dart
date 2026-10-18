@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -238,11 +237,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void initState() {
     super.initState();
     updateStatsClicks();
-    HistoryManager().addListener(updateHistory);
-    providerContainer
-        .read(bangumiManagerProvider)
-        .addListener(updateBangumiBind);
-    StatsManager().addListener(updateStats);
+    ref.listenManual(historyManagerProvider, (_, _) {
+      if (mounted) updateHistory();
+    });
+    ref.listenManual(bangumiManagerProvider, (_, _) {
+      if (mounted) updateBangumiBind();
+    });
+    ref.listenManual(statsManagerProvider, (_, _) {
+      if (mounted) updateStats();
+    });
     tabController = TabController(length: 5, vsync: this);
     tabController.addListener(() {
       if (!tabController.indexIsChanging) {
@@ -266,9 +269,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       }
       await HistoryManager().addHistory(history!);
     }
-    if (history?.bangumiId != null) {
-      updateBangumiBind();
-    }
     history!.time = DateTime.now();
     await HistoryManager().addHistory(history!);
     watcherController.history = history;
@@ -276,15 +276,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     isBangumi = animeSource.isBangumi;
     if (history?.bangumiId == null) {
       if (isBangumi) {
-        // 绑定 bangumiId 需要网络搜索，绑定成功后再按 id 继承其它来源的进度
-        // （否则这里 fire-and-forget，后面的继承会因 bangumiId 仍为空而跳过）
-        unawaited(
-          updateBangumiId().then((_) async {
-            if (!mounted) return;
-            await inheritBangumiProgress();
-            update();
-          }),
-        );
+        // 绑定需要网络搜索。等待写入完成后再查询绑定信息和继承进度，
+        // 避免后续流程在异步写入完成前读取到 null。
+        await updateBangumiId();
       }
     }
     isLiked = await stats.getGroupLikedStatus(
@@ -328,6 +322,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   void dispose() {
+    providerContainer.invalidate(
+      playerControllerProvider(playerControllerScopeKey),
+    );
     // 退出页面时清除媒体会话通知（clearController→stop 会移除通知栏常驻条）
     unawaited(() async {
       await Future<void>.delayed(Duration.zero);
@@ -338,11 +335,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         } catch (_) {}
       }
     }());
-    HistoryManager().removeListener(updateHistory);
-    providerContainer
-        .read(bangumiManagerProvider)
-        .removeListener(updateBangumiBind);
-    StatsManager().removeListener(updateStats);
     // 仅当详情加载完成（data != null）才触发数据同步：
     // 误点进入即退出 / 加载失败时未产生数据变化，不应上传。
     // 同步本身还有 5s 防抖 + 30s 最小间隔兜底，避免频繁进出反复上传。
@@ -391,12 +383,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       return;
     }
 
-    history?.bangumiId = res.first.id;
-    await HistoryManager().addHistory(history!);
-    // 绑定后立即刷新当前页的番剧信息，否则要重新点开详情页才显示
-    if (mounted) {
-      await updateBangumiBind();
-    }
+    final currentHistory = history;
+    if (currentHistory == null) return;
+    currentHistory.bangumiId = res.first.id;
+    // 同步当前页和播放器使用的历史对象，后续状态读取不会继续拿到旧的 null。
+    watcherController.history = currentHistory;
+    infoController.bangumiId = res.first.id;
+    await HistoryManager().addHistory(currentHistory);
   }
 
   var isFirst = true;
@@ -622,7 +615,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                   error: (_, _) => <BangumiItem>[],
                 );
             final bangumiItem = history?.bangumiId != null
-                ? bindAll.firstWhereOrNull((e) => e.id == history!.bangumiId)
+                ? (bangumiBindInfo?.id == history!.bangumiId
+                      ? bangumiBindInfo
+                      : bindAll.firstWhereOrNull(
+                          (e) => e.id == history!.bangumiId,
+                        ))
                 : null;
 
             final maxImageWidth = constraints.maxWidth * 0.3;

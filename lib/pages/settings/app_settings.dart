@@ -268,14 +268,14 @@ class _AppSettingsState extends State<AppSettings> {
   }
 }
 
-class _WebdavSetting extends StatefulWidget {
+class _WebdavSetting extends ConsumerStatefulWidget {
   const _WebdavSetting();
 
   @override
-  State<_WebdavSetting> createState() => _WebdavSettingState();
+  ConsumerState<_WebdavSetting> createState() => _WebdavSettingState();
 }
 
-class _WebdavSettingState extends State<_WebdavSetting> {
+class _WebdavSettingState extends ConsumerState<_WebdavSetting> {
   late final TextEditingController urlCtrl;
   late final TextEditingController userCtrl;
   late final TextEditingController passCtrl;
@@ -301,7 +301,9 @@ class _WebdavSettingState extends State<_WebdavSetting> {
     userCtrl = TextEditingController(text: us);
     passCtrl = TextEditingController(text: p);
     autoSync = appdata.implicitData['webdavAutoSync'] ?? true;
-    DataSync().addListener(_onSyncChanged);
+    ref.listenManual(dataSyncProvider, (_, _) {
+      if (mounted) _onSyncChanged();
+    });
   }
 
   void _onSyncChanged() {
@@ -310,7 +312,6 @@ class _WebdavSettingState extends State<_WebdavSetting> {
 
   @override
   void dispose() {
-    DataSync().removeListener(_onSyncChanged);
     urlCtrl.dispose();
     userCtrl.dispose();
     passCtrl.dispose();

@@ -2,13 +2,24 @@
 // 体积最大，独立成库便于选择性同步（可跳过消息库，只同步设置/故事等）。
 
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/database/db_common.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/provider_container.dart';
 
 part 'ai_task_database.g.dart';
+
+class AiTaskDatabaseRevision extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void markChanged() => state++;
+}
+
+final aiTaskDatabaseRevisionProvider =
+    NotifierProvider<AiTaskDatabaseRevision, int>(AiTaskDatabaseRevision.new);
 
 @TableIndex(name: 'tasks_session_idx', columns: {#sessionId})
 class AiTasks extends Table {
@@ -48,10 +59,6 @@ class AiTasks extends Table {
 class AiTaskDatabase extends _$AiTaskDatabase {
   static AiTaskDatabase? _instance;
 
-  /// 库被重新打开（如导入 ai_tasks 分片后）时自增，
-  /// 供页面重建消息流，避免仍订阅旧实例导致列表空白
-  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
-
   static AiTaskDatabase get instance => _instance ??= AiTaskDatabase._();
 
   AiTaskDatabase._() : super(_openConnection());
@@ -71,7 +78,9 @@ class AiTaskDatabase extends _$AiTaskDatabase {
 
   static void init() {
     _instance = AiTaskDatabase._();
-    revision.value++;
+    providerContainer
+        .read(aiTaskDatabaseRevisionProvider.notifier)
+        .markChanged();
   }
 
   /// 导出全部消息（跨端同步合并用）
@@ -100,7 +109,9 @@ class AiTaskDatabase extends _$AiTaskDatabase {
         );
       }
     });
-    revision.value++;
+    providerContainer
+        .read(aiTaskDatabaseRevisionProvider.notifier)
+        .markChanged();
   }
 
   static String _taskKey(AiTask r) =>

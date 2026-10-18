@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -45,26 +44,25 @@ part 'stats_overview.dart';
 part 'stats_view_page.dart';
 
 class StatsCalendarPage extends ConsumerStatefulWidget {
-  const StatsCalendarPage({super.key, required this.controller});
-
-  final StatsController controller;
+  const StatsCalendarPage({super.key});
 
   @override
   ConsumerState<StatsCalendarPage> createState() => _StatsCalendarPageState();
 }
 
 class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
-  StatsController get controller => widget.controller;
+  StatsController get controller => ref.read(statsControllerProvider.notifier);
 
   @override
   void initState() {
     super.initState();
-    DataSync().addListener(controller.loadEvents);
+    ref.listenManual(dataSyncProvider, (_, _) {
+      controller.loadEvents();
+    });
   }
 
   @override
   void dispose() {
-    DataSync().removeListener(controller.loadEvents);
     super.dispose();
   }
 
@@ -117,14 +115,12 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
-      builder: (_) {
-        if (controller.isLoading) {
-          return const Center(
-            heightFactor: 10,
-            child: KostoriRefreshIndicator(),
-          );
-        }
+    final asyncState = ref.watch(statsControllerProvider);
+    return asyncState.when(
+      loading: () =>
+          const Center(heightFactor: 10, child: KostoriRefreshIndicator()),
+      error: (error, stackTrace) => ErrorWidget('$error'),
+      data: (_) {
         final groupedEntries = _groupEntriesByBangumiId(
           controller.entriesForSelectedDay,
         );

@@ -39,8 +39,20 @@ class $FavoriteFoldersTable extends FavoriteFolders
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, sortOrder];
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, sortOrder, updatedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -74,6 +86,12 @@ class $FavoriteFoldersTable extends FavoriteFolders
     } else if (isInserting) {
       context.missing(_sortOrderMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -95,6 +113,10 @@ class $FavoriteFoldersTable extends FavoriteFolders
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -108,10 +130,12 @@ class FavoriteFolder extends DataClass implements Insertable<FavoriteFolder> {
   final String id;
   final String name;
   final int sortOrder;
+  final int updatedAt;
   const FavoriteFolder({
     required this.id,
     required this.name,
     required this.sortOrder,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -119,6 +143,7 @@ class FavoriteFolder extends DataClass implements Insertable<FavoriteFolder> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['sort_order'] = Variable<int>(sortOrder);
+    map['updated_at'] = Variable<int>(updatedAt);
     return map;
   }
 
@@ -127,6 +152,7 @@ class FavoriteFolder extends DataClass implements Insertable<FavoriteFolder> {
       id: Value(id),
       name: Value(name),
       sortOrder: Value(sortOrder),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -139,6 +165,7 @@ class FavoriteFolder extends DataClass implements Insertable<FavoriteFolder> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
   }
   @override
@@ -148,20 +175,27 @@ class FavoriteFolder extends DataClass implements Insertable<FavoriteFolder> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'updatedAt': serializer.toJson<int>(updatedAt),
     };
   }
 
-  FavoriteFolder copyWith({String? id, String? name, int? sortOrder}) =>
-      FavoriteFolder(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        sortOrder: sortOrder ?? this.sortOrder,
-      );
+  FavoriteFolder copyWith({
+    String? id,
+    String? name,
+    int? sortOrder,
+    int? updatedAt,
+  }) => FavoriteFolder(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    sortOrder: sortOrder ?? this.sortOrder,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
   FavoriteFolder copyWithCompanion(FavoriteFoldersCompanion data) {
     return FavoriteFolder(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -170,37 +204,42 @@ class FavoriteFolder extends DataClass implements Insertable<FavoriteFolder> {
     return (StringBuffer('FavoriteFolder(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, sortOrder);
+  int get hashCode => Object.hash(id, name, sortOrder, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FavoriteFolder &&
           other.id == this.id &&
           other.name == this.name &&
-          other.sortOrder == this.sortOrder);
+          other.sortOrder == this.sortOrder &&
+          other.updatedAt == this.updatedAt);
 }
 
 class FavoriteFoldersCompanion extends UpdateCompanion<FavoriteFolder> {
   final Value<String> id;
   final Value<String> name;
   final Value<int> sortOrder;
+  final Value<int> updatedAt;
   final Value<int> rowid;
   const FavoriteFoldersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FavoriteFoldersCompanion.insert({
     required String id,
     required String name,
     required int sortOrder,
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -209,12 +248,14 @@ class FavoriteFoldersCompanion extends UpdateCompanion<FavoriteFolder> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<int>? sortOrder,
+    Expression<int>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -223,12 +264,14 @@ class FavoriteFoldersCompanion extends UpdateCompanion<FavoriteFolder> {
     Value<String>? id,
     Value<String>? name,
     Value<int>? sortOrder,
+    Value<int>? updatedAt,
     Value<int>? rowid,
   }) {
     return FavoriteFoldersCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       sortOrder: sortOrder ?? this.sortOrder,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -245,6 +288,9 @@ class FavoriteFoldersCompanion extends UpdateCompanion<FavoriteFolder> {
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -257,6 +303,7 @@ class FavoriteFoldersCompanion extends UpdateCompanion<FavoriteFolder> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('sortOrder: $sortOrder, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -371,6 +418,18 @@ class $FavoriteItemsTable extends FavoriteItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _viewMoreMeta = const VerificationMeta(
     'viewMore',
   );
@@ -394,6 +453,7 @@ class $FavoriteItemsTable extends FavoriteItems
     time,
     displayOrder,
     recentlyWatched,
+    updatedAt,
     viewMore,
   ];
   @override
@@ -479,6 +539,12 @@ class $FavoriteItemsTable extends FavoriteItems
         ),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     if (data.containsKey('view_more')) {
       context.handle(
         _viewMoreMeta,
@@ -534,6 +600,10 @@ class $FavoriteItemsTable extends FavoriteItems
         DriftSqlType.string,
         data['${effectivePrefix}recently_watched'],
       ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
       viewMore: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}view_more'],
@@ -558,6 +628,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
   final String? time;
   final int displayOrder;
   final String? recentlyWatched;
+  final int updatedAt;
   final String? viewMore;
   const FavoriteItemRow({
     required this.folderId,
@@ -570,6 +641,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
     this.time,
     required this.displayOrder,
     this.recentlyWatched,
+    required this.updatedAt,
     this.viewMore,
   });
   @override
@@ -595,6 +667,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
     if (!nullToAbsent || recentlyWatched != null) {
       map['recently_watched'] = Variable<String>(recentlyWatched);
     }
+    map['updated_at'] = Variable<int>(updatedAt);
     if (!nullToAbsent || viewMore != null) {
       map['view_more'] = Variable<String>(viewMore);
     }
@@ -619,6 +692,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
       recentlyWatched: recentlyWatched == null && nullToAbsent
           ? const Value.absent()
           : Value(recentlyWatched),
+      updatedAt: Value(updatedAt),
       viewMore: viewMore == null && nullToAbsent
           ? const Value.absent()
           : Value(viewMore),
@@ -641,6 +715,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
       time: serializer.fromJson<String?>(json['time']),
       displayOrder: serializer.fromJson<int>(json['displayOrder']),
       recentlyWatched: serializer.fromJson<String?>(json['recentlyWatched']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
       viewMore: serializer.fromJson<String?>(json['viewMore']),
     );
   }
@@ -658,6 +733,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
       'time': serializer.toJson<String?>(time),
       'displayOrder': serializer.toJson<int>(displayOrder),
       'recentlyWatched': serializer.toJson<String?>(recentlyWatched),
+      'updatedAt': serializer.toJson<int>(updatedAt),
       'viewMore': serializer.toJson<String?>(viewMore),
     };
   }
@@ -673,6 +749,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
     Value<String?> time = const Value.absent(),
     int? displayOrder,
     Value<String?> recentlyWatched = const Value.absent(),
+    int? updatedAt,
     Value<String?> viewMore = const Value.absent(),
   }) => FavoriteItemRow(
     folderId: folderId ?? this.folderId,
@@ -687,6 +764,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
     recentlyWatched: recentlyWatched.present
         ? recentlyWatched.value
         : this.recentlyWatched,
+    updatedAt: updatedAt ?? this.updatedAt,
     viewMore: viewMore.present ? viewMore.value : this.viewMore,
   );
   FavoriteItemRow copyWithCompanion(FavoriteItemsCompanion data) {
@@ -705,6 +783,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
       recentlyWatched: data.recentlyWatched.present
           ? data.recentlyWatched.value
           : this.recentlyWatched,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       viewMore: data.viewMore.present ? data.viewMore.value : this.viewMore,
     );
   }
@@ -722,6 +801,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
           ..write('time: $time, ')
           ..write('displayOrder: $displayOrder, ')
           ..write('recentlyWatched: $recentlyWatched, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('viewMore: $viewMore')
           ..write(')'))
         .toString();
@@ -739,6 +819,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
     time,
     displayOrder,
     recentlyWatched,
+    updatedAt,
     viewMore,
   );
   @override
@@ -755,6 +836,7 @@ class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
           other.time == this.time &&
           other.displayOrder == this.displayOrder &&
           other.recentlyWatched == this.recentlyWatched &&
+          other.updatedAt == this.updatedAt &&
           other.viewMore == this.viewMore);
 }
 
@@ -769,6 +851,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
   final Value<String?> time;
   final Value<int> displayOrder;
   final Value<String?> recentlyWatched;
+  final Value<int> updatedAt;
   final Value<String?> viewMore;
   final Value<int> rowid;
   const FavoriteItemsCompanion({
@@ -782,6 +865,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
     this.time = const Value.absent(),
     this.displayOrder = const Value.absent(),
     this.recentlyWatched = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.viewMore = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -796,6 +880,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
     this.time = const Value.absent(),
     this.displayOrder = const Value.absent(),
     this.recentlyWatched = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.viewMore = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : folderId = Value(folderId),
@@ -813,6 +898,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
     Expression<String>? time,
     Expression<int>? displayOrder,
     Expression<String>? recentlyWatched,
+    Expression<int>? updatedAt,
     Expression<String>? viewMore,
     Expression<int>? rowid,
   }) {
@@ -827,6 +913,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
       if (time != null) 'time': time,
       if (displayOrder != null) 'display_order': displayOrder,
       if (recentlyWatched != null) 'recently_watched': recentlyWatched,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (viewMore != null) 'view_more': viewMore,
       if (rowid != null) 'rowid': rowid,
     });
@@ -843,6 +930,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
     Value<String?>? time,
     Value<int>? displayOrder,
     Value<String?>? recentlyWatched,
+    Value<int>? updatedAt,
     Value<String?>? viewMore,
     Value<int>? rowid,
   }) {
@@ -857,6 +945,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
       time: time ?? this.time,
       displayOrder: displayOrder ?? this.displayOrder,
       recentlyWatched: recentlyWatched ?? this.recentlyWatched,
+      updatedAt: updatedAt ?? this.updatedAt,
       viewMore: viewMore ?? this.viewMore,
       rowid: rowid ?? this.rowid,
     );
@@ -895,6 +984,9 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
     if (recentlyWatched.present) {
       map['recently_watched'] = Variable<String>(recentlyWatched.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
     if (viewMore.present) {
       map['view_more'] = Variable<String>(viewMore.value);
     }
@@ -917,6 +1009,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
           ..write('time: $time, ')
           ..write('displayOrder: $displayOrder, ')
           ..write('recentlyWatched: $recentlyWatched, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('viewMore: $viewMore, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -956,6 +1049,7 @@ typedef $$FavoriteFoldersTableCreateCompanionBuilder =
       required String id,
       required String name,
       required int sortOrder,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 typedef $$FavoriteFoldersTableUpdateCompanionBuilder =
@@ -963,6 +1057,7 @@ typedef $$FavoriteFoldersTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<int> sortOrder,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 
@@ -1023,6 +1118,11 @@ class $$FavoriteFoldersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> favoriteItemsRefs(
     Expression<bool> Function($$FavoriteItemsTableFilterComposer f) f,
   ) {
@@ -1072,6 +1172,11 @@ class $$FavoriteFoldersTableOrderingComposer
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FavoriteFoldersTableAnnotationComposer
@@ -1091,6 +1196,9 @@ class $$FavoriteFoldersTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> favoriteItemsRefs<T extends Object>(
     Expression<T> Function($$FavoriteItemsTableAnnotationComposer a) f,
@@ -1151,11 +1259,13 @@ class $$FavoriteFoldersTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FavoriteFoldersCompanion(
                 id: id,
                 name: name,
                 sortOrder: sortOrder,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1163,11 +1273,13 @@ class $$FavoriteFoldersTableTableManager
                 required String id,
                 required String name,
                 required int sortOrder,
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FavoriteFoldersCompanion.insert(
                 id: id,
                 name: name,
                 sortOrder: sortOrder,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -1240,6 +1352,7 @@ typedef $$FavoriteItemsTableCreateCompanionBuilder =
       Value<String?> time,
       Value<int> displayOrder,
       Value<String?> recentlyWatched,
+      Value<int> updatedAt,
       Value<String?> viewMore,
       Value<int> rowid,
     });
@@ -1255,6 +1368,7 @@ typedef $$FavoriteItemsTableUpdateCompanionBuilder =
       Value<String?> time,
       Value<int> displayOrder,
       Value<String?> recentlyWatched,
+      Value<int> updatedAt,
       Value<String?> viewMore,
       Value<int> rowid,
     });
@@ -1345,6 +1459,11 @@ class $$FavoriteItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get viewMore => $composableBuilder(
     column: $table.viewMore,
     builder: (column) => ColumnFilters(column),
@@ -1428,6 +1547,11 @@ class $$FavoriteItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get viewMore => $composableBuilder(
     column: $table.viewMore,
     builder: (column) => ColumnOrderings(column),
@@ -1497,6 +1621,9 @@ class $$FavoriteItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
   GeneratedColumn<String> get viewMore =>
       $composableBuilder(column: $table.viewMore, builder: (column) => column);
 
@@ -1564,6 +1691,7 @@ class $$FavoriteItemsTableTableManager
                 Value<String?> time = const Value.absent(),
                 Value<int> displayOrder = const Value.absent(),
                 Value<String?> recentlyWatched = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<String?> viewMore = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FavoriteItemsCompanion(
@@ -1577,6 +1705,7 @@ class $$FavoriteItemsTableTableManager
                 time: time,
                 displayOrder: displayOrder,
                 recentlyWatched: recentlyWatched,
+                updatedAt: updatedAt,
                 viewMore: viewMore,
                 rowid: rowid,
               ),
@@ -1592,6 +1721,7 @@ class $$FavoriteItemsTableTableManager
                 Value<String?> time = const Value.absent(),
                 Value<int> displayOrder = const Value.absent(),
                 Value<String?> recentlyWatched = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<String?> viewMore = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FavoriteItemsCompanion.insert(
@@ -1605,6 +1735,7 @@ class $$FavoriteItemsTableTableManager
                 time: time,
                 displayOrder: displayOrder,
                 recentlyWatched: recentlyWatched,
+                updatedAt: updatedAt,
                 viewMore: viewMore,
                 rowid: rowid,
               ),

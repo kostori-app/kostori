@@ -16,6 +16,8 @@ class FavoriteFolders extends Table {
 
   IntColumn get sortOrder => integer()();
 
+  IntColumn get updatedAt => integer().withDefault(const Constant(0))();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -46,6 +48,8 @@ class FavoriteItems extends Table {
 
   TextColumn get recentlyWatched => text().nullable()();
 
+  IntColumn get updatedAt => integer().withDefault(const Constant(0))();
+
   TextColumn get viewMore => text().nullable()();
 
   @override
@@ -57,7 +61,7 @@ class FavoriteDatabase extends _$FavoriteDatabase {
   FavoriteDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   /// 统一打开入口：与收藏旧库同一路径（local_favorite.db）
   factory FavoriteDatabase.open(String dbPath) {
@@ -78,11 +82,32 @@ class FavoriteDatabase extends _$FavoriteDatabase {
         // 幂等：若还有遗留多表结构则补搬（通常是 v1 drift 空壳库/中断场景）
         await _migrateLegacyMultiTableSchema();
       }
+      if (from < 3) {
+        await _addColumnIfMissing(
+          m,
+          favoriteFolders,
+          favoriteFolders.updatedAt,
+        );
+        await _addColumnIfMissing(m, favoriteItems, favoriteItems.updatedAt);
+      }
     },
     beforeOpen: (details) async {
       // 兼容旧库可能打开的外键/文件损坏容错等
     },
   );
+
+  Future<void> _addColumnIfMissing(
+    Migrator migrator,
+    TableInfo table,
+    GeneratedColumn column,
+  ) async {
+    final rows = await customSelect(
+      'PRAGMA table_info(${table.actualTableName})',
+    ).get();
+    if (!rows.any((row) => row.data['name'] == column.name)) {
+      await migrator.addColumn(table, column);
+    }
+  }
 
   /// 旧版（重构前）结构：每个分组是一张 "$folder" 动态表 + folder_order +
   /// folder_sync。首次用 drift 打开同一文件时，把这些数据无损搬进新表，

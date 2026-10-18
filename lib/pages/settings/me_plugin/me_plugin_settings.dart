@@ -1,14 +1,15 @@
 part of '../settings_page.dart';
 
 /// 个人页插件管理卡片：列出已加载插件，支持重新加载与删除。
-class PluginSettings extends StatefulWidget {
+class PluginSettings extends ConsumerStatefulWidget {
   const PluginSettings({super.key});
 
   @override
-  State<PluginSettings> createState() => _PluginSettingsState();
+  ConsumerState<PluginSettings> createState() => _PluginSettingsState();
 }
 
-class _PluginSettingsState extends State<PluginSettings> with RouteAware {
+class _PluginSettingsState extends ConsumerState<PluginSettings>
+    with RouteAware {
   late final TextEditingController _urlCtrl;
   final TextEditingController _searchCtrl = TextEditingController();
 
@@ -223,6 +224,7 @@ const plugin = {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(mePagePluginManagerProvider);
     final plugins = MePagePluginManager().all();
     final visible = _visible(plugins);
     return SmoothCustomScrollView(
@@ -1066,16 +1068,17 @@ class _PluginSourceListState extends State<_PluginSourceList> {
 }
 
 /// 插件设置页：渲染插件声明的 `settings` 模块（config 输入等，存插件 .data）
-class _PluginSettingsPage extends StatefulWidget {
+class _PluginSettingsPage extends ConsumerStatefulWidget {
   final MePagePlugin plugin;
 
   const _PluginSettingsPage({required this.plugin});
 
   @override
-  State<_PluginSettingsPage> createState() => _PluginSettingsPageState();
+  ConsumerState<_PluginSettingsPage> createState() =>
+      _PluginSettingsPageState();
 }
 
-class _PluginSettingsPageState extends State<_PluginSettingsPage> {
+class _PluginSettingsPageState extends ConsumerState<_PluginSettingsPage> {
   late Future<List<Map<String, dynamic>>> _future;
 
   MePagePlugin get p => widget.plugin;
@@ -1085,12 +1088,13 @@ class _PluginSettingsPageState extends State<_PluginSettingsPage> {
     super.initState();
     _future = p.settingsModules();
     // 账号登录/饼干列表写入数据后，各设置卡片即时重建显示
-    MePagePluginManager().addListener(_onPluginsChanged);
+    ref.listenManual(mePagePluginManagerProvider, (_, _) {
+      if (mounted) _onPluginsChanged();
+    });
   }
 
   @override
   void dispose() {
-    MePagePluginManager().removeListener(_onPluginsChanged);
     super.dispose();
   }
 
@@ -1100,6 +1104,7 @@ class _PluginSettingsPageState extends State<_PluginSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(mePagePluginManagerProvider);
     return PopUpWidgetScaffold(
       title: p.name,
       body: FutureBuilder<List<Map<String, dynamic>>>(

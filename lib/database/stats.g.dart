@@ -159,6 +159,18 @@ class $StatsTableTable extends StatsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -175,6 +187,7 @@ class $StatsTableTable extends StatsTable
     totalWatchDurations,
     rating,
     favorite,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -285,6 +298,12 @@ class $StatsTableTable extends StatsTable
         favorite.isAcceptableOrUnknown(data['favorite']!, _favoriteMeta),
       );
     }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -350,6 +369,10 @@ class $StatsTableTable extends StatsTable
         DriftSqlType.string,
         data['${effectivePrefix}favorite'],
       ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
     );
   }
 
@@ -374,6 +397,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
   final String? totalWatchDurations;
   final String? rating;
   final String? favorite;
+  final int updatedAt;
   const StatsTableData({
     required this.id,
     this.title,
@@ -389,6 +413,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
     this.totalWatchDurations,
     this.rating,
     this.favorite,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -427,6 +452,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
     if (!nullToAbsent || favorite != null) {
       map['favorite'] = Variable<String>(favorite);
     }
+    map['updatedAt'] = Variable<int>(updatedAt);
     return map;
   }
 
@@ -466,6 +492,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
       favorite: favorite == null && nullToAbsent
           ? const Value.absent()
           : Value(favorite),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -491,6 +518,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
       ),
       rating: serializer.fromJson<String?>(json['rating']),
       favorite: serializer.fromJson<String?>(json['favorite']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
   }
   @override
@@ -511,6 +539,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
       'totalWatchDurations': serializer.toJson<String?>(totalWatchDurations),
       'rating': serializer.toJson<String?>(rating),
       'favorite': serializer.toJson<String?>(favorite),
+      'updatedAt': serializer.toJson<int>(updatedAt),
     };
   }
 
@@ -529,6 +558,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
     Value<String?> totalWatchDurations = const Value.absent(),
     Value<String?> rating = const Value.absent(),
     Value<String?> favorite = const Value.absent(),
+    int? updatedAt,
   }) => StatsTableData(
     id: id ?? this.id,
     title: title.present ? title.value : this.title,
@@ -552,6 +582,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
         : this.totalWatchDurations,
     rating: rating.present ? rating.value : this.rating,
     favorite: favorite.present ? favorite.value : this.favorite,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   StatsTableData copyWithCompanion(StatsTableCompanion data) {
     return StatsTableData(
@@ -577,6 +608,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
           : this.totalWatchDurations,
       rating: data.rating.present ? data.rating.value : this.rating,
       favorite: data.favorite.present ? data.favorite.value : this.favorite,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -596,7 +628,8 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
           ..write('lastClickTime: $lastClickTime, ')
           ..write('totalWatchDurations: $totalWatchDurations, ')
           ..write('rating: $rating, ')
-          ..write('favorite: $favorite')
+          ..write('favorite: $favorite, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -617,6 +650,7 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
     totalWatchDurations,
     rating,
     favorite,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -635,7 +669,8 @@ class StatsTableData extends DataClass implements Insertable<StatsTableData> {
           other.lastClickTime == this.lastClickTime &&
           other.totalWatchDurations == this.totalWatchDurations &&
           other.rating == this.rating &&
-          other.favorite == this.favorite);
+          other.favorite == this.favorite &&
+          other.updatedAt == this.updatedAt);
 }
 
 class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
@@ -653,6 +688,7 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
   final Value<String?> totalWatchDurations;
   final Value<String?> rating;
   final Value<String?> favorite;
+  final Value<int> updatedAt;
   final Value<int> rowid;
   const StatsTableCompanion({
     this.id = const Value.absent(),
@@ -669,6 +705,7 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
     this.totalWatchDurations = const Value.absent(),
     this.rating = const Value.absent(),
     this.favorite = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   StatsTableCompanion.insert({
@@ -686,6 +723,7 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
     this.totalWatchDurations = const Value.absent(),
     this.rating = const Value.absent(),
     this.favorite = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type);
@@ -704,6 +742,7 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
     Expression<String>? totalWatchDurations,
     Expression<String>? rating,
     Expression<String>? favorite,
+    Expression<int>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -722,6 +761,7 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
         'totalWatchDurations': totalWatchDurations,
       if (rating != null) 'rating': rating,
       if (favorite != null) 'favorite': favorite,
+      if (updatedAt != null) 'updatedAt': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -741,6 +781,7 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
     Value<String?>? totalWatchDurations,
     Value<String?>? rating,
     Value<String?>? favorite,
+    Value<int>? updatedAt,
     Value<int>? rowid,
   }) {
     return StatsTableCompanion(
@@ -758,6 +799,7 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
       totalWatchDurations: totalWatchDurations ?? this.totalWatchDurations,
       rating: rating ?? this.rating,
       favorite: favorite ?? this.favorite,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -807,6 +849,9 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
     if (favorite.present) {
       map['favorite'] = Variable<String>(favorite.value);
     }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -830,6 +875,7 @@ class StatsTableCompanion extends UpdateCompanion<StatsTableData> {
           ..write('totalWatchDurations: $totalWatchDurations, ')
           ..write('rating: $rating, ')
           ..write('favorite: $favorite, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -862,6 +908,7 @@ typedef $$StatsTableTableCreateCompanionBuilder = StatsTableCompanion Function({
   Value<String?> totalWatchDurations,
   Value<String?> rating,
   Value<String?> favorite,
+  Value<int> updatedAt,
   Value<int> rowid,
 });
 typedef $$StatsTableTableUpdateCompanionBuilder = StatsTableCompanion Function({
@@ -879,6 +926,7 @@ typedef $$StatsTableTableUpdateCompanionBuilder = StatsTableCompanion Function({
   Value<String?> totalWatchDurations,
   Value<String?> rating,
   Value<String?> favorite,
+  Value<int> updatedAt,
   Value<int> rowid,
 });
 
@@ -958,6 +1006,11 @@ class $$StatsTableTableFilterComposer
 
   ColumnFilters<String> get favorite => $composableBuilder(
     column: $table.favorite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1040,6 +1093,11 @@ class $$StatsTableTableOrderingComposer
     column: $table.favorite,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$StatsTableTableAnnotationComposer
@@ -1100,6 +1158,9 @@ class $$StatsTableTableAnnotationComposer
 
   GeneratedColumn<String> get favorite =>
       $composableBuilder(column: $table.favorite, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$StatsTableTableTableManager
@@ -1147,6 +1208,7 @@ class $$StatsTableTableTableManager
                 Value<String?> totalWatchDurations = const Value.absent(),
                 Value<String?> rating = const Value.absent(),
                 Value<String?> favorite = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StatsTableCompanion(
                 id: id,
@@ -1163,6 +1225,7 @@ class $$StatsTableTableTableManager
                 totalWatchDurations: totalWatchDurations,
                 rating: rating,
                 favorite: favorite,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1181,6 +1244,7 @@ class $$StatsTableTableTableManager
                 Value<String?> totalWatchDurations = const Value.absent(),
                 Value<String?> rating = const Value.absent(),
                 Value<String?> favorite = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StatsTableCompanion.insert(
                 id: id,
@@ -1197,6 +1261,7 @@ class $$StatsTableTableTableManager
                 totalWatchDurations: totalWatchDurations,
                 rating: rating,
                 favorite: favorite,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

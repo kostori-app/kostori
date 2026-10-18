@@ -50,6 +50,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   bool searchHasUpper = false;
   bool multiSelectMode = false;
   bool isLoading = false;
+  bool _refreshPending = false;
 
   int? lastSelectedIndex;
 
@@ -64,12 +65,13 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     // 这里无需再改 provider。
     _buildTabController();
     updateAnimes();
-    manager.addListener(updateAnimes);
+    ref.listenManual(localFavoritesManagerProvider, (_, _) {
+      if (mounted) updateAnimes();
+    });
   }
 
   @override
   void dispose() {
-    manager.removeListener(updateAnimes);
     favoritesController.tabController?.dispose();
     for (final c in _folderControllers.values) {
       c.dispose();
@@ -107,8 +109,12 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   }
 
   Future<void> updateAnimes() async {
-    if (isLoading) return;
+    if (isLoading) {
+      _refreshPending = true;
+      return;
+    }
 
+    _refreshPending = false;
     final newFolders = manager.folderNames.where((name) {
       if (name == kUnassignedFolder) {
         return manager
@@ -141,6 +147,11 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     }
 
     if (!mounted) return;
+    if (_refreshPending) {
+      _refreshPending = false;
+      await updateAnimes();
+      return;
+    }
 
     int newIndex = effectiveFolders.indexWhere(
       (name) => name == favState.folder,

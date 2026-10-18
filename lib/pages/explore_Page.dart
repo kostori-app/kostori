@@ -318,7 +318,9 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     });
     // 源被启用/禁用（设置页开关）时也要刷新：探索页的源列表与 TabController
     // 必须一起重建，否则会停留/错位在旧的源上
-    AnimeSourceManager().revision.addListener(onSettingsChanged);
+    ref.listenManual(animeSourceManagerProvider, (_, _) {
+      if (mounted) onSettingsChanged();
+    });
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
     _fbController = AnimationController(
       vsync: this,
@@ -386,7 +388,6 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     for (var c in pageControllers.values) {
       c.dispose();
     }
-    AnimeSourceManager().revision.removeListener(onSettingsChanged);
     naviPane?.removeNaviItemTapListener(onNaviItemTapped);
     _fbController.dispose();
     WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -87,6 +87,18 @@ class $HistoryTableTable extends HistoryTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _lastRoadMeta = const VerificationMeta(
     'lastRoad',
   );
@@ -153,6 +165,7 @@ class $HistoryTableTable extends HistoryTable
     type,
     lastWatchEpisode,
     lastWatchTime,
+    updatedAt,
     lastRoad,
     allEpisode,
     watchEpisode,
@@ -234,6 +247,12 @@ class $HistoryTableTable extends HistoryTable
         ),
       );
     }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
     if (data.containsKey('lastRoad')) {
       context.handle(
         _lastRoadMeta,
@@ -308,6 +327,10 @@ class $HistoryTableTable extends HistoryTable
         DriftSqlType.int,
         data['${effectivePrefix}lastWatchTime'],
       ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
       lastRoad: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}lastRoad'],
@@ -347,6 +370,7 @@ class HistoryTableData extends DataClass
   final int type;
   final int? lastWatchEpisode;
   final int? lastWatchTime;
+  final int updatedAt;
   final int? lastRoad;
   final int? allEpisode;
   final String watchEpisode;
@@ -361,6 +385,7 @@ class HistoryTableData extends DataClass
     required this.type,
     this.lastWatchEpisode,
     this.lastWatchTime,
+    required this.updatedAt,
     this.lastRoad,
     this.allEpisode,
     required this.watchEpisode,
@@ -382,6 +407,7 @@ class HistoryTableData extends DataClass
     if (!nullToAbsent || lastWatchTime != null) {
       map['lastWatchTime'] = Variable<int>(lastWatchTime);
     }
+    map['updatedAt'] = Variable<int>(updatedAt);
     if (!nullToAbsent || lastRoad != null) {
       map['lastRoad'] = Variable<int>(lastRoad);
     }
@@ -412,6 +438,7 @@ class HistoryTableData extends DataClass
       lastWatchTime: lastWatchTime == null && nullToAbsent
           ? const Value.absent()
           : Value(lastWatchTime),
+      updatedAt: Value(updatedAt),
       lastRoad: lastRoad == null && nullToAbsent
           ? const Value.absent()
           : Value(lastRoad),
@@ -442,6 +469,7 @@ class HistoryTableData extends DataClass
       type: serializer.fromJson<int>(json['type']),
       lastWatchEpisode: serializer.fromJson<int?>(json['lastWatchEpisode']),
       lastWatchTime: serializer.fromJson<int?>(json['lastWatchTime']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
       lastRoad: serializer.fromJson<int?>(json['lastRoad']),
       allEpisode: serializer.fromJson<int?>(json['allEpisode']),
       watchEpisode: serializer.fromJson<String>(json['watchEpisode']),
@@ -461,6 +489,7 @@ class HistoryTableData extends DataClass
       'type': serializer.toJson<int>(type),
       'lastWatchEpisode': serializer.toJson<int?>(lastWatchEpisode),
       'lastWatchTime': serializer.toJson<int?>(lastWatchTime),
+      'updatedAt': serializer.toJson<int>(updatedAt),
       'lastRoad': serializer.toJson<int?>(lastRoad),
       'allEpisode': serializer.toJson<int?>(allEpisode),
       'watchEpisode': serializer.toJson<String>(watchEpisode),
@@ -478,6 +507,7 @@ class HistoryTableData extends DataClass
     int? type,
     Value<int?> lastWatchEpisode = const Value.absent(),
     Value<int?> lastWatchTime = const Value.absent(),
+    int? updatedAt,
     Value<int?> lastRoad = const Value.absent(),
     Value<int?> allEpisode = const Value.absent(),
     String? watchEpisode,
@@ -496,6 +526,7 @@ class HistoryTableData extends DataClass
     lastWatchTime: lastWatchTime.present
         ? lastWatchTime.value
         : this.lastWatchTime,
+    updatedAt: updatedAt ?? this.updatedAt,
     lastRoad: lastRoad.present ? lastRoad.value : this.lastRoad,
     allEpisode: allEpisode.present ? allEpisode.value : this.allEpisode,
     watchEpisode: watchEpisode ?? this.watchEpisode,
@@ -516,6 +547,7 @@ class HistoryTableData extends DataClass
       lastWatchTime: data.lastWatchTime.present
           ? data.lastWatchTime.value
           : this.lastWatchTime,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       lastRoad: data.lastRoad.present ? data.lastRoad.value : this.lastRoad,
       allEpisode: data.allEpisode.present
           ? data.allEpisode.value
@@ -539,6 +571,7 @@ class HistoryTableData extends DataClass
           ..write('type: $type, ')
           ..write('lastWatchEpisode: $lastWatchEpisode, ')
           ..write('lastWatchTime: $lastWatchTime, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('lastRoad: $lastRoad, ')
           ..write('allEpisode: $allEpisode, ')
           ..write('watchEpisode: $watchEpisode, ')
@@ -558,6 +591,7 @@ class HistoryTableData extends DataClass
     type,
     lastWatchEpisode,
     lastWatchTime,
+    updatedAt,
     lastRoad,
     allEpisode,
     watchEpisode,
@@ -576,6 +610,7 @@ class HistoryTableData extends DataClass
           other.type == this.type &&
           other.lastWatchEpisode == this.lastWatchEpisode &&
           other.lastWatchTime == this.lastWatchTime &&
+          other.updatedAt == this.updatedAt &&
           other.lastRoad == this.lastRoad &&
           other.allEpisode == this.allEpisode &&
           other.watchEpisode == this.watchEpisode &&
@@ -592,6 +627,7 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
   final Value<int> type;
   final Value<int?> lastWatchEpisode;
   final Value<int?> lastWatchTime;
+  final Value<int> updatedAt;
   final Value<int?> lastRoad;
   final Value<int?> allEpisode;
   final Value<String> watchEpisode;
@@ -607,6 +643,7 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
     this.type = const Value.absent(),
     this.lastWatchEpisode = const Value.absent(),
     this.lastWatchTime = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.lastRoad = const Value.absent(),
     this.allEpisode = const Value.absent(),
     this.watchEpisode = const Value.absent(),
@@ -623,6 +660,7 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
     required int type,
     this.lastWatchEpisode = const Value.absent(),
     this.lastWatchTime = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.lastRoad = const Value.absent(),
     this.allEpisode = const Value.absent(),
     this.watchEpisode = const Value.absent(),
@@ -644,6 +682,7 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
     Expression<int>? type,
     Expression<int>? lastWatchEpisode,
     Expression<int>? lastWatchTime,
+    Expression<int>? updatedAt,
     Expression<int>? lastRoad,
     Expression<int>? allEpisode,
     Expression<String>? watchEpisode,
@@ -660,6 +699,7 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
       if (type != null) 'type': type,
       if (lastWatchEpisode != null) 'lastWatchEpisode': lastWatchEpisode,
       if (lastWatchTime != null) 'lastWatchTime': lastWatchTime,
+      if (updatedAt != null) 'updatedAt': updatedAt,
       if (lastRoad != null) 'lastRoad': lastRoad,
       if (allEpisode != null) 'allEpisode': allEpisode,
       if (watchEpisode != null) 'watchEpisode': watchEpisode,
@@ -678,6 +718,7 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
     Value<int>? type,
     Value<int?>? lastWatchEpisode,
     Value<int?>? lastWatchTime,
+    Value<int>? updatedAt,
     Value<int?>? lastRoad,
     Value<int?>? allEpisode,
     Value<String>? watchEpisode,
@@ -694,6 +735,7 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
       type: type ?? this.type,
       lastWatchEpisode: lastWatchEpisode ?? this.lastWatchEpisode,
       lastWatchTime: lastWatchTime ?? this.lastWatchTime,
+      updatedAt: updatedAt ?? this.updatedAt,
       lastRoad: lastRoad ?? this.lastRoad,
       allEpisode: allEpisode ?? this.allEpisode,
       watchEpisode: watchEpisode ?? this.watchEpisode,
@@ -730,6 +772,9 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
     if (lastWatchTime.present) {
       map['lastWatchTime'] = Variable<int>(lastWatchTime.value);
     }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
     if (lastRoad.present) {
       map['lastRoad'] = Variable<int>(lastRoad.value);
     }
@@ -762,6 +807,7 @@ class HistoryTableCompanion extends UpdateCompanion<HistoryTableData> {
           ..write('type: $type, ')
           ..write('lastWatchEpisode: $lastWatchEpisode, ')
           ..write('lastWatchTime: $lastWatchTime, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('lastRoad: $lastRoad, ')
           ..write('allEpisode: $allEpisode, ')
           ..write('watchEpisode: $watchEpisode, ')
@@ -867,6 +913,18 @@ class $ProgressTableTable extends ProgressTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     type,
@@ -877,6 +935,7 @@ class $ProgressTableTable extends ProgressTable
     isCompleted,
     startTime,
     endTime,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -954,6 +1013,12 @@ class $ProgressTableTable extends ProgressTable
         endTime.isAcceptableOrUnknown(data['endTime']!, _endTimeMeta),
       );
     }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -995,6 +1060,10 @@ class $ProgressTableTable extends ProgressTable
         DriftSqlType.string,
         data['${effectivePrefix}endTime'],
       ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
     );
   }
 
@@ -1014,6 +1083,7 @@ class ProgressTableData extends DataClass
   final bool isCompleted;
   final String? startTime;
   final String? endTime;
+  final int updatedAt;
   const ProgressTableData({
     required this.type,
     required this.historyId,
@@ -1023,6 +1093,7 @@ class ProgressTableData extends DataClass
     required this.isCompleted,
     this.startTime,
     this.endTime,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1039,6 +1110,7 @@ class ProgressTableData extends DataClass
     if (!nullToAbsent || endTime != null) {
       map['endTime'] = Variable<String>(endTime);
     }
+    map['updatedAt'] = Variable<int>(updatedAt);
     return map;
   }
 
@@ -1056,6 +1128,7 @@ class ProgressTableData extends DataClass
       endTime: endTime == null && nullToAbsent
           ? const Value.absent()
           : Value(endTime),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -1073,6 +1146,7 @@ class ProgressTableData extends DataClass
       isCompleted: serializer.fromJson<bool>(json['isCompleted']),
       startTime: serializer.fromJson<String?>(json['startTime']),
       endTime: serializer.fromJson<String?>(json['endTime']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
   }
   @override
@@ -1087,6 +1161,7 @@ class ProgressTableData extends DataClass
       'isCompleted': serializer.toJson<bool>(isCompleted),
       'startTime': serializer.toJson<String?>(startTime),
       'endTime': serializer.toJson<String?>(endTime),
+      'updatedAt': serializer.toJson<int>(updatedAt),
     };
   }
 
@@ -1099,6 +1174,7 @@ class ProgressTableData extends DataClass
     bool? isCompleted,
     Value<String?> startTime = const Value.absent(),
     Value<String?> endTime = const Value.absent(),
+    int? updatedAt,
   }) => ProgressTableData(
     type: type ?? this.type,
     historyId: historyId ?? this.historyId,
@@ -1108,6 +1184,7 @@ class ProgressTableData extends DataClass
     isCompleted: isCompleted ?? this.isCompleted,
     startTime: startTime.present ? startTime.value : this.startTime,
     endTime: endTime.present ? endTime.value : this.endTime,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   ProgressTableData copyWithCompanion(ProgressTableCompanion data) {
     return ProgressTableData(
@@ -1123,6 +1200,7 @@ class ProgressTableData extends DataClass
           : this.isCompleted,
       startTime: data.startTime.present ? data.startTime.value : this.startTime,
       endTime: data.endTime.present ? data.endTime.value : this.endTime,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1136,7 +1214,8 @@ class ProgressTableData extends DataClass
           ..write('progressInMilli: $progressInMilli, ')
           ..write('isCompleted: $isCompleted, ')
           ..write('startTime: $startTime, ')
-          ..write('endTime: $endTime')
+          ..write('endTime: $endTime, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1151,6 +1230,7 @@ class ProgressTableData extends DataClass
     isCompleted,
     startTime,
     endTime,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1163,7 +1243,8 @@ class ProgressTableData extends DataClass
           other.progressInMilli == this.progressInMilli &&
           other.isCompleted == this.isCompleted &&
           other.startTime == this.startTime &&
-          other.endTime == this.endTime);
+          other.endTime == this.endTime &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
@@ -1175,6 +1256,7 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
   final Value<bool> isCompleted;
   final Value<String?> startTime;
   final Value<String?> endTime;
+  final Value<int> updatedAt;
   final Value<int> rowid;
   const ProgressTableCompanion({
     this.type = const Value.absent(),
@@ -1185,6 +1267,7 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
     this.isCompleted = const Value.absent(),
     this.startTime = const Value.absent(),
     this.endTime = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProgressTableCompanion.insert({
@@ -1196,6 +1279,7 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
     this.isCompleted = const Value.absent(),
     this.startTime = const Value.absent(),
     this.endTime = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : type = Value(type),
        historyId = Value(historyId),
@@ -1211,6 +1295,7 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
     Expression<bool>? isCompleted,
     Expression<String>? startTime,
     Expression<String>? endTime,
+    Expression<int>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1222,6 +1307,7 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
       if (isCompleted != null) 'isCompleted': isCompleted,
       if (startTime != null) 'startTime': startTime,
       if (endTime != null) 'endTime': endTime,
+      if (updatedAt != null) 'updatedAt': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1235,6 +1321,7 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
     Value<bool>? isCompleted,
     Value<String?>? startTime,
     Value<String?>? endTime,
+    Value<int>? updatedAt,
     Value<int>? rowid,
   }) {
     return ProgressTableCompanion(
@@ -1246,6 +1333,7 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
       isCompleted: isCompleted ?? this.isCompleted,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1277,6 +1365,9 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
     if (endTime.present) {
       map['endTime'] = Variable<String>(endTime.value);
     }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1294,6 +1385,7 @@ class ProgressTableCompanion extends UpdateCompanion<ProgressTableData> {
           ..write('isCompleted: $isCompleted, ')
           ..write('startTime: $startTime, ')
           ..write('endTime: $endTime, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2565,6 +2657,7 @@ typedef $$HistoryTableTableCreateCompanionBuilder =
       required int type,
       Value<int?> lastWatchEpisode,
       Value<int?> lastWatchTime,
+      Value<int> updatedAt,
       Value<int?> lastRoad,
       Value<int?> allEpisode,
       Value<String> watchEpisode,
@@ -2582,6 +2675,7 @@ typedef $$HistoryTableTableUpdateCompanionBuilder =
       Value<int> type,
       Value<int?> lastWatchEpisode,
       Value<int?> lastWatchTime,
+      Value<int> updatedAt,
       Value<int?> lastRoad,
       Value<int?> allEpisode,
       Value<String> watchEpisode,
@@ -2636,6 +2730,11 @@ class $$HistoryTableTableFilterComposer
 
   ColumnFilters<int> get lastWatchTime => $composableBuilder(
     column: $table.lastWatchTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2714,6 +2813,11 @@ class $$HistoryTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get lastRoad => $composableBuilder(
     column: $table.lastRoad,
     builder: (column) => ColumnOrderings(column),
@@ -2777,6 +2881,9 @@ class $$HistoryTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
   GeneratedColumn<int> get lastRoad =>
       $composableBuilder(column: $table.lastRoad, builder: (column) => column);
 
@@ -2836,6 +2943,7 @@ class $$HistoryTableTableTableManager
                 Value<int> type = const Value.absent(),
                 Value<int?> lastWatchEpisode = const Value.absent(),
                 Value<int?> lastWatchTime = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int?> lastRoad = const Value.absent(),
                 Value<int?> allEpisode = const Value.absent(),
                 Value<String> watchEpisode = const Value.absent(),
@@ -2851,6 +2959,7 @@ class $$HistoryTableTableTableManager
                 type: type,
                 lastWatchEpisode: lastWatchEpisode,
                 lastWatchTime: lastWatchTime,
+                updatedAt: updatedAt,
                 lastRoad: lastRoad,
                 allEpisode: allEpisode,
                 watchEpisode: watchEpisode,
@@ -2868,6 +2977,7 @@ class $$HistoryTableTableTableManager
                 required int type,
                 Value<int?> lastWatchEpisode = const Value.absent(),
                 Value<int?> lastWatchTime = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int?> lastRoad = const Value.absent(),
                 Value<int?> allEpisode = const Value.absent(),
                 Value<String> watchEpisode = const Value.absent(),
@@ -2883,6 +2993,7 @@ class $$HistoryTableTableTableManager
                 type: type,
                 lastWatchEpisode: lastWatchEpisode,
                 lastWatchTime: lastWatchTime,
+                updatedAt: updatedAt,
                 lastRoad: lastRoad,
                 allEpisode: allEpisode,
                 watchEpisode: watchEpisode,
@@ -2934,6 +3045,7 @@ typedef $$ProgressTableTableCreateCompanionBuilder =
       Value<bool> isCompleted,
       Value<String?> startTime,
       Value<String?> endTime,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 typedef $$ProgressTableTableUpdateCompanionBuilder =
@@ -2946,6 +3058,7 @@ typedef $$ProgressTableTableUpdateCompanionBuilder =
       Value<bool> isCompleted,
       Value<String?> startTime,
       Value<String?> endTime,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 
@@ -2995,6 +3108,11 @@ class $$ProgressTableTableFilterComposer
 
   ColumnFilters<String> get endTime => $composableBuilder(
     column: $table.endTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3047,6 +3165,11 @@ class $$ProgressTableTableOrderingComposer
     column: $table.endTime,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProgressTableTableAnnotationComposer
@@ -3085,6 +3208,9 @@ class $$ProgressTableTableAnnotationComposer
 
   GeneratedColumn<String> get endTime =>
       $composableBuilder(column: $table.endTime, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$ProgressTableTableTableManager
@@ -3130,6 +3256,7 @@ class $$ProgressTableTableTableManager
                 Value<bool> isCompleted = const Value.absent(),
                 Value<String?> startTime = const Value.absent(),
                 Value<String?> endTime = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProgressTableCompanion(
                 type: type,
@@ -3140,6 +3267,7 @@ class $$ProgressTableTableTableManager
                 isCompleted: isCompleted,
                 startTime: startTime,
                 endTime: endTime,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3152,6 +3280,7 @@ class $$ProgressTableTableTableManager
                 Value<bool> isCompleted = const Value.absent(),
                 Value<String?> startTime = const Value.absent(),
                 Value<String?> endTime = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProgressTableCompanion.insert(
                 type: type,
@@ -3162,6 +3291,7 @@ class $$ProgressTableTableTableManager
                 isCompleted: isCompleted,
                 startTime: startTime,
                 endTime: endTime,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

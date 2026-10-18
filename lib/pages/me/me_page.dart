@@ -162,12 +162,13 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget> {
   @override
   void initState() {
     super.initState();
-    DataSync().addListener(_update);
+    ref.listenManual(dataSyncProvider, (_, _) {
+      if (mounted) _update();
+    });
   }
 
   @override
   void dispose() {
-    DataSync().removeListener(_update);
     super.dispose();
   }
 

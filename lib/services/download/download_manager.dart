@@ -5,6 +5,8 @@ import 'dart:isolate';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/database/download_database.dart';
@@ -191,10 +193,11 @@ class _FfmpegHlsRequired implements Exception {
 ///
 /// 支持 mp4 直链（dio 流式写入，Range 断点续传，完成后校验字节数）
 /// 与 m3u8/HLS（分片下载后用 FFmpeg 转封装为 mp4，流复制不重编码）。
-class DownloadManager extends ChangeNotifier {
+class DownloadManager extends RiverpodStore {
   DownloadManager._internal();
 
-  static final DownloadManager instance = DownloadManager._internal();
+  static DownloadManager get instance =>
+      providerContainer.read(downloadManagerProvider.notifier);
 
   /// 下载兜底浏览器 UA（移动端：moedet 等手机源仅对移动 UA 放行，桌面 UA 会 400）
   static const String _browserUA =
@@ -2840,3 +2843,7 @@ void _cleanupOrphanSegmentsSync(
     }
   } catch (_) {}
 }
+
+final downloadManagerProvider = NotifierProvider<DownloadManager, int>(
+  () => DownloadManager._internal(),
+);

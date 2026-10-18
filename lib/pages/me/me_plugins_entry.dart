@@ -48,12 +48,13 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
   void initState() {
     super.initState();
     _load();
-    MePagePluginManager().addListener(_onPluginsChanged);
+    ref.listenManual(mePagePluginManagerProvider, (_, _) {
+      _onPluginsChanged();
+    });
   }
 
   @override
   void dispose() {
-    MePagePluginManager().removeListener(_onPluginsChanged);
     super.dispose();
   }
 

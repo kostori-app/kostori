@@ -213,13 +213,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     ref.listenManual(storyStoreProvider, (_, _) {
       _onStoryStoreChanged();
     });
-    // 消息库被重新打开（如导入 ai_tasks 分片）后刷新列表
-    AiTaskDatabase.revision.addListener(_onDbRevisionChanged);
     _boot();
-  }
-
-  void _onDbRevisionChanged() {
-    if (mounted) setState(() {});
   }
 
   /// 故事库变化：重算有效故事，并把新声明的变量（如声望/善恶）补进当前状态
@@ -268,7 +262,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   @override
   void dispose() {
-    AiTaskDatabase.revision.removeListener(_onDbRevisionChanged);
     _stallTimer?.cancel();
     _input.dispose();
     _inputFocus.dispose();
@@ -2135,6 +2128,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   @override
   Widget build(BuildContext context) {
+    final taskDbRevision = ref.watch(aiTaskDatabaseRevisionProvider);
     if (_booting) {
       return Scaffold(
         appBar: Appbar(title: Text(story.name)),
@@ -2165,7 +2159,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           ? const Center(child: PolygonRefreshIndicator())
           : StreamBuilder<List<AiTask>>(
               // 库被重新打开（导入 ai_tasks 分片）时换 key 重新订阅
-              key: ValueKey('story-msgs-${AiTaskDatabase.revision.value}'),
+              key: ValueKey('story-msgs-$taskDbRevision'),
               stream: AiConversationService().watchMessages(sessionId),
               builder: (context, snap) {
                 final messages = snap.data ?? [];

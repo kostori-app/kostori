@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/database/favorite_database.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -220,15 +222,16 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
 class _FavEntry {
   FavoriteItem item;
   String? recentlyWatched;
+  int updatedAt;
 
   /// 入库前把 base64 封面换成 `inline:<hash>` 短引用：
   /// 图片字节落盘（CacheManager），数据库只留几十字节的引用。
-  _FavEntry(this.item, [this.recentlyWatched]) {
+  _FavEntry(this.item, this.recentlyWatched, this.updatedAt) {
     item.coverPath = InlineImageStore.refOfBase64(item.coverPath);
   }
 }
 
-class LocalFavoritesManager with ChangeNotifier {
+class LocalFavoritesManager extends RiverpodStore {
   factory LocalFavoritesManager() =>
       cache ?? (cache = LocalFavoritesManager._create());
 
@@ -241,6 +244,8 @@ class LocalFavoritesManager with ChangeNotifier {
   final Map<String, List<_FavEntry>> _byFolder = {};
 
   final List<String> _folderOrder = [];
+
+  int _folderOrderUpdatedAt = 0;
 
   var _hashedIds = <int, int>{};
 
@@ -273,6 +278,7 @@ class LocalFavoritesManager with ChangeNotifier {
   Future<void> init() async {
     _byFolder.clear();
     _folderOrder.clear();
+    _folderOrderUpdatedAt = 0;
     _hashedIds.clear();
     await appdata.ensureInit();
     final db = FavoriteDatabase.open(FavoriteDatabase.defaultPath());
@@ -330,6 +336,9 @@ class LocalFavoritesManager with ChangeNotifier {
       db.favoriteFolders,
     )..orderBy([(t) => OrderingTerm.asc(t.sortOrder)])).get();
     for (final f in folders) {
+      if (f.updatedAt > _folderOrderUpdatedAt) {
+        _folderOrderUpdatedAt = f.updatedAt;
+      }
       final rows =
           await (db.select(db.favoriteItems)
                 ..where((t) => t.folderId.equals(f.id))
@@ -337,7 +346,11 @@ class LocalFavoritesManager with ChangeNotifier {
               .get();
       _byFolder[f.name] = [
         for (final r in rows)
-          _FavEntry(_rowToFavoriteItem(r), r.recentlyWatched),
+          _FavEntry(
+            _rowToFavoriteItem(r),
+            r.recentlyWatched,
+            r.updatedAt > 0 ? r.updatedAt : _legacyFavoriteUpdatedAt(r.time),
+          ),
       ];
       _folderOrder.add(f.name);
     }
@@ -356,6 +369,40 @@ class LocalFavoritesManager with ChangeNotifier {
           ? null
           : PageJumpTarget.fromJsonString(r.viewMore!),
     )..time = r.time ?? '';
+  }
+
+  int _legacyFavoriteUpdatedAt(String? value) {
+    if (value == null || value.isEmpty) return 0;
+    return DateTime.tryParse(value.replaceFirst(' ', 'T'))
+            ?.millisecondsSinceEpoch ??
+        0;
+  }
+
+  int _nextUpdatedAt([int previous = 0]) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return now > previous ? now : previous + 1;
+  }
+
+  List<_FavEntry> _findEntries(String id, AnimeType type) => [
+    for (final folder in _folderOrder)
+      for (final entry in _byFolder[folder] ?? const <_FavEntry>[])
+        if (entry.item.id == id && entry.item.type == type) entry,
+  ];
+
+  int _latestUpdatedAt(String id, AnimeType type) =>
+      _findEntries(id, type).fold(
+        0,
+        (latest, entry) => entry.updatedAt > latest ? entry.updatedAt : latest,
+      );
+
+  void _touchEntries(String id, AnimeType type, int timestamp) {
+    for (final entry in _findEntries(id, type)) {
+      entry.updatedAt = timestamp;
+    }
+  }
+
+  void _markFolderOrderUpdated() {
+    _folderOrderUpdatedAt = _nextUpdatedAt(_folderOrderUpdatedAt);
   }
 
   void _rebuildHashedIds() {
@@ -415,6 +462,7 @@ class LocalFavoritesManager with ChangeNotifier {
                   id: folder,
                   name: folder,
                   sortOrder: orderIndex++,
+                  updatedAt: Value(_folderOrderUpdatedAt),
                 ),
               );
           final entries = _byFolder[folder] ?? const [];
@@ -437,6 +485,7 @@ class LocalFavoritesManager with ChangeNotifier {
                     time: Value(it.time),
                     displayOrder: Value(i),
                     recentlyWatched: Value(e.recentlyWatched),
+                    updatedAt: Value(e.updatedAt),
                     viewMore: Value(
                       it.viewMore is PageJumpTarget
                           ? (it.viewMore as PageJumpTarget).toJsonString()
@@ -506,11 +555,29 @@ class LocalFavoritesManager with ChangeNotifier {
         if (entry == null) {
           entry = item.toMergeJson();
           entry['folders'] = <String>[];
-          // 最近观看时间也要同步，否则各端按各自的观看记录排序，顺序对不上
           entry['recentlyWatched'] = e.recentlyWatched;
+          entry['updatedAt'] = e.updatedAt;
           entry['orders'] = <String, dynamic>{};
           seen[key] = entry;
           out.add(entry);
+        } else if (e.updatedAt > (entry['updatedAt'] as int? ?? 0)) {
+          entry
+            ..['name'] = item.name
+            ..['author'] = item.author
+            ..['type'] = item.type.value
+            ..['tags'] = item.tags
+            ..['coverPath'] = item.coverPath
+            ..['time'] = item.time
+            ..['viewMore'] = item.viewMore is PageJumpTarget
+                ? (item.viewMore as PageJumpTarget).toJsonString()
+                : null
+            ..['updatedAt'] = e.updatedAt;
+        }
+        final recent = e.recentlyWatched;
+        final currentRecent = entry['recentlyWatched']?.toString();
+        if (recent != null &&
+            (currentRecent == null || recent.compareTo(currentRecent) > 0)) {
+          entry['recentlyWatched'] = recent;
         }
         (entry['folders'] as List).add(token);
         // 各文件夹内的位置（默认排序用），跨端对齐条目顺序
@@ -518,7 +585,10 @@ class LocalFavoritesManager with ChangeNotifier {
       }
     }
     // 文件夹 tab 顺序：单独一项放在末尾，避免混进条目解析
-    out.add({'folderOrder': _folderOrder.map(_folderToken).toList()});
+    out.add({
+      'folderOrder': _folderOrder.map(_folderToken).toList(),
+      'folderOrderUpdatedAt': _folderOrderUpdatedAt,
+    });
     return out;
   }
 
@@ -538,6 +608,12 @@ class LocalFavoritesManager with ChangeNotifier {
         .whereType<Map>()
         .map((m) => m['folderOrder'])
         .firstWhere((v) => v is List, orElse: () => null);
+    final folderOrderUpdatedAt = remote
+        .whereType<Map>()
+        .map((m) => m['folderOrderUpdatedAt'])
+        .whereType<num>()
+        .map((v) => v.toInt())
+        .firstOrNull;
     if (folderOrderRaw is List && folderOrderRaw.isNotEmpty) {
       final desired = <String>[];
       for (final f in folderOrderRaw) {
@@ -549,13 +625,21 @@ class LocalFavoritesManager with ChangeNotifier {
         final t = _folderToken(f);
         if (!desired.contains(t)) desired.add(t);
       }
-      if (!listEquals(desired, _folderOrder.map(_folderToken).toList())) {
+      final orderIsNewer =
+          folderOrderUpdatedAt == null ||
+          folderOrderUpdatedAt > _folderOrderUpdatedAt;
+      if (orderIsNewer &&
+          !listEquals(desired, _folderOrder.map(_folderToken).toList())) {
         for (final t in desired) {
           _ensureFolderExists(t);
         }
         _folderOrder
           ..clear()
           ..addAll(desired);
+        changed = true;
+      }
+      if (orderIsNewer && folderOrderUpdatedAt != null) {
+        _folderOrderUpdatedAt = folderOrderUpdatedAt;
         changed = true;
       }
     }
@@ -571,8 +655,15 @@ class LocalFavoritesManager with ChangeNotifier {
       final rawFolders = map['folders'];
       final hasFolderInfo = rawFolders is List && rawFolders.isNotEmpty;
       final remoteRecent = map['recentlyWatched']?.toString();
+      final remoteUpdatedAt = (map['updatedAt'] as num?)?.toInt() ?? 0;
+      final hasRemoteUpdateTime = remoteUpdatedAt > 0;
+      final localUpdatedAt = _latestUpdatedAt(item.id, item.type);
+      final remoteWins =
+          !hasRemoteUpdateTime ||
+          localUpdatedAt == 0 ||
+          remoteUpdatedAt > localUpdatedAt;
       final rawOrders = map['orders'];
-      if (rawOrders is Map) {
+      if (remoteWins && rawOrders is Map) {
         for (final o in rawOrders.entries) {
           final token = _folderToken(o.key.toString());
           final index = o.value is num
@@ -584,7 +675,7 @@ class LocalFavoritesManager with ChangeNotifier {
         }
       }
 
-      /// 最近观看时间按「谁更新用谁」合并（字符串即时间序，可直接比较）
+      /// 最近观看是累计活动时间，保留两端较新的值。
       void mergeRecentlyWatched() {
         if (remoteRecent == null || remoteRecent.isEmpty) return;
         for (final folder in _folderOrder) {
@@ -595,6 +686,9 @@ class LocalFavoritesManager with ChangeNotifier {
               local.isEmpty ||
               local.compareTo(remoteRecent) < 0) {
             e.recentlyWatched = remoteRecent;
+            if (remoteUpdatedAt > e.updatedAt) {
+              e.updatedAt = remoteUpdatedAt;
+            }
             changed = true;
           }
         }
@@ -607,7 +701,12 @@ class LocalFavoritesManager with ChangeNotifier {
               ? '默认'
               : (_folderOrder.isNotEmpty ? _folderOrder.first : '默认');
           try {
-            addAnime(defaultFolder, item);
+            _addAnime(
+              defaultFolder,
+              item,
+              recentlyWatched: remoteRecent,
+              updatedAt: remoteUpdatedAt,
+            );
             changed = true;
           } catch (e) {
             DebugLog.error('mergeFavoriteMaps', '添加收藏 ${item.id} 失败：$e');
@@ -622,32 +721,39 @@ class LocalFavoritesManager with ChangeNotifier {
         if (!desired.contains(t)) desired.add(t);
       }
       if (desired.isEmpty) desired.add(kUnassignedFolder);
-      // 目标文件夹不存在则先建（例如对端刚新建的“在看”）
-      for (final d in desired) {
-        _ensureFolderExists(d);
-        if (_findEntry(d, item.id, item.type) == null) {
-          final list = _byFolder[_resolveFolder(d)];
-          if (list != null) {
+      if (remoteWins) {
+        // 目标文件夹不存在则先建（例如对端刚新建的“在看”）
+        for (final d in desired) {
+          _ensureFolderExists(d);
+          final existing = _findEntry(d, item.id, item.type);
+          if (existing == null) {
+            final list = _byFolder[_resolveFolder(d)];
+            if (list == null) continue;
             list.add(
               _FavEntry(
                 _cloneItem(item),
                 (remoteRecent != null && remoteRecent.isNotEmpty)
                     ? remoteRecent
                     : null,
+                remoteUpdatedAt > 0 ? remoteUpdatedAt : _nextUpdatedAt(),
               ),
             );
             changed = true;
+          } else {
+            existing.item = _cloneItem(item);
+            if (remoteUpdatedAt > 0) existing.updatedAt = remoteUpdatedAt;
+            changed = true;
           }
         }
-      }
-      // 以远端为准：本地多余的旧文件夹成员移除
-      for (final folder in _folderOrder) {
-        final localToken = _folderToken(folder);
-        if (desired.contains(localToken)) continue;
-        final e = _findEntry(folder, item.id, item.type);
-        if (e != null) {
-          removeFavoriteFromFolder(folder, item.id, item.type);
-          changed = true;
+        // 以远端为准：本地多余的旧文件夹成员移除
+        for (final folder in _folderOrder) {
+          final localToken = _folderToken(folder);
+          if (desired.contains(localToken)) continue;
+          final e = _findEntry(folder, item.id, item.type);
+          if (e != null) {
+            removeFavoriteFromFolder(folder, item.id, item.type);
+            changed = true;
+          }
         }
       }
       mergeRecentlyWatched();
@@ -701,7 +807,7 @@ class LocalFavoritesManager with ChangeNotifier {
     for (final r in remote) {
       if (findWithModelSync(r)) continue;
       try {
-        addAnime(defaultFolder, r);
+        _addAnime(defaultFolder, r, markRecentlyWatched: false);
         changed = true;
       } catch (e) {
         DebugLog.error('mergeFavoriteList', '添加收藏 ${r.id} 失败：$e');
@@ -874,6 +980,7 @@ class LocalFavoritesManager with ChangeNotifier {
     }
     _byFolder[_resolveFolder(name)] = <_FavEntry>[];
     _folderOrder.add(name);
+    _markFolderOrderUpdated();
     _notify();
     _schedulePersist();
     return name;
@@ -884,6 +991,7 @@ class LocalFavoritesManager with ChangeNotifier {
     _folderOrder
       ..clear()
       ..addAll(current);
+    _markFolderOrderUpdated();
     _notify();
     _schedulePersist();
   }
@@ -904,6 +1012,7 @@ class LocalFavoritesManager with ChangeNotifier {
     } else {
       _folderOrder.add(after);
     }
+    _markFolderOrderUpdated();
     _notify();
     _schedulePersist();
   }
@@ -912,6 +1021,7 @@ class LocalFavoritesManager with ChangeNotifier {
     if (isUnassignedFolder(name)) return;
     _byFolder.remove(name);
     _folderOrder.remove(name);
+    _markFolderOrderUpdated();
     _rebuildHashedIds();
     _notify();
     _schedulePersist();
@@ -919,7 +1029,17 @@ class LocalFavoritesManager with ChangeNotifier {
 
   // ─── 增删改 ───────────────────────────────────────────
 
-  bool addAnime(String folder, FavoriteItem anime, [int? order]) {
+  bool addAnime(String folder, FavoriteItem anime, [int? order]) =>
+      _addAnime(folder, anime, order: order);
+
+  bool _addAnime(
+    String folder,
+    FavoriteItem anime, {
+    int? order,
+    String? recentlyWatched,
+    int? updatedAt,
+    bool markRecentlyWatched = true,
+  }) {
     final key = _resolveFolder(folder);
     final list = _byFolder[key];
     if (list == null) {
@@ -928,7 +1048,12 @@ class LocalFavoritesManager with ChangeNotifier {
     if (list.any((e) => e.item.id == anime.id && e.item.type == anime.type)) {
       return false;
     }
-    final entry = _FavEntry(anime);
+    final entry = _FavEntry(
+      anime,
+      recentlyWatched ??
+          (markRecentlyWatched ? _getTimeString(DateTime.now()) : null),
+      updatedAt ?? _nextUpdatedAt(),
+    );
     if (order != null) {
       final idx = order.clamp(0, list.length);
       list.insert(idx, entry);
@@ -950,11 +1075,20 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void addTagTo(String folder, String id, String tag) {
-    for (final entry in _byFolder[_resolveFolder(folder)] ?? const []) {
-      if (entry.item.id == id) {
-        entry.item.tags = [tag, ...entry.item.tags];
-      }
+    final entries = (_byFolder[_resolveFolder(folder)] ?? const <_FavEntry>[])
+        .where((entry) => entry.item.id == id)
+        .toList();
+    if (entries.isEmpty) return;
+    final updatedAt = _nextUpdatedAt(
+      entries.fold(0, (latest, entry) => math.max(latest, entry.updatedAt)),
+    );
+    var changed = false;
+    for (final entry in entries) {
+      entry.item.tags = [tag, ...entry.item.tags];
+      entry.updatedAt = updatedAt;
+      changed = true;
     }
+    if (!changed) return;
     _notify();
     _schedulePersist();
   }
@@ -962,7 +1096,11 @@ class LocalFavoritesManager with ChangeNotifier {
   void removeFavoriteFromFolder(String folder, String id, AnimeType type) {
     final list = _byFolder[_resolveFolder(folder)];
     if (list == null) return;
+    final previousLength = list.length;
     list.removeWhere((e) => e.item.id == id && e.item.type == type);
+    if (list.length != previousLength) {
+      _touchEntries(id, type, _nextUpdatedAt(_latestUpdatedAt(id, type)));
+    }
   }
 
   /// 复制条目到目标文件夹（目标已存在则只补齐观看时间，不产生副本）
@@ -973,16 +1111,23 @@ class LocalFavoritesManager with ChangeNotifier {
       (e) => e.item.id == src.item.id && e.item.type == src.item.type,
     );
     if (existing != -1) {
+      final target = list[existing];
       // 同一条目在各文件夹的观看时间应一致，来源更新就同步过去
       if ((src.recentlyWatched ?? '').compareTo(
             list[existing].recentlyWatched ?? '',
           ) >
           0) {
-        list[existing].recentlyWatched = src.recentlyWatched;
+        target.recentlyWatched = src.recentlyWatched;
+      }
+      if (src.updatedAt > target.updatedAt) {
+        target.item = _cloneItem(src.item);
+        target.updatedAt = src.updatedAt;
       }
       return;
     }
-    list.add(_FavEntry(_cloneItem(src.item), src.recentlyWatched));
+    list.add(
+      _FavEntry(_cloneItem(src.item), src.recentlyWatched, src.updatedAt),
+    );
   }
 
   FavoriteItem _cloneItem(FavoriteItem src) => FavoriteItem(
@@ -1062,6 +1207,11 @@ class LocalFavoritesManager with ChangeNotifier {
       if (e != null) _copyInto(targetFolder, e);
     }
     for (var i in items) {
+      _touchEntries(
+        i.id,
+        i.type,
+        _nextUpdatedAt(_latestUpdatedAt(i.id, i.type)),
+      );
       StatsManager().addFavoriteRecord(
         id: i.id,
         type: i.type.value,
@@ -1075,12 +1225,9 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void batchDeleteAnimes(String folder, List<FavoriteItem> animes) {
-    final list = _byFolder[_resolveFolder(folder)];
     for (var anime in animes) {
       LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
-      list?.removeWhere(
-        (e) => e.item.id == anime.id && e.item.type == anime.type,
-      );
+      removeFavoriteFromFolder(folder, anime.id, anime.type);
     }
     for (var i in animes) {
       reduceHashedId(i.id, i.type.value);
@@ -1146,20 +1293,30 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void editTags(String id, String folder, List<String> tags) {
-    for (final e in _byFolder[_resolveFolder(folder)] ?? const []) {
-      if (e.item.id == id) e.item.tags = List<String>.from(tags);
+    final entries = (_byFolder[_resolveFolder(folder)] ?? const <_FavEntry>[])
+        .where((e) => e.item.id == id)
+        .toList();
+    if (entries.isEmpty) return;
+    final updatedAt = _nextUpdatedAt(
+      entries.fold(0, (latest, e) => math.max(latest, e.updatedAt)),
+    );
+    for (final e in entries) {
+      e.item.tags = List<String>.from(tags);
+      e.updatedAt = updatedAt;
     }
     _notify();
     _schedulePersist();
   }
 
   void updateInfo(String folder, FavoriteItem anime) {
+    final updatedAt = _nextUpdatedAt(_latestUpdatedAt(anime.id, anime.type));
     for (final e in _byFolder[_resolveFolder(folder)] ?? const []) {
       if (e.item.id == anime.id && e.item.type == anime.type) {
         e.item.name = anime.name;
         e.item.author = anime.author;
         e.item.coverPath = anime.coverPath;
         e.item.tags = List<String>.from(anime.tags);
+        e.updatedAt = updatedAt;
       }
     }
     _notify();
@@ -1194,6 +1351,9 @@ class LocalFavoritesManager with ChangeNotifier {
         }
       }
       if (changed) {
+        _touchEntries(id, type, _nextUpdatedAt(_latestUpdatedAt(id, type)));
+      }
+      if (changed) {
         _notify();
         _schedulePersist();
       }
@@ -1206,10 +1366,12 @@ class LocalFavoritesManager with ChangeNotifier {
   void updateRecentlyWatched(String id, AnimeType type) {
     if (!isExist(id, type)) return;
     final now = _getTimeString(DateTime.now());
+    final updatedAt = _nextUpdatedAt(_latestUpdatedAt(id, type));
     for (final folder in _folderOrder) {
       for (final e in _byFolder[folder] ?? const []) {
         if (e.item.id == id && e.item.type == type) {
           e.recentlyWatched = now;
+          e.updatedAt = updatedAt;
         }
       }
     }
@@ -1278,6 +1440,9 @@ class LocalFavoritesManager with ChangeNotifier {
 
   int minValue(String folder) => 0;
 }
+
+final localFavoritesManagerProvider =
+    NotifierProvider<LocalFavoritesManager, int>(LocalFavoritesManager.new);
 
 final favoritesChangedProvider = StreamProvider<void>((ref) {
   return LocalFavoritesManager()._favoritesStream.stream;

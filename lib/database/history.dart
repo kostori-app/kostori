@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart' show SqliteException;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/database/db_common.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -53,6 +54,7 @@ class History implements Anime {
   int? lastRoad;
   int? allEpisode;
   int? bangumiId;
+  int updatedAt;
   @override
   final PageJumpTarget? viewMore;
   @override
@@ -68,6 +70,7 @@ class History implements Anime {
     this.bangumiId,
     Set<int>? watchEpisode,
     DateTime? time,
+    int? updatedAt,
   }) : type = model.historyType,
        title = model.title,
        subtitle = model.subTitle ?? '',
@@ -75,7 +78,8 @@ class History implements Anime {
        id = model.id,
        viewMore = model.viewMore,
        watchEpisode = watchEpisode ?? <int>{},
-       time = time ?? DateTime.now();
+       time = time ?? DateTime.now(),
+       updatedAt = updatedAt ?? (time ?? DateTime.now()).millisecondsSinceEpoch;
 
   /// 直接构造（用于后台 isolate 反序列化重建）
   History({
@@ -92,8 +96,10 @@ class History implements Anime {
     this.bangumiId,
     Set<int>? watchEpisode,
     this.viewMore,
+    int? updatedAt,
   }) : time = time ?? DateTime.now(),
-       watchEpisode = watchEpisode ?? <int>{};
+       watchEpisode = watchEpisode ?? <int>{},
+       updatedAt = updatedAt ?? (time ?? DateTime.now()).millisecondsSinceEpoch;
 
   History.fromDrift(HistoryTableData r)
     : type = HistoryType(r.type),
@@ -110,6 +116,7 @@ class History implements Anime {
         r.watchEpisode.split(',').where((e) => e.isNotEmpty).map(int.parse),
       ),
       bangumiId = r.bangumiId,
+      updatedAt = r.updatedAt,
       viewMore = r.viewMore != null && r.viewMore!.isNotEmpty
           ? PageJumpTarget.fromJsonString(r.viewMore!)
           : null;
@@ -128,6 +135,7 @@ class History implements Anime {
     allEpisode: Value(allEpisode),
     watchEpisode: Value(watchEpisode.join(',')),
     bangumiId: Value(bangumiId),
+    updatedAt: Value(updatedAt),
     viewMore: Value(
       viewMore is PageJumpTarget
           ? (viewMore as PageJumpTarget).toJsonString()
@@ -148,6 +156,7 @@ class History implements Anime {
     'subtitle': subtitle,
     'cover': InlineImageStore.refOfBase64(cover),
     'time': time.millisecondsSinceEpoch,
+    'updatedAt': updatedAt,
     'lastWatchEpisode': lastWatchEpisode,
     'lastWatchTime': lastWatchTime,
     'lastRoad': lastRoad,
@@ -164,6 +173,10 @@ class History implements Anime {
     id: json['id'] as String,
     type: AnimeType(json['type'] as int),
     time: DateTime.fromMillisecondsSinceEpoch(json['time'] as int),
+    updatedAt:
+        (json['updatedAt'] as num?)?.toInt() ??
+        (json['time'] as num?)?.toInt() ??
+        0,
     title: json['title'] as String? ?? '',
     subtitle: json['subtitle'] as String? ?? '',
     cover: json['cover'] as String? ?? '',
@@ -326,6 +339,7 @@ class Progress {
   bool isCompleted;
   DateTime? startTime;
   DateTime? endTime;
+  int updatedAt;
 
   Progress.fromModel({
     required HistoryMixin model,
@@ -336,7 +350,8 @@ class Progress {
     this.startTime,
     this.endTime,
   }) : type = model.historyType,
-       historyId = model.id;
+       historyId = model.id,
+       updatedAt = DateTime.now().millisecondsSinceEpoch;
 
   Progress.fromDrift(ProgressTableData r)
     : type = HistoryType(r.type),
@@ -346,7 +361,8 @@ class Progress {
       progressInMilli = r.progressInMilli,
       isCompleted = r.isCompleted,
       startTime = r.startTime != null ? DateTime.tryParse(r.startTime!) : null,
-      endTime = r.endTime != null ? DateTime.tryParse(r.endTime!) : null;
+      endTime = r.endTime != null ? DateTime.tryParse(r.endTime!) : null,
+      updatedAt = r.updatedAt;
 
   Progress({
     required this.historyId,
@@ -357,7 +373,8 @@ class Progress {
     this.isCompleted = false,
     this.startTime,
     this.endTime,
-  });
+    int? updatedAt,
+  }) : updatedAt = updatedAt ?? DateTime.now().millisecondsSinceEpoch;
 
   /// 跨端同步用序列化（见 `utils/data.dart` 的 progress_merge.json）
   Map<String, dynamic> toJson() => {
@@ -369,24 +386,37 @@ class Progress {
     'isCompleted': isCompleted,
     'startTime': startTime?.toIso8601String(),
     'endTime': endTime?.toIso8601String(),
+    'updatedAt': updatedAt,
   };
 
-  static Progress fromJson(Map<String, dynamic> json) => Progress(
-    historyId: json['historyId']?.toString() ?? '',
-    type: HistoryType((json['type'] as num?)?.toInt() ?? 0),
-    episode: (json['episode'] as num?)?.toInt() ?? 0,
-    road: (json['road'] as num?)?.toInt() ?? 0,
-    progressInMilli: (json['progressInMilli'] as num?)?.toInt() ?? 0,
-    isCompleted: json['isCompleted'] == true,
-    startTime: DateTime.tryParse(json['startTime']?.toString() ?? ''),
-    endTime: DateTime.tryParse(json['endTime']?.toString() ?? ''),
-  );
+  static Progress fromJson(Map<String, dynamic> json) {
+    final startTime = DateTime.tryParse(json['startTime']?.toString() ?? '');
+    final endTime = DateTime.tryParse(json['endTime']?.toString() ?? '');
+    return Progress(
+      historyId: json['historyId']?.toString() ?? '',
+      type: HistoryType((json['type'] as num?)?.toInt() ?? 0),
+      episode: (json['episode'] as num?)?.toInt() ?? 0,
+      road: (json['road'] as num?)?.toInt() ?? 0,
+      progressInMilli: (json['progressInMilli'] as num?)?.toInt() ?? 0,
+      isCompleted: json['isCompleted'] == true,
+      startTime: startTime,
+      endTime: endTime,
+      updatedAt:
+          (json['updatedAt'] as num?)?.toInt() ??
+          endTime?.millisecondsSinceEpoch ??
+          startTime?.millisecondsSinceEpoch ??
+          0,
+    );
+  }
 
   /// 同一条进度（type + historyId + episode + road）的唯一键
   String get key => '${type.value}|$historyId|$episode|$road';
 
   /// 是否比 [other] 更新：结束时间更晚优先，都没有结束时间时比较观看进度
   bool isNewerThan(Progress other) {
+    if (updatedAt > 0 && other.updatedAt > 0 && updatedAt != other.updatedAt) {
+      return updatedAt > other.updatedAt;
+    }
     final end = endTime;
     final otherEnd = other.endTime;
     if (end != null && otherEnd != null) {
@@ -431,6 +461,9 @@ class HistoryTable extends Table {
 
   IntColumn get lastWatchTime => integer().named('lastWatchTime').nullable()();
 
+  IntColumn get updatedAt =>
+      integer().named('updatedAt').withDefault(const Constant(0))();
+
   IntColumn get lastRoad => integer().named('lastRoad').nullable()();
 
   IntColumn get allEpisode => integer().named('allEpisode').nullable()();
@@ -467,6 +500,9 @@ class ProgressTable extends Table {
   TextColumn get startTime => text().named('startTime').nullable()();
 
   TextColumn get endTime => text().named('endTime').nullable()();
+
+  IntColumn get updatedAt =>
+      integer().named('updatedAt').withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {type, episode, road, historyId};
@@ -562,11 +598,30 @@ class _HistoryDb extends _$_HistoryDb {
   _HistoryDb() : super(_openConn());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        Future<void> addColumnIfMissing(
+          TableInfo table,
+          GeneratedColumn column,
+        ) async {
+          final columns = await m.database
+              .customSelect('PRAGMA table_info(${table.actualTableName})')
+              .get();
+          if (!columns.any((row) => row.data['name'] == column.name)) {
+            await m.addColumn(table, column);
+          }
+        }
+
+        await addColumnIfMissing(historyTable, historyTable.updatedAt);
+        await addColumnIfMissing(progressTable, progressTable.updatedAt);
+      }
+    },
+  );
 }
 
 /// 物理建表（v1 无迁移）：幂等，确保 history.db 里有 plugin_events 表
@@ -666,7 +721,7 @@ class PluginEventItem {
   );
 }
 
-class HistoryManager with ChangeNotifier {
+class HistoryManager extends RiverpodStore {
   static HistoryManager? _cache;
 
   HistoryManager._();
@@ -718,11 +773,12 @@ class HistoryManager with ChangeNotifier {
   /// （`lastWatchTime` 是集内播放位置，不是时间戳）。
   static History _mergeHistoryFields(History a, History b) {
     final advanced = _betterHistory(a, b) ? a : b;
-    final newer = a.time.isAfter(b.time) ? a : b;
+    final newer = a.updatedAt >= b.updatedAt ? a : b;
+    final latestActivity = a.time.isAfter(b.time) ? a.time : b.time;
     return History(
       id: advanced.id,
       type: advanced.type,
-      time: newer.time,
+      time: latestActivity,
       title: newer.title.isNotEmpty ? newer.title : advanced.title,
       subtitle: newer.subtitle.isNotEmpty ? newer.subtitle : advanced.subtitle,
       cover: newer.cover.isNotEmpty ? newer.cover : advanced.cover,
@@ -733,6 +789,7 @@ class HistoryManager with ChangeNotifier {
       bangumiId: newer.bangumiId ?? advanced.bangumiId,
       watchEpisode: {...a.watchEpisode, ...b.watchEpisode},
       viewMore: newer.viewMore ?? advanced.viewMore,
+      updatedAt: a.updatedAt > b.updatedAt ? a.updatedAt : b.updatedAt,
     );
   }
 
@@ -746,6 +803,7 @@ class HistoryManager with ChangeNotifier {
     return a.id == b.id &&
         a.type == b.type &&
         a.time == b.time &&
+        a.updatedAt == b.updatedAt &&
         a.title == b.title &&
         a.subtitle == b.subtitle &&
         a.cover == b.cover &&
@@ -995,6 +1053,9 @@ class HistoryManager with ChangeNotifier {
   // ─── 写入 ──────────────────────────────────
 
   Future<void> addHistory(History item) => _guard(() async {
+    final previous = cachedHistories[item.id]?.updatedAt ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    item.updatedAt = now > previous ? now : previous + 1;
     await _db.into(_db.historyTable).insertOnConflictUpdate(item.toCompanion());
     _cachedHistoryIds ??= {};
     _cachedHistoryIds![item.id] = true;
@@ -1261,6 +1322,7 @@ class HistoryManager with ChangeNotifier {
             isCompleted: local.isCompleted || r.isCompleted,
             startTime: winner.startTime,
             endTime: winner.endTime,
+            updatedAt: winner.updatedAt,
           ),
         );
       }
@@ -1279,6 +1341,7 @@ class HistoryManager with ChangeNotifier {
               isCompleted: Value(p.isCompleted),
               startTime: Value(p.startTime?.toIso8601String()),
               endTime: Value(p.endTime?.toIso8601String()),
+              updatedAt: Value(p.updatedAt),
             ),
             mode: InsertMode.insertOrReplace,
           );
@@ -1289,6 +1352,10 @@ class HistoryManager with ChangeNotifier {
   );
 }
 
+final historyManagerProvider = NotifierProvider<HistoryManager, int>(
+  HistoryManager.new,
+);
+
 // ═══════════════════════════════════════════════════════════
 // ProgressHelper
 // ═══════════════════════════════════════════════════════════
@@ -1296,6 +1363,19 @@ class HistoryManager with ChangeNotifier {
 extension ProgressHelper on HistoryManager {
   Future<void> addProgress(Progress prog, String historyId) => _guard(
     () => _resilient(_db.progressTable, () async {
+      final previous =
+          await (_db.select(_db.progressTable)..where(
+                (t) =>
+                    t.historyId.equals(historyId) &
+                    t.type.equals(prog.type.value) &
+                    t.episode.equals(prog.episode) &
+                    t.road.equals(prog.road),
+              ))
+              .getSingleOrNull();
+      final now = DateTime.now().millisecondsSinceEpoch;
+      prog.updatedAt = previous == null || now > previous.updatedAt
+          ? now
+          : previous.updatedAt + 1;
       await _db
           .into(_db.progressTable)
           .insertOnConflictUpdate(
@@ -1308,6 +1388,7 @@ extension ProgressHelper on HistoryManager {
               isCompleted: Value(prog.isCompleted),
               startTime: Value(prog.startTime?.toIso8601String()),
               endTime: Value(prog.endTime?.toIso8601String()),
+              updatedAt: Value(prog.updatedAt),
             ),
           );
     }),
@@ -1374,6 +1455,16 @@ extension ProgressHelper on HistoryManager {
     DateTime? endTime,
   }) => _guard(
     () => _resilient(_db.progressTable, () async {
+      final current =
+          await (_db.select(_db.progressTable)..where(
+                (t) =>
+                    t.historyId.equals(historyId) &
+                    t.type.equals(type.value) &
+                    t.episode.equals(episode) &
+                    t.road.equals(road),
+              ))
+              .getSingleOrNull();
+      final now = DateTime.now().millisecondsSinceEpoch;
       await (_db.update(_db.progressTable)..where(
             (t) =>
                 t.historyId.equals(historyId) &
@@ -1395,6 +1486,11 @@ extension ProgressHelper on HistoryManager {
               endTime: endTime != null
                   ? Value(endTime.toIso8601String())
                   : const Value.absent(),
+              updatedAt: Value(
+                current == null || now > current.updatedAt
+                    ? now
+                    : current.updatedAt + 1,
+              ),
             ),
           );
     }),
@@ -1689,18 +1785,12 @@ final historyAllProvider =
 class HistoryAllNotifier extends StreamNotifier<List<History>> {
   @override
   Stream<List<History>> build() async* {
-    final manager = HistoryManager();
+    // Manager 状态变化会使 StreamNotifier 重建并重新读取内存缓存。
+    ref.watch(historyManagerProvider);
+    final manager = ref.read(historyManagerProvider.notifier);
     if (!manager.isInitialized) await manager.init();
     // 读缓存（不查库）：避免每次查询与后台写入锁冲突导致卡顿
     yield _fromCache(manager);
-    yield* Stream<void>.multi((controller) {
-      void notify() {
-        if (!controller.isClosed) controller.add(null);
-      }
-
-      manager.addListener(notify);
-      controller.onCancel = () => manager.removeListener(notify);
-    }).map((_) => _fromCache(manager));
   }
 
   List<History> _fromCache(HistoryManager manager) {

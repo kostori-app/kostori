@@ -1,5 +1,7 @@
 library;
 
+import 'package:kostori/utils/riverpod_store.dart';
+
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
@@ -7,6 +9,7 @@ import 'dart:isolate';
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
@@ -32,7 +35,7 @@ part 'models.dart';
 
 part 'parser.dart';
 
-class AnimeSourceManager with ChangeNotifier, Init {
+class AnimeSourceManager extends RiverpodStore with Init {
   final List<AnimeSource> _sources = [];
 
   static AnimeSourceManager? _instance;
@@ -314,6 +317,10 @@ class AnimeSourceManager with ChangeNotifier, Init {
     return candidates;
   }
 }
+
+final animeSourceManagerProvider = NotifierProvider<AnimeSourceManager, int>(
+  AnimeSourceManager.new,
+);
 
 /// build Anime list, [Res.subData] should be maxPage or null if there is no limit.
 typedef AnimeListBuilder = Future<Res<List<Anime>>> Function(int page);

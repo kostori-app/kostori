@@ -160,14 +160,14 @@ class AnimeSourceSettings extends StatelessWidget {
   }
 }
 
-class _Body extends StatefulWidget {
+class _Body extends ConsumerStatefulWidget {
   const _Body();
 
   @override
-  State<_Body> createState() => _BodyState();
+  ConsumerState<_Body> createState() => _BodyState();
 }
 
-class _BodyState extends State<_Body> with RouteAware {
+class _BodyState extends ConsumerState<_Body> with RouteAware {
   var url = "";
 
   bool _isDragging = false;
@@ -257,7 +257,9 @@ class _BodyState extends State<_Body> with RouteAware {
     super.initState();
     _searchCtrl.addListener(() => setState(() {}));
     _loadFilter();
-    AnimeSourceManager().addListener(updateUI);
+    ref.listenManual(animeSourceManagerProvider, (_, _) {
+      if (mounted) updateUI();
+    });
   }
 
   @override
@@ -272,7 +274,6 @@ class _BodyState extends State<_Body> with RouteAware {
     App.routeObserver.unsubscribe(this);
     _searchFocus.dispose();
     _searchCtrl.dispose();
-    AnimeSourceManager().removeListener(updateUI);
     super.dispose();
   }
 
@@ -285,6 +286,7 @@ class _BodyState extends State<_Body> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(animeSourceManagerProvider);
     final sources = _filteredSources();
     return SmoothCustomScrollView(
       slivers: [

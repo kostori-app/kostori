@@ -1,9 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:kostori/utils/riverpod_store.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/database/favorites.dart';
@@ -11,6 +14,7 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/provider_container.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/data.dart';
@@ -26,7 +30,7 @@ class RemoteFileInfo {
   const RemoteFileInfo({required this.name, this.size = 0, this.modified});
 }
 
-class DataSync with ChangeNotifier, WidgetsBindingObserver {
+class DataSync extends RiverpodStore with WidgetsBindingObserver {
   DataSync._() {
     final t = appdata.implicitData['dataLastSyncTime'];
     if (t is int) _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(t);
@@ -34,7 +38,10 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
       downloadData();
     }
     LocalFavoritesManager().onChanged.listen((_) => onDataChanged());
-    AnimeSourceManager().addListener(onDataChanged);
+    providerContainer.listen(
+      animeSourceManagerProvider,
+      (_, _) => onDataChanged(),
+    );
     if (App.isDesktop) {
       Future.delayed(const Duration(seconds: 1), () {
         // 无头模式没有 UI 上下文（rootContext 为 null），直接跳过窗口监听
@@ -829,3 +836,5 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 }
+
+final dataSyncProvider = NotifierProvider<DataSync, int>(DataSync.new);

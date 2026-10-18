@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/js_engine.dart';
@@ -528,7 +530,7 @@ class MePagePlugin {
 }
 
 /// 个人页插件管理器：从 data/me_plugins 读取 *.js。
-class MePagePluginManager with ChangeNotifier, Init {
+class MePagePluginManager extends RiverpodStore with Init {
   final List<MePagePlugin> _plugins = [];
 
   static MePagePluginManager? _instance;
@@ -750,6 +752,10 @@ class MePagePluginManager with ChangeNotifier, Init {
     return clean.substring(0, idx + 1);
   }
 }
+
+final mePagePluginManagerProvider = NotifierProvider<MePagePluginManager, int>(
+  MePagePluginManager.new,
+);
 
 /// 个人页插件解析器：执行 JS 文件并把 `plugin` 对象挂到全局。
 class MePagePluginParser {

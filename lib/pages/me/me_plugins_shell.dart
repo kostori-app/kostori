@@ -206,7 +206,7 @@ class _PluginShellEntry extends StatelessWidget {
 }
 
 /// 插件导航壳：顶部/底部导航 + 各导航页内容（每页各自调用 plugin.page）
-class PluginShellPage extends StatefulWidget {
+class PluginShellPage extends ConsumerStatefulWidget {
   final MePagePlugin plugin;
 
   /// 打开时定位的初始页 key（如 'login'），null 时取第一个导航页
@@ -215,12 +215,11 @@ class PluginShellPage extends StatefulWidget {
   const PluginShellPage({super.key, required this.plugin, this.initialPageKey});
 
   @override
-  State<PluginShellPage> createState() => _PluginShellPageState();
+  ConsumerState<PluginShellPage> createState() => _PluginShellPageState();
 }
 
-class _PluginShellPageState extends State<PluginShellPage>
+class _PluginShellPageState extends ConsumerState<PluginShellPage>
     with TickerProviderStateMixin {
-  late final MePagePluginManager _manager;
   late Future<List<Map<String, dynamic>>> _navFuture;
   TabController? _outerTabs;
   int _index = 0;
@@ -245,7 +244,9 @@ class _PluginShellPageState extends State<PluginShellPage>
   @override
   void initState() {
     super.initState();
-    _manager = MePagePluginManager()..addListener(_onManagerChanged);
+    ref.listenManual(mePagePluginManagerProvider, (_, _) {
+      _onManagerChanged();
+    });
     _navFuture = widget.plugin.nav().then((nav) {
       _nav = nav;
       int start = 0;
@@ -272,7 +273,6 @@ class _PluginShellPageState extends State<PluginShellPage>
 
   @override
   void dispose() {
-    _manager.removeListener(_onManagerChanged);
     _outerTabs?.dispose();
     for (final c in _boardCtrls) {
       c?.dispose();

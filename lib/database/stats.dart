@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/db_common.dart';
 import 'package:kostori/database/favorites.dart';
@@ -349,6 +350,8 @@ abstract class StatsData {
 
   DateTime? get lastClickTime;
 
+  int get updatedAt;
+
   List<DailyEvent> get totalWatchDurations;
 
   List<DailyEvent> get rating;
@@ -380,6 +383,8 @@ class StatsDataImpl implements StatsData {
   @override
   DateTime? lastClickTime;
   @override
+  int updatedAt;
+  @override
   List<DailyEvent> totalWatchDurations;
   @override
   List<DailyEvent> rating;
@@ -401,11 +406,13 @@ class StatsDataImpl implements StatsData {
     List<DailyEvent>? totalWatchDurations,
     List<DailyEvent>? rating,
     List<DailyEvent>? favorite,
+    int? updatedAt,
   }) : comment = comment ?? [],
        totalClickCount = totalClickCount ?? [],
        totalWatchDurations = totalWatchDurations ?? [],
        rating = rating ?? [],
-       favorite = favorite ?? [];
+       favorite = favorite ?? [],
+       updatedAt = updatedAt ?? DateTime.now().millisecondsSinceEpoch;
 
   static List<DailyEvent> _parseList(String? jsonStr) {
     if (jsonStr == null || jsonStr.isEmpty) return [];
@@ -440,6 +447,7 @@ class StatsDataImpl implements StatsData {
       lastClickTime: row.lastClickTime != null
           ? DateTime.parse(row.lastClickTime!)
           : null,
+      updatedAt: row.updatedAt,
     );
   }
 
@@ -466,6 +474,7 @@ class StatsDataImpl implements StatsData {
         : null,
     'firstClickTime': firstClickTime?.toIso8601String(),
     'lastClickTime': lastClickTime?.toIso8601String(),
+    'updatedAt': updatedAt,
   };
 
   @override
@@ -489,6 +498,7 @@ class StatsDataImpl implements StatsData {
     'favorite': favorite.map((e) => e.toJson()).toList(),
     'firstClickTime': firstClickTime?.toIso8601String(),
     'lastClickTime': lastClickTime?.toIso8601String(),
+    'updatedAt': updatedAt,
   };
 
   factory StatsDataImpl.fromMergeJson(Map<String, dynamic> json) {
@@ -500,6 +510,9 @@ class StatsDataImpl implements StatsData {
           .toList();
     }
 
+    final lastClickTime = json['lastClickTime'] != null
+        ? DateTime.parse(json['lastClickTime'] as String)
+        : null;
     return StatsDataImpl(
       id: json['id'] as String,
       title: json['title'] as String?,
@@ -516,9 +529,11 @@ class StatsDataImpl implements StatsData {
       firstClickTime: json['firstClickTime'] != null
           ? DateTime.parse(json['firstClickTime'] as String)
           : null,
-      lastClickTime: json['lastClickTime'] != null
-          ? DateTime.parse(json['lastClickTime'] as String)
-          : null,
+      lastClickTime: lastClickTime,
+      updatedAt:
+          (json['updatedAt'] as num?)?.toInt() ??
+          lastClickTime?.millisecondsSinceEpoch ??
+          0,
     );
   }
 }
@@ -563,6 +578,9 @@ class StatsTable extends Table {
 
   TextColumn get favorite => text().named('favorite').nullable()();
 
+  IntColumn get updatedAt =>
+      integer().named('updatedAt').withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {id, type};
 }
@@ -576,11 +594,24 @@ class _StatsDb extends _$_StatsDb {
   _StatsDb() : super(_openConn());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        final columns = await m.database
+            .customSelect('PRAGMA table_info(${statsTable.actualTableName})')
+            .get();
+        if (!columns.any(
+          (row) => row.data['name'] == statsTable.updatedAt.name,
+        )) {
+          await m.addColumn(statsTable, statsTable.updatedAt);
+        }
+      }
+    },
+  );
 }
 
 LazyDatabase _openConn() => openWalDb('stats.db');
@@ -589,7 +620,7 @@ LazyDatabase _openConn() => openWalDb('stats.db');
 // StatsManager
 // ═══════════════════════════════════════════════════════════
 
-class StatsManager with ChangeNotifier {
+class StatsManager extends RiverpodStore {
   static StatsManager? _cache;
 
   StatsManager._();
@@ -714,40 +745,56 @@ class StatsManager with ChangeNotifier {
     ),
     firstClickTime: Value(s.firstClickTime?.toIso8601String()),
     lastClickTime: Value(s.lastClickTime?.toIso8601String()),
+    updatedAt: Value(s.updatedAt),
   );
 
   // ─── 写入 ──────────────────────────────────
 
-  Future<void> addStats(StatsData newItem) => _guard(() async {
-    _modifiedAfterLastCache = true;
-    _cachedStatsIds['${newItem.id}@${newItem.type}'] = true;
-    final c = _toCompanion(newItem);
-    await _db.customInsert(
-      '''INSERT OR REPLACE INTO stats
+  Future<void> addStats(StatsData newItem, {bool preserveUpdatedAt = false}) =>
+      _guard(() async {
+        final existing =
+            await (_db.select(_db.statsTable)..where(
+                  (t) => t.id.equals(newItem.id) & t.type.equals(newItem.type),
+                ))
+                .getSingleOrNull();
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final updatedAt = preserveUpdatedAt
+            ? (newItem.updatedAt > 0
+                  ? newItem.updatedAt
+                  : existing?.updatedAt ?? 0)
+            : (existing == null || now > existing.updatedAt
+                  ? now
+                  : existing.updatedAt + 1);
+        _modifiedAfterLastCache = true;
+        _cachedStatsIds['${newItem.id}@${newItem.type}'] = true;
+        final c = _toCompanion(newItem).copyWith(updatedAt: Value(updatedAt));
+        await _db.customInsert(
+          '''INSERT OR REPLACE INTO stats
        (id, title, cover, bangumiId, type, liked, isBangumi, comment,
         totalClickCount, firstClickTime, lastClickTime,
-        totalWatchDurations, rating, favorite)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
-      variables: [
-        Variable(c.id.value),
-        Variable(c.title.value),
-        Variable(c.cover.value),
-        Variable(c.bangumiId.value),
-        Variable(c.type.value),
-        Variable(c.liked.value),
-        Variable(c.isBangumi.value),
-        Variable(c.comment.value),
-        Variable(c.totalClickCount.value),
-        Variable(c.firstClickTime.value),
-        Variable(c.lastClickTime.value),
-        Variable(c.totalWatchDurations.value),
-        Variable(c.rating.value),
-        Variable(c.favorite.value),
-      ],
-      updates: {_db.statsTable},
-    );
-    notifyListeners();
-  });
+        totalWatchDurations, rating, favorite, updatedAt)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+          variables: [
+            Variable(c.id.value),
+            Variable(c.title.value),
+            Variable(c.cover.value),
+            Variable(c.bangumiId.value),
+            Variable(c.type.value),
+            Variable(c.liked.value),
+            Variable(c.isBangumi.value),
+            Variable(c.comment.value),
+            Variable(c.totalClickCount.value),
+            Variable(c.firstClickTime.value),
+            Variable(c.lastClickTime.value),
+            Variable(c.totalWatchDurations.value),
+            Variable(c.rating.value),
+            Variable(c.favorite.value),
+            Variable(c.updatedAt.value),
+          ],
+          updates: {_db.statsTable},
+        );
+        notifyListeners();
+      });
 
   Future<void> updateStats({
     required String id,
@@ -759,6 +806,10 @@ class StatsManager with ChangeNotifier {
     List<DailyEvent>? rating,
     List<DailyEvent>? comment,
   }) => _guard(() async {
+    final current = await (_db.select(
+      _db.statsTable,
+    )..where((t) => t.id.equals(id) & t.type.equals(type))).getSingleOrNull();
+    final now = DateTime.now().millisecondsSinceEpoch;
     final companion = StatsTableCompanion(
       liked: liked != null ? Value(liked) : const Value.absent(),
       bangumiId: bangumiId != null ? Value(bangumiId) : const Value.absent(),
@@ -776,6 +827,11 @@ class StatsManager with ChangeNotifier {
       comment: comment != null
           ? Value(jsonEncode(comment.map((e) => e.toJson()).toList()))
           : const Value.absent(),
+      updatedAt: Value(
+        current == null || now > current.updatedAt
+            ? now
+            : current.updatedAt + 1,
+      ),
     );
 
     await (_db.update(
@@ -791,20 +847,50 @@ class StatsManager with ChangeNotifier {
   }) => _guard(() async {
     final current = await getStatsByIdAndType(id: id, type: type);
     if (current == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final affectedRows = !targetLiked && current.bangumiId != null
+        ? await (_db.select(
+            _db.statsTable,
+          )..where((t) => t.bangumiId.equals(current.bangumiId!))).get()
+        : [
+            await (_db.select(
+              _db.statsTable,
+            )..where((t) => t.id.equals(id) & t.type.equals(type))).getSingle(),
+          ];
+    final latestUpdate = affectedRows.fold<int>(
+      0,
+      (latest, row) => row.updatedAt > latest ? row.updatedAt : latest,
+    );
+    final updatedAt = now > latestUpdate ? now : latestUpdate + 1;
 
     if (targetLiked) {
-      await (_db.update(_db.statsTable)
-            ..where((t) => t.id.equals(id) & t.type.equals(type)))
-          .write(const StatsTableCompanion(liked: Value(true)));
+      await (_db.update(
+        _db.statsTable,
+      )..where((t) => t.id.equals(id) & t.type.equals(type))).write(
+        StatsTableCompanion(
+          liked: const Value(true),
+          updatedAt: Value(updatedAt),
+        ),
+      );
     } else {
       if (current.bangumiId != null) {
-        await (_db.update(_db.statsTable)
-              ..where((t) => t.bangumiId.equals(current.bangumiId!)))
-            .write(const StatsTableCompanion(liked: Value(false)));
+        await (_db.update(
+          _db.statsTable,
+        )..where((t) => t.bangumiId.equals(current.bangumiId!))).write(
+          StatsTableCompanion(
+            liked: const Value(false),
+            updatedAt: Value(updatedAt),
+          ),
+        );
       } else {
-        await (_db.update(_db.statsTable)
-              ..where((t) => t.id.equals(id) & t.type.equals(type)))
-            .write(const StatsTableCompanion(liked: Value(false)));
+        await (_db.update(
+          _db.statsTable,
+        )..where((t) => t.id.equals(id) & t.type.equals(type))).write(
+          StatsTableCompanion(
+            liked: const Value(false),
+            updatedAt: Value(updatedAt),
+          ),
+        );
       }
     }
   });
@@ -910,17 +996,26 @@ class StatsManager with ChangeNotifier {
       final l = localMap[key];
       if (l == null) {
         // 本地没有：直接写入
-        await addStats(r);
+        await addStats(r, preserveUpdatedAt: true);
         continue;
       }
-      // 合并：DailyEvent 列表并集，liked/isBangumi 取 OR，时间取较新
+      // 元数据按修改时间取新值，DailyEvent 列表仍按事件规则合并。
+      final hasUpdateTime = l.updatedAt > 0 || r.updatedAt > 0;
+      final remoteIsNewer = r.updatedAt > l.updatedAt;
+      final metadata = remoteIsNewer ? r : l;
       final merged = StatsDataImpl(
         id: r.id,
-        title: r.title ?? l.title,
-        cover: r.cover ?? l.cover,
-        bangumiId: r.bangumiId ?? l.bangumiId,
+        title: hasUpdateTime
+            ? metadata.title ?? (remoteIsNewer ? l.title : r.title)
+            : r.title ?? l.title,
+        cover: hasUpdateTime
+            ? metadata.cover ?? (remoteIsNewer ? l.cover : r.cover)
+            : r.cover ?? l.cover,
+        bangumiId: hasUpdateTime
+            ? metadata.bangumiId ?? (remoteIsNewer ? l.bangumiId : r.bangumiId)
+            : r.bangumiId ?? l.bangumiId,
         type: r.type,
-        liked: r.liked || l.liked,
+        liked: hasUpdateTime ? metadata.liked : r.liked || l.liked,
         isBangumi: r.isBangumi || l.isBangumi,
         comment: _mergeDailyEvents(l.comment, r.comment),
         totalClickCount: _mergeDailyEvents(
@@ -937,8 +1032,9 @@ class StatsManager with ChangeNotifier {
         favorite: _mergeDailyEvents(l.favorite, r.favorite),
         firstClickTime: _earlier(l.firstClickTime, r.firstClickTime),
         lastClickTime: _later(l.lastClickTime, r.lastClickTime),
+        updatedAt: r.updatedAt > l.updatedAt ? r.updatedAt : l.updatedAt,
       );
-      await addStats(merged);
+      await addStats(merged, preserveUpdatedAt: true);
     }
     notifyListeners();
   }
@@ -1135,6 +1231,10 @@ class StatsManager with ChangeNotifier {
     }
   });
 }
+
+final statsManagerProvider = NotifierProvider<StatsManager, int>(
+  StatsManager.new,
+);
 
 // ═══════════════════════════════════════════════════════════
 // StatsHelper extension（不变，仅把同步 DB 调用改为 async）
