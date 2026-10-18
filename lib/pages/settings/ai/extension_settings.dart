@@ -505,9 +505,9 @@ class _SkillsBlockState extends State<_SkillsBlock> {
             ],
           ),
         ),
-        ListenableBuilder(
-          listenable: AiSkillStore.instance,
-          builder: (context, _) {
+        Consumer(
+          builder: (context, ref, _) {
+            ref.watch(aiSkillStoreProvider);
             final skills = AiSkillStore.instance.items;
             if (skills.isEmpty) {
               return Padding(

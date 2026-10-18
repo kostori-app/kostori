@@ -288,9 +288,9 @@ class _AiHubPageState extends State<AiHubPage> {
             ],
           ),
           const SizedBox(height: 8),
-          ListenableBuilder(
-            listenable: PluginStore.instance,
-            builder: (context, _) {
+          Consumer(
+            builder: (context, ref, _) {
+              ref.watch(pluginStoreProvider);
               final plugins = PluginStore.instance.plugins;
               if (plugins.isEmpty) {
                 return Padding(
@@ -1405,9 +1405,9 @@ class _StoryText extends StatelessWidget {
         .replaceAll(RegExp(r'[〖【]\s*/\s*角色\s*[〗】]'), '')
         .replaceAll(RegExp(r'[〖【]\s*角色\s*[:：]\s*[^〗】]+?[〗】]'), '')
         .trim();
-    return ListenableBuilder(
-      listenable: StoryTextStyleStore.instance,
-      builder: (context, _) {
+    return Consumer(
+      builder: (context, ref, _) {
+        ref.watch(storyTextStyleStoreProvider);
         final style = StoryTextStyleStore.instance.style;
         if (_blockRe.hasMatch(text)) {
           return CustomMarkdownWidget(

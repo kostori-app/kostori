@@ -4,7 +4,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/app.dart';
 
@@ -67,8 +69,9 @@ class AiSkillEntry {
 }
 
 /// 技能存储：`dataPath/ai_skills/<key>.json`
-class AiSkillStore extends ChangeNotifier {
-  static final AiSkillStore instance = AiSkillStore._();
+class AiSkillStore extends RiverpodStore {
+  static AiSkillStore get instance =>
+      providerContainer.read(aiSkillStoreProvider.notifier);
 
   AiSkillStore._();
 
@@ -185,3 +188,7 @@ class AiSkillStore extends ChangeNotifier {
     } catch (_) {}
   }
 }
+
+final aiSkillStoreProvider = NotifierProvider<AiSkillStore, int>(
+  () => AiSkillStore._(),
+);

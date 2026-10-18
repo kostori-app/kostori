@@ -208,9 +208,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   @override
   void initState() {
     super.initState();
-    StoryTextStyleStore.instance.ensureLoaded();
+    ref.read(storyTextStyleStoreProvider.notifier).ensureLoaded();
     // 故事被重新导入 / 编辑后，页面无需重开也能立即用上新定义
-    StoryStore.instance.addListener(_onStoryStoreChanged);
+    ref.listenManual(storyStoreProvider, (_, _) {
+      _onStoryStoreChanged();
+    });
     // 消息库被重新打开（如导入 ai_tasks 分片）后刷新列表
     AiTaskDatabase.revision.addListener(_onDbRevisionChanged);
     _boot();
@@ -266,7 +268,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   @override
   void dispose() {
-    StoryStore.instance.removeListener(_onStoryStoreChanged);
     AiTaskDatabase.revision.removeListener(_onDbRevisionChanged);
     _stallTimer?.cancel();
     _input.dispose();
@@ -3490,9 +3491,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         title: t.storyTextStyle,
         icon: Icons.text_fields_outlined,
         initialSize: 0.78,
-        builder: (ctx, sc) => ListenableBuilder(
-          listenable: StoryTextStyleStore.instance,
-          builder: (ctx, _) {
+        builder: (ctx, sc) => Consumer(
+          builder: (ctx, ref, _) {
+            ref.watch(storyTextStyleStoreProvider);
             final store = StoryTextStyleStore.instance;
             final s = store.style;
             final scheme = Theme.of(ctx).colorScheme;

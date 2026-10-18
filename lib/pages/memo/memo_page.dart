@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/memo_store.dart';
@@ -7,11 +8,11 @@ import 'package:kostori/i18n/strings.g.dart';
 
 /// 备忘录页（剪贴板）：新增 / 编辑 / 复制 / 删除。
 /// 数据存 `history.db` 的 `memos` 表，随历史同步。
-class MemoPage extends StatefulWidget {
+class MemoPage extends ConsumerStatefulWidget {
   const MemoPage({super.key});
 
   @override
-  State<MemoPage> createState() => _MemoPageState();
+  ConsumerState<MemoPage> createState() => _MemoPageState();
 }
 
 String _fmtMemoTime(int ms) {
@@ -22,25 +23,19 @@ String _fmtMemoTime(int ms) {
       '${two(dt.hour)}:${two(dt.minute)}';
 }
 
-class _MemoPageState extends State<MemoPage> {
+class _MemoPageState extends ConsumerState<MemoPage> {
   final _ctrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     MemoStore.instance.load();
-    MemoStore.instance.addListener(_onChange);
   }
 
   @override
   void dispose() {
-    MemoStore.instance.removeListener(_onChange);
     _ctrl.dispose();
     super.dispose();
-  }
-
-  void _onChange() {
-    if (mounted) setState(() {});
   }
 
   Future<void> _add() async {
@@ -82,6 +77,7 @@ class _MemoPageState extends State<MemoPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(memoStoreProvider);
     final cs = Theme.of(context).colorScheme;
     final memos = MemoStore.instance.memos;
     return Scaffold(

@@ -87,12 +87,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: Listenable.merge([
-        GroupChatStore.instance,
-        CharacterCardStore.instance,
-      ]),
-      builder: (context, _) {
+    return Consumer(
+      builder: (context, ref, _) {
+        ref.watch(groupChatStoreProvider);
+        ref.watch(characterCardStoreProvider);
         final groups = GroupChatStore.instance.chats;
         return Scaffold(
           appBar: Appbar(

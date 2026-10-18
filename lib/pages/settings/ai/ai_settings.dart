@@ -928,9 +928,9 @@ class _AssistantProfileSectionState extends State<_AssistantProfileSection> {
             ),
           ),
         ),
-        ListenableBuilder(
-          listenable: store,
-          builder: (context, _) {
+        Consumer(
+          builder: (context, ref, _) {
+            ref.watch(assistantProfileStoreProvider);
             if (store.profiles.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.all(16),

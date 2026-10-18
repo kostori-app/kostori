@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/database/history.dart';
 
 /// 单条备忘（剪贴板）：存在 `history.db` 的 `memos` 表，随历史同步。
@@ -19,7 +20,7 @@ class Memo {
 }
 
 /// 备忘录存储：内存缓存 + 落库，与 [TextRuleStore] 同构。
-class MemoStore with ChangeNotifier {
+class MemoStore extends RiverpodStore {
   MemoStore._();
 
   static final MemoStore instance = MemoStore._();
@@ -100,3 +101,7 @@ class MemoStore with ChangeNotifier {
     notifyListeners();
   }
 }
+
+final memoStoreProvider = NotifierProvider<MemoStore, int>(
+  () => MemoStore.instance,
+);

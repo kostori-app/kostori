@@ -4,7 +4,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/app.dart';
 
@@ -99,8 +101,9 @@ class GroupChat {
 }
 
 /// 群聊存储：`dataPath/group_chats/<id>.json`
-class GroupChatStore extends ChangeNotifier {
-  static final GroupChatStore instance = GroupChatStore._();
+class GroupChatStore extends RiverpodStore {
+  static GroupChatStore get instance =>
+      providerContainer.read(groupChatStoreProvider.notifier);
 
   GroupChatStore._();
 
@@ -221,3 +224,7 @@ String buildGroupSystemPrompt({
   }
   return buf.toString();
 }
+
+final groupChatStoreProvider = NotifierProvider<GroupChatStore, int>(
+  () => GroupChatStore._(),
+);

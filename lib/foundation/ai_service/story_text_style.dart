@@ -3,7 +3,9 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 引号字形
@@ -187,8 +189,9 @@ class StoryTextStyle {
   };
 }
 
-class StoryTextStyleStore extends ChangeNotifier {
-  static final StoryTextStyleStore instance = StoryTextStyleStore._();
+class StoryTextStyleStore extends RiverpodStore {
+  static StoryTextStyleStore get instance =>
+      providerContainer.read(storyTextStyleStoreProvider.notifier);
 
   StoryTextStyleStore._();
 
@@ -225,3 +228,7 @@ class StoryTextStyleStore extends ChangeNotifier {
     await prefs.setString(_kKey, jsonEncode(style.toJson()));
   }
 }
+
+final storyTextStyleStoreProvider = NotifierProvider<StoryTextStyleStore, int>(
+  () => StoryTextStyleStore._(),
+);

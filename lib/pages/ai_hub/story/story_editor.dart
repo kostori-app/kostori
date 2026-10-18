@@ -1392,12 +1392,11 @@ class _StoryEditorState extends State<_StoryEditor>
 
   Widget _libraryTab() {
     final scheme = Theme.of(context).colorScheme;
-    return ListenableBuilder(
-      listenable: Listenable.merge([
-        WorldBookStore.instance,
-        PromptInjectionStore.instance,
-      ]),
-      builder: (context, _) {
+    return Consumer(
+      builder: (context, ref, _) {
+        ref
+          ..watch(worldBookStoreProvider)
+          ..watch(promptInjectionStoreProvider);
         final worldBook = WorldBookStore.instance.entries;
         final injections = PromptInjectionStore.instance.items;
         final manage = Align(
@@ -1486,9 +1485,9 @@ class _StoryEditorState extends State<_StoryEditor>
   /// 设定库：勾选要并入本故事的词条 / 称号 / 职业 / 据点
   Widget _settingLibraryTab() {
     final scheme = Theme.of(context).colorScheme;
-    return ListenableBuilder(
-      listenable: SettingLibraryStore.instance,
-      builder: (context, _) {
+    return Consumer(
+      builder: (context, ref, _) {
+        ref.watch(settingLibraryStoreProvider);
         final store = SettingLibraryStore.instance;
         final manage = Align(
           alignment: Alignment.centerLeft,

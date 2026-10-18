@@ -133,9 +133,9 @@ class _CharacterCardsSettingsPageState
                 ],
               ),
               Expanded(
-                child: ListenableBuilder(
-                  listenable: store,
-                  builder: (context, _) {
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    ref.watch(characterCardStoreProvider);
                     final cards = store.cards;
                     if (cards.isEmpty) {
                       return Center(

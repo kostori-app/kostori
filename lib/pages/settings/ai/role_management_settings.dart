@@ -437,9 +437,9 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
           ),
         ),
         Expanded(
-          child: ListenableBuilder(
-            listenable: store,
-            builder: (context, _) {
+          child: Consumer(
+            builder: (context, ref, _) {
+              ref.watch(settingLibraryStoreProvider);
               final items = store.items;
               if (items.isEmpty) {
                 return Padding(
@@ -1660,9 +1660,9 @@ class _PromptInjectionPanelState extends State<_PromptInjectionPanel> {
           ),
         ),
         Expanded(
-          child: ListenableBuilder(
-            listenable: store,
-            builder: (context, _) {
+          child: Consumer(
+            builder: (context, ref, _) {
+              ref.watch(promptInjectionStoreProvider);
               final items = [...store.items]
                 ..sort((a, b) {
                   final byPos = a.position.index.compareTo(b.position.index);
@@ -2393,9 +2393,9 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
           ),
         ),
         Expanded(
-          child: ListenableBuilder(
-            listenable: store,
-            builder: (context, _) {
+          child: Consumer(
+            builder: (context, ref, _) {
+              ref.watch(worldBookStoreProvider);
               final books = store.books;
               if (books.isEmpty) {
                 return Padding(

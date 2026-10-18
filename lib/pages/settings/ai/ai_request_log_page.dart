@@ -52,9 +52,9 @@ class _AiRequestLogPageState extends State<AiRequestLogPage> {
           onPressed: _clear,
         ),
       ],
-      body: ListenableBuilder(
-        listenable: AiRequestLogService.instance,
-        builder: (context, _) {
+      body: Consumer(
+        builder: (context, ref, _) {
+          ref.watch(aiRequestLogServiceProvider);
           final entries = AiRequestLogService.instance.entries;
           if (entries.isEmpty) {
             return Center(

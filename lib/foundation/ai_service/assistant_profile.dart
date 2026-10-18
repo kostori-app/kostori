@@ -6,7 +6,9 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/app.dart';
@@ -364,6 +366,9 @@ class AssistantProfile {
   /// 系统预设档案（如"通用助手"）：不可删除，仅可编辑/复制
   final bool isPreset;
 
+  /// 最后一次编辑时间（跨端合并时用于解决同一档案的修改竞争）
+  final int updatedAt;
+
   const AssistantProfile({
     required this.id,
     required this.name,
@@ -391,6 +396,7 @@ class AssistantProfile {
     this.promptFragments = const [],
     this.isBuiltin = false,
     this.isPreset = false,
+    this.updatedAt = 0,
   });
 
   AssistantProfile copyWith({
@@ -417,6 +423,7 @@ class AssistantProfile {
     AssistantParams? params,
     Map<String, dynamic>? behaviorPrefs,
     List<String>? promptFragments,
+    int? updatedAt,
   }) => AssistantProfile(
     id: id,
     name: name ?? this.name,
@@ -444,9 +451,16 @@ class AssistantProfile {
     promptFragments: promptFragments ?? this.promptFragments,
     isBuiltin: isBuiltin,
     isPreset: isPreset,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
 
   factory AssistantProfile.fromJson(Map<String, dynamic> json) {
+    final updatedAtRaw = json['updatedAt'];
+    final updatedAt = updatedAtRaw is num
+        ? updatedAtRaw.toInt()
+        : DateTime.tryParse(updatedAtRaw?.toString() ?? '')
+                  ?.millisecondsSinceEpoch ??
+              0;
     List<String> strList(Object? v) =>
         (v is List ? v.whereType<String>().toList() : const <String>[]);
     List<dynamic> objList(Object? v) => (v is List ? v : const <dynamic>[]);
@@ -508,6 +522,7 @@ class AssistantProfile {
       promptFragments: strList(json['promptFragments']),
       isBuiltin: (json['isBuiltin'] as bool?) ?? false,
       isPreset: (json['isPreset'] as bool?) ?? false,
+      updatedAt: updatedAt,
     );
   }
 
@@ -538,6 +553,7 @@ class AssistantProfile {
     'promptFragments': promptFragments,
     'isBuiltin': isBuiltin,
     'isPreset': isPreset,
+    'updatedAt': updatedAt,
   };
 
   /// ③ 扩展管理：某模块是否启用。未显式配置时按默认启用处理。
@@ -602,8 +618,9 @@ final AssistantProfile defaultProfile = AssistantProfile(
 const _oldPresetIds = {'preset_code', 'preset_life', 'preset_writing'};
 
 /// 助手档案存储：shared_preferences 持久化
-class AssistantProfileStore extends ChangeNotifier {
-  static final AssistantProfileStore instance = AssistantProfileStore._();
+class AssistantProfileStore extends RiverpodStore {
+  static AssistantProfileStore get instance =>
+      providerContainer.read(assistantProfileStoreProvider.notifier);
 
   AssistantProfileStore._();
 
@@ -704,17 +721,22 @@ class AssistantProfileStore extends ChangeNotifier {
     for (final p in _profiles) p.toJson(),
   ];
 
-  /// 合并同步来的助手档案：本机没有的 id 直接补充，已有的保留本机版本
-  /// （档案没有更新时间列，纯增量合并最安全；当前选中档案仍由本机决定）
+  /// 合并同步来的助手档案：同一 id 按更新时间取较新版本；当前选中档案仍由本机决定。
   Future<void> mergeData(List<Map<String, dynamic>> rows) async {
     if (rows.isEmpty) return;
     if (!isInitialized) await init();
     var changed = false;
     for (final m in rows) {
       final p = AssistantProfile.fromJson(m);
-      if (p.id.isEmpty || _find(p.id) != null) continue;
-      _profiles.add(p);
-      changed = true;
+      if (p.id.isEmpty) continue;
+      final index = _profiles.indexWhere((local) => local.id == p.id);
+      if (index < 0) {
+        _profiles.add(p);
+        changed = true;
+      } else if (p.updatedAt > _profiles[index].updatedAt) {
+        _profiles[index] = p;
+        changed = true;
+      }
     }
     if (!changed) return;
     await _save();
@@ -730,12 +752,17 @@ class AssistantProfileStore extends ChangeNotifier {
 
   Future<void> upsert(AssistantProfile profile) async {
     final idx = _profiles.indexWhere((p) => p.id == profile.id);
+    final previousUpdatedAt = idx >= 0 ? _profiles[idx].updatedAt : 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updatedProfile = profile.copyWith(
+      updatedAt: now > previousUpdatedAt ? now : previousUpdatedAt + 1,
+    );
     if (idx >= 0) {
-      _profiles[idx] = profile;
+      _profiles[idx] = updatedProfile;
     } else {
-      _profiles.add(profile);
+      _profiles.add(updatedProfile);
     }
-    _activeId ??= profile.id;
+    _activeId ??= updatedProfile.id;
     await _save();
     notifyListeners();
   }
@@ -800,6 +827,7 @@ class AssistantProfileStore extends ChangeNotifier {
       behaviorPrefs: src.behaviorPrefs,
       promptFragments: src.promptFragments,
       isBuiltin: false,
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
     _profiles.add(profile);
     await _save();
@@ -846,6 +874,9 @@ class AssistantProfileStore extends ChangeNotifier {
           isBuiltin: false,
         );
       }
+      profile = profile.copyWith(
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
       _profiles.add(profile);
       _activeId ??= profile.id;
       await _save();
@@ -859,8 +890,9 @@ class AssistantProfileStore extends ChangeNotifier {
 
 /// ④ 长期记忆存储：按助手档案 id 分库（shared_preferences）。
 /// 记录用户偏好 / 常问话题 / 关键结论，在 System Prompt ⑥ 记忆段注入。
-class AssistantMemoryStore extends ChangeNotifier {
-  static final AssistantMemoryStore instance = AssistantMemoryStore._();
+class AssistantMemoryStore extends RiverpodStore {
+  static AssistantMemoryStore get instance =>
+      providerContainer.read(assistantMemoryStoreProvider.notifier);
 
   AssistantMemoryStore._();
 
@@ -1289,3 +1321,11 @@ String _platformName() {
   if (App.isIOS) return 'iOS';
   return '未知平台';
 }
+
+final assistantProfileStoreProvider =
+    NotifierProvider<AssistantProfileStore, int>(
+      () => AssistantProfileStore._(),
+    );
+
+final assistantMemoryStoreProvider =
+    NotifierProvider<AssistantMemoryStore, int>(() => AssistantMemoryStore._());

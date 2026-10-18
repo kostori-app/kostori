@@ -7,7 +7,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -2391,8 +2393,9 @@ class Story {
 }
 
 /// 故事存储：内置故事 + 用户自定义，shared_preferences 持久化
-class StoryStore extends ChangeNotifier {
-  static final StoryStore instance = StoryStore._();
+class StoryStore extends RiverpodStore {
+  static StoryStore get instance =>
+      providerContainer.read(storyStoreProvider.notifier);
 
   StoryStore._();
 
@@ -3084,8 +3087,9 @@ class StorySession {
 }
 
 /// 会话存储：storyId -> StorySession，存放于 `dataPath/story_sessions/` 的独立文件
-class StorySessionStore extends ChangeNotifier {
-  static final StorySessionStore instance = StorySessionStore._();
+class StorySessionStore extends RiverpodStore {
+  static StorySessionStore get instance =>
+      providerContainer.read(storySessionStoreProvider.notifier);
 
   StorySessionStore._();
 
@@ -3183,8 +3187,9 @@ class StorySessionStore extends ChangeNotifier {
 /// 故事角色卡存储：`story_characters/<storyId>.json`
 /// 与故事 `.md` 分离——App 内添加的角色卡不再写进故事文件，
 /// 避免撑大文件、影响故事版本升级与后续改动。
-class StoryCharacterStore extends ChangeNotifier {
-  static final StoryCharacterStore instance = StoryCharacterStore._();
+class StoryCharacterStore extends RiverpodStore {
+  static StoryCharacterStore get instance =>
+      providerContainer.read(storyCharacterStoreProvider.notifier);
 
   StoryCharacterStore._();
 
@@ -3328,3 +3333,15 @@ class StoryCharacterStore extends ChangeNotifier {
     }
   }
 }
+
+final storyStoreProvider = NotifierProvider<StoryStore, int>(
+  () => StoryStore._(),
+);
+
+final storySessionStoreProvider = NotifierProvider<StorySessionStore, int>(
+  () => StorySessionStore._(),
+);
+
+final storyCharacterStoreProvider = NotifierProvider<StoryCharacterStore, int>(
+  () => StoryCharacterStore._(),
+);

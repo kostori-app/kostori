@@ -4,7 +4,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
 
@@ -140,8 +142,9 @@ class SettingBook {
 }
 
 /// 设定库存储：`dataPath/setting_library/<bookId>.json`（一本书一个文件、内含多条条目）
-class SettingLibraryStore extends ChangeNotifier {
-  static final SettingLibraryStore instance = SettingLibraryStore._();
+class SettingLibraryStore extends RiverpodStore {
+  static SettingLibraryStore get instance =>
+      providerContainer.read(settingLibraryStoreProvider.notifier);
 
   SettingLibraryStore._();
 
@@ -503,3 +506,7 @@ Story mergeSettingLibrary(Story story, Iterable<SettingEntry> entries) {
     facilities: facilities,
   );
 }
+
+final settingLibraryStoreProvider = NotifierProvider<SettingLibraryStore, int>(
+  () => SettingLibraryStore._(),
+);

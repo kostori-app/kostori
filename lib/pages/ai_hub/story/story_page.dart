@@ -187,96 +187,92 @@ class _StoryPageState extends ConsumerState<StoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: StoryStore.instance,
-      builder: (context, _) {
-        final stories = StoryStore.instance.stories;
-        return DropTarget(
-          onDragDone: _onDrop,
-          onDragEntered: (_) {
-            if (mounted) setState(() => _dragOver = true);
-          },
-          onDragExited: (_) {
-            if (mounted) setState(() => _dragOver = false);
-          },
-          child: Stack(
-            children: [
-              Scaffold(
-                appBar: Appbar(
-                  title: Text(t.rolePlay),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.receipt_long_outlined),
-                      tooltip: t.aiRequestLog,
-                      onPressed: () => showPopUpWidget(
-                        App.rootContext,
-                        const AiRequestLogPage(),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.groups_outlined),
-                      tooltip: t.groupChat,
-                      onPressed: () => context.to(() => const GroupChatPage()),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.file_open_outlined),
-                      tooltip: t.importEntries,
-                      onPressed: _import,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      tooltip: t.storyNew,
-                      onPressed: _new,
-                    ),
-                  ],
-                ),
-                body: stories.isEmpty
-                    ? _emptyState(context)
-                    : ListView(
-                        padding: const EdgeInsets.all(12),
-                        children: [
-                          for (final s in stories)
-                            _StoryCard(
-                              story: s,
-                              onTap: () =>
-                                  context.to(() => StoryGamePage(story: s)),
-                              onEdit: () => _edit(s),
-                              onExport: () => _export(s),
-                              onRestart: () => _restart(s),
-                              onDelete: s.isBuiltin ? null : () => _delete(s),
-                            ),
-                        ],
-                      ),
-                floatingActionButton: stories.isEmpty
-                    ? null
-                    : FloatingActionButton(
-                        onPressed: _new,
-                        tooltip: t.storyNew,
-                        child: const Icon(Icons.add),
-                      ),
-              ),
-              if (_dragOver)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Container(
-                      color: Theme.of(context).colorScheme.scrim
-                          .withValues(alpha: 0.45),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.download_outlined, size: 48),
-                          const SizedBox(height: 12),
-                          Text(t.storyDropHint),
-                        ],
-                      ),
-                    ),
+    ref.watch(storyStoreProvider);
+    final stories = StoryStore.instance.stories;
+    return DropTarget(
+      onDragDone: _onDrop,
+      onDragEntered: (_) {
+        if (mounted) setState(() => _dragOver = true);
+      },
+      onDragExited: (_) {
+        if (mounted) setState(() => _dragOver = false);
+      },
+      child: Stack(
+        children: [
+          Scaffold(
+            appBar: Appbar(
+              title: Text(t.rolePlay),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  tooltip: t.aiRequestLog,
+                  onPressed: () => showPopUpWidget(
+                    App.rootContext,
+                    const AiRequestLogPage(),
                   ),
                 ),
-            ],
+                IconButton(
+                  icon: const Icon(Icons.groups_outlined),
+                  tooltip: t.groupChat,
+                  onPressed: () => context.to(() => const GroupChatPage()),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.file_open_outlined),
+                  tooltip: t.importEntries,
+                  onPressed: _import,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  tooltip: t.storyNew,
+                  onPressed: _new,
+                ),
+              ],
+            ),
+            body: stories.isEmpty
+                ? _emptyState(context)
+                : ListView(
+                    padding: const EdgeInsets.all(12),
+                    children: [
+                      for (final s in stories)
+                        _StoryCard(
+                          story: s,
+                          onTap: () =>
+                              context.to(() => StoryGamePage(story: s)),
+                          onEdit: () => _edit(s),
+                          onExport: () => _export(s),
+                          onRestart: () => _restart(s),
+                          onDelete: s.isBuiltin ? null : () => _delete(s),
+                        ),
+                    ],
+                  ),
+            floatingActionButton: stories.isEmpty
+                ? null
+                : FloatingActionButton(
+                    onPressed: _new,
+                    tooltip: t.storyNew,
+                    child: const Icon(Icons.add),
+                  ),
           ),
-        );
-      },
+          if (_dragOver)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Theme.of(context).colorScheme.scrim
+                      .withValues(alpha: 0.45),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.download_outlined, size: 48),
+                      const SizedBox(height: 12),
+                      Text(t.storyDropHint),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

@@ -3,7 +3,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/foundation/app.dart';
 
 class AiRequestLogEntry {
@@ -56,8 +58,9 @@ class AiRequestLogEntry {
   };
 }
 
-class AiRequestLogService extends ChangeNotifier {
-  static final AiRequestLogService instance = AiRequestLogService._();
+class AiRequestLogService extends RiverpodStore {
+  static AiRequestLogService get instance =>
+      providerContainer.read(aiRequestLogServiceProvider.notifier);
 
   AiRequestLogService._();
 
@@ -128,3 +131,7 @@ class AiRequestLogService extends ChangeNotifier {
     } catch (_) {}
   }
 }
+
+final aiRequestLogServiceProvider = NotifierProvider<AiRequestLogService, int>(
+  () => AiRequestLogService._(),
+);

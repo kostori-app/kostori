@@ -9,7 +9,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -99,8 +101,9 @@ class PromptInjection {
 }
 
 /// 提示词注入存储：shared_preferences 持久化
-class PromptInjectionStore extends ChangeNotifier {
-  static final PromptInjectionStore instance = PromptInjectionStore._();
+class PromptInjectionStore extends RiverpodStore {
+  static PromptInjectionStore get instance =>
+      providerContainer.read(promptInjectionStoreProvider.notifier);
 
   PromptInjectionStore._();
 
@@ -494,8 +497,9 @@ class WorldBookBook {
 }
 
 /// 世界书存储：`dataPath/world_info/<bookId>.json`（一本书一个文件、内含多条条目）
-class WorldBookStore extends ChangeNotifier {
-  static final WorldBookStore instance = WorldBookStore._();
+class WorldBookStore extends RiverpodStore {
+  static WorldBookStore get instance =>
+      providerContainer.read(worldBookStoreProvider.notifier);
 
   WorldBookStore._();
 
@@ -985,3 +989,10 @@ class WorldBookStore extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+final promptInjectionStoreProvider =
+    NotifierProvider<PromptInjectionStore, int>(() => PromptInjectionStore._());
+
+final worldBookStoreProvider = NotifierProvider<WorldBookStore, int>(
+  () => WorldBookStore._(),
+);

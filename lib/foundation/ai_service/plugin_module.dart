@@ -3,7 +3,9 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -116,8 +118,9 @@ class PluginModule {
   };
 }
 
-class PluginStore extends ChangeNotifier {
-  static final PluginStore instance = PluginStore._();
+class PluginStore extends RiverpodStore {
+  static PluginStore get instance =>
+      providerContainer.read(pluginStoreProvider.notifier);
 
   PluginStore._();
 
@@ -258,3 +261,7 @@ class PluginStore extends ChangeNotifier {
     return true;
   }
 }
+
+final pluginStoreProvider = NotifierProvider<PluginStore, int>(
+  () => PluginStore._(),
+);

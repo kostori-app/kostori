@@ -5,6 +5,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/foundation/provider_container.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -536,8 +539,9 @@ class CharacterCard {
 
 /// 全局角色卡库：存放在 `dataPath/character_cards/` 的独立文件
 /// （`<id>.json` + `<id>.png` 头像），便于单独 WebDAV 同步。
-class CharacterCardStore extends ChangeNotifier {
-  static final CharacterCardStore instance = CharacterCardStore._();
+class CharacterCardStore extends RiverpodStore {
+  static CharacterCardStore get instance =>
+      providerContainer.read(characterCardStoreProvider.notifier);
 
   CharacterCardStore._();
 
@@ -693,3 +697,7 @@ class CharacterCardStore extends ChangeNotifier {
     await init();
   }
 }
+
+final characterCardStoreProvider = NotifierProvider<CharacterCardStore, int>(
+  () => CharacterCardStore._(),
+);

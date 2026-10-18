@@ -270,6 +270,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       },
       promptFragments: _lines(_fragmentsCtrl),
       isBuiltin: widget.profile?.isBuiltin ?? false,
+      updatedAt: widget.profile?.updatedAt ?? 0,
     );
   }
 
@@ -945,9 +946,9 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
             style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
-          ListenableBuilder(
-            listenable: AiSkillStore.instance,
-            builder: (context, _) {
+          Consumer(
+            builder: (context, ref, _) {
+              ref.watch(aiSkillStoreProvider);
               final skills = AiSkillStore.instance.items;
               if (skills.isEmpty) {
                 return Padding(
@@ -981,13 +982,11 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
 
   Widget _buildLibraryTab() {
     final scheme = Theme.of(context).colorScheme;
-    return ListenableBuilder(
-      listenable: Listenable.merge([
-        WorldBookStore.instance,
-        PromptInjectionStore.instance,
-        CharacterCardStore.instance,
-      ]),
-      builder: (context, _) {
+    return Consumer(
+      builder: (context, ref, _) {
+        ref.watch(worldBookStoreProvider);
+        ref.watch(promptInjectionStoreProvider);
+        ref.watch(characterCardStoreProvider);
         final worldBook = WorldBookStore.instance.entries;
         final injections = PromptInjectionStore.instance.items;
         final cards = CharacterCardStore.instance.cards;

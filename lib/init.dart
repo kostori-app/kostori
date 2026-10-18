@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/download_database.dart';
@@ -19,6 +18,7 @@ import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/provider_container.dart';
 import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
 import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/services/download/download_manager.dart';
@@ -53,7 +53,7 @@ import 'package:kostori/utils/data_sync.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final providerContainer = ProviderContainer();
+export 'package:kostori/foundation/provider_container.dart';
 
 extension _FutureInit<T> on Future<T> {
   /// Prevent unhandled exception
