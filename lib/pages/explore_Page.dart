@@ -2,6 +2,7 @@
 
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/anime_filter.dart';
 import 'package:kostori/components/anime_list.dart';
 import 'package:kostori/components/components.dart';
@@ -18,14 +19,14 @@ import 'package:kostori/network/cache.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
 
-class ExplorePage extends StatefulWidget {
+class ExplorePage extends ConsumerStatefulWidget {
   const ExplorePage({super.key});
 
   @override
-  State<ExplorePage> createState() => _ExplorePageState();
+  ConsumerState<ExplorePage> createState() => _ExplorePageState();
 }
 
-class _ExplorePageState extends State<ExplorePage>
+class _ExplorePageState extends ConsumerState<ExplorePage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin<ExplorePage> {
   late TabController sourceController;
   late Map<String, TabController> pageControllers = {};
@@ -49,7 +50,7 @@ class _ExplorePageState extends State<ExplorePage>
     }
   }
 
-  // 原 ExploreController 逻辑直接并入本页（无全局共享需求，去掉 mobx）
+  // 探索页状态仅由本页使用，因此在页面控制器内维护。
   bool _showFB = false;
   late AnimationController _fbController;
   late Animation<double> _fbFade;
@@ -77,7 +78,7 @@ class _ExplorePageState extends State<ExplorePage>
   late List<String> sources;
   late Map<String, List<String>> sourcePages;
 
-  void onSettingsChanged() {
+  void onSettingsChanged({bool notify = true}) {
     _scheduleSyncLift();
     final pagesMap = _readPagesMap();
     var savedOrder = List<String>.from(appdata.settings.s.exploreSourcesOrder);
@@ -122,7 +123,7 @@ class _ExplorePageState extends State<ExplorePage>
       return;
     }
 
-    setState(() {
+    void applyChanges() {
       // 重建前记录当前选中的源与各源的页索引，按 key 恢复
       final prevSourceKey =
           sources.isNotEmpty && sourceController.index < sources.length
@@ -148,7 +149,13 @@ class _ExplorePageState extends State<ExplorePage>
       old.removeListener(_onSourceChanged);
       old.dispose();
       sourceController.addListener(_onSourceChanged);
-    });
+    }
+
+    if (notify) {
+      setState(applyChanges);
+    } else {
+      applyChanges();
+    }
   }
 
   bool _sameSources(List<String> a, List<String> b) {
@@ -304,10 +311,14 @@ class _ExplorePageState extends State<ExplorePage>
     _lastSourceIndex = restoredSource;
     sourceController.addListener(_onSourceChanged);
     _rebuildPageControllers();
-    appdata.settings.addListener(onSettingsChanged);
+    ref.listenManual(settingsProvider, (_, _) {
+      if (!mounted) return;
+      onSettingsChanged(notify: false);
+      setState(() {});
+    });
     // 源被启用/禁用（设置页开关）时也要刷新：探索页的源列表与 TabController
     // 必须一起重建，否则会停留/错位在旧的源上
-    AnimeSourceManager().addListener(onSettingsChanged);
+    AnimeSourceManager().revision.addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
     _fbController = AnimationController(
       vsync: this,
@@ -375,8 +386,7 @@ class _ExplorePageState extends State<ExplorePage>
     for (var c in pageControllers.values) {
       c.dispose();
     }
-    appdata.settings.removeListener(onSettingsChanged);
-    AnimeSourceManager().removeListener(onSettingsChanged);
+    AnimeSourceManager().revision.removeListener(onSettingsChanged);
     naviPane?.removeNaviItemTapListener(onNaviItemTapped);
     _fbController.dispose();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -456,6 +466,7 @@ class _ExplorePageState extends State<ExplorePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ref.watch(settingsProvider);
     if (sources.isEmpty) {
       return buildEmpty();
     }
@@ -828,7 +839,6 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
         if (d.title == widget.title) {
           data = d;
           animeSourceKey = source.key;
-          appdata.settings.addListener(onSettingsChanged);
           return;
         }
       }
@@ -840,7 +850,6 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   void dispose() {
     scrollController.removeListener(onScroll);
     scrollController.dispose();
-    appdata.settings.removeListener(onSettingsChanged);
     super.dispose();
   }
 

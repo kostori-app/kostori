@@ -254,11 +254,11 @@ class NaviPaneState extends State<NaviPane>
   double targetFormContext(BuildContext context) {
     var width = MediaQuery.sizeOf(context).width;
     double target = 0;
-    if (width > changePoint) {
+    if (!App.mobileFullscreenTransitioning && width > changePoint) {
       // 桌面端：展开显示侧边栏；收起则完全隐藏（value=1）
       target = _sidebarOpen ? 2 : 1;
     }
-    if (width > changePoint2) {
+    if (!App.mobileFullscreenTransitioning && width > changePoint2) {
       // 宽屏：侧边栏完整展开(3)；收起同样完全隐藏
       target = _sidebarOpen ? 3 : 1;
     }
@@ -319,7 +319,8 @@ class NaviPaneState extends State<NaviPane>
               ),
               Positioned.fill(left: mainViewLeft, child: buildMainView()),
               // 桌面端：侧边栏边缘的收缩/展开手柄（细线 + 中间圆点）
-              if (mq.size.width > changePoint)
+              if (!App.mobileFullscreenTransitioning &&
+                  mq.size.width > changePoint)
                 Positioned(
                   left: math.max(0.0, mainViewLeft - 7),
                   width: 14,
@@ -997,16 +998,16 @@ class _NaviPopScope extends StatelessWidget {
   }
 }
 
-class _NaviMainView extends StatefulWidget {
+class _NaviMainView extends ConsumerStatefulWidget {
   const _NaviMainView({required this.state});
 
   final NaviPaneState state;
 
   @override
-  State<_NaviMainView> createState() => _NaviMainViewState();
+  ConsumerState<_NaviMainView> createState() => _NaviMainViewState();
 }
 
-class _NaviMainViewState extends State<_NaviMainView> {
+class _NaviMainViewState extends ConsumerState<_NaviMainView> {
   NaviPaneState get state => widget.state;
 
   /// 底部导航栏是否收缩成一条粗短横线（滚动浏览时）。
@@ -1027,8 +1028,9 @@ class _NaviMainViewState extends State<_NaviMainView> {
     state.mainViewUpdateHandler = () {
       setState(() {});
     };
-    // 显示模式/抬升开关变化时，导航栏位置要跟着更新
-    appdata.settings.addListener(_onSettingsChanged);
+    ref.listenManual(settingsProvider, (_, _) {
+      if (mounted) _onSettingsChanged();
+    });
     super.initState();
   }
 
@@ -1038,7 +1040,6 @@ class _NaviMainViewState extends State<_NaviMainView> {
 
   @override
   void dispose() {
-    appdata.settings.removeListener(_onSettingsChanged);
     _minimized.dispose();
     _actionsOpen.dispose();
     super.dispose();
@@ -1145,8 +1146,10 @@ class _NaviMainViewState extends State<_NaviMainView> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(settingsProvider);
     final mqSize = MediaQuery.sizeOf(context);
-    final isWide = mqSize.width > changePoint;
+    final isWide =
+        !App.mobileFullscreenTransitioning && mqSize.width > changePoint;
     // 仅移动端（窄屏）显示顶部/底部导航栏；桌面端即使侧边栏收起也不显示
     var shouldShowAppBar =
         state.controller.value < 2 &&
@@ -1370,38 +1373,98 @@ class _NaviMainViewState extends State<_NaviMainView> {
   }
 }
 
-/// 收缩后的底部导航栏：一条磨砂透明的粗短横线
-class _MiniBar extends StatelessWidget {
+/// 收缩后的底部导航栏：一条磨砂透明的粗短横线。
+/// 外层保留足够触摸面积，内层用低对比度流光描边提示可唤出导航。
+class _MiniBar extends StatefulWidget {
   const _MiniBar({required this.onTap, super.key});
 
   final VoidCallback onTap;
 
   @override
+  State<_MiniBar> createState() => _MiniBarState();
+}
+
+class _MiniBarState extends State<_MiniBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 7),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 52,
-        height: 8,
-        decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: 0.88),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      child: SizedBox(
+        width: 104,
+        height: 42,
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, _) => CustomPaint(
+              size: const Size(64, 11),
+              painter: _MiniBarPainter(
+                progress: _animationController.value,
+                colors: colorScheme,
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _MiniBarPainter extends CustomPainter {
+  const _MiniBarPainter({required this.progress, required this.colors});
+
+  final double progress;
+  final ColorScheme colors;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(size.height));
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = colors.surface.withValues(alpha: 0.9),
+    );
+    final shader = SweepGradient(
+      transform: GradientRotation(progress * 2 * math.pi),
+      colors: [
+        colors.outlineVariant.withValues(alpha: 0.18),
+        colors.primary.withValues(alpha: 0.42),
+        colors.secondary.withValues(alpha: 0.24),
+        colors.outlineVariant.withValues(alpha: 0.18),
+      ],
+      stops: const [0, 0.42, 0.56, 1],
+    ).createShader(rect);
+    canvas.drawRRect(
+      rrect.deflate(0.5),
+      Paint()
+        ..shader = shader
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniBarPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.colors != colors;
 }
 
 /// 信息圆片（含 1.2 倍缩放后）的视觉高度估算。

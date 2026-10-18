@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
@@ -214,7 +216,13 @@ class Appdata with Init {
 
 final appdata = Appdata._create();
 
-class Settings with ChangeNotifier {
+/// 全局设置状态。页面通过 provider 订阅，旧的 `revision` 仅供尚未迁移的
+/// 非 Riverpod 服务过渡使用。
+final settingsProvider = NotifierProvider<Settings, int>(
+  () => appdata.settings,
+);
+
+class Settings extends RiverpodStore {
   Settings._create();
 
   SettingsData _state = const SettingsData();

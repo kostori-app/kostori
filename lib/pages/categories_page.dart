@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -8,14 +9,14 @@ import 'package:kostori/pages/ranking_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 
-class CategoriesPage extends StatefulWidget {
+class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
 
   @override
-  State<CategoriesPage> createState() => _CategoriesPageState();
+  ConsumerState<CategoriesPage> createState() => _CategoriesPageState();
 }
 
-class _CategoriesPageState extends State<CategoriesPage>
+class _CategoriesPageState extends ConsumerState<CategoriesPage>
     with
         TickerProviderStateMixin,
         AutomaticKeepAliveClientMixin<CategoriesPage> {
@@ -23,7 +24,7 @@ class _CategoriesPageState extends State<CategoriesPage>
 
   late TabController controller;
 
-  void onSettingsChanged() {
+  void onSettingsChanged({bool notify = true}) {
     var categories = List.from(appdata.settings["categories"])
         .whereType<String>()
         .toList();
@@ -40,11 +41,17 @@ class _CategoriesPageState extends State<CategoriesPage>
         length: categories.length,
         vsync: this,
       );
-      setState(() {
+      if (notify) {
+        setState(() {
+          this.categories = categories;
+          controller.dispose();
+          controller = newController;
+        });
+      } else {
         this.categories = categories;
         controller.dispose();
         controller = newController;
-      });
+      }
     }
   }
 
@@ -62,7 +69,9 @@ class _CategoriesPageState extends State<CategoriesPage>
     this.categories = categories
         .where((element) => allCategories.contains(element))
         .toList();
-    appdata.settings.addListener(onSettingsChanged);
+    ref.listenManual(settingsProvider, (_, _) {
+      if (mounted) onSettingsChanged();
+    });
     controller = TabController(length: this.categories.length, vsync: this);
   }
 
@@ -82,7 +91,6 @@ class _CategoriesPageState extends State<CategoriesPage>
   void dispose() {
     super.dispose();
     controller.dispose();
-    appdata.settings.removeListener(onSettingsChanged);
   }
 
   Widget buildEmpty() {
@@ -109,6 +117,7 @@ class _CategoriesPageState extends State<CategoriesPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ref.watch(settingsProvider);
     if (categories.isEmpty) {
       return buildEmpty();
     }

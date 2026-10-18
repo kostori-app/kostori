@@ -19,17 +19,17 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key, this.keyword});
 
   /// 进入时预填的关键词（如「搜索选中文本」），不自动搜索
   final String? keyword;
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchPageState extends ConsumerState<SearchPage> {
   late final SearchBarController controller;
 
   late List<String> searchSources;
@@ -157,7 +157,9 @@ class _SearchPageState extends State<SearchPage> {
       onSearch: search,
       currentText: widget.keyword ?? '',
     );
-    appdata.settings.addListener(updateSearchSourcesIfNeeded);
+    ref.listenManual(settingsProvider, (_, _) {
+      if (mounted) updateSearchSourcesIfNeeded();
+    });
     super.initState();
   }
 
@@ -165,7 +167,6 @@ class _SearchPageState extends State<SearchPage> {
   void dispose() {
     focusNode.dispose();
     scrollController.dispose();
-    appdata.settings.removeListener(updateSearchSourcesIfNeeded);
     super.dispose();
   }
 
@@ -223,6 +224,7 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(settingsProvider);
     if (searchSources.isEmpty) {
       return buildEmpty();
     }
