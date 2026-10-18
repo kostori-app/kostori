@@ -44,12 +44,33 @@ class PlayerHudCard extends StatelessWidget {
   }
 }
 
-/// 播放器时间格式：mm:ss / h:mm:ss
+/// 播放器时间按当前语言格式化。
 String formatPlayerTime(Duration d) {
-  final h = d.inHours;
-  final m = (d.inMinutes % 60).toString().padLeft(2, '0');
-  final s = (d.inSeconds % 60).toString().padLeft(2, '0');
-  return h > 0 ? '$h:$m:$s' : '$m:$s';
+  final totalSeconds = d.inSeconds.abs();
+  final hours = totalSeconds ~/ 3600;
+  final minutes = (totalSeconds ~/ 60) % 60;
+  final seconds = totalSeconds % 60;
+  final isChinese = LocaleSettings.currentLocale.languageCode == 'zh';
+  final secondText = seconds.toString();
+  final paddedSecondText = secondText.padLeft(2, '0');
+  final minuteText = isChinese
+      ? minutes.toString()
+      : minutes.toString().padLeft(2, '0');
+
+  if (hours > 0) {
+    return t.playerTimeHours(h: hours, m: minuteText, s: paddedSecondText);
+  }
+  if (minutes > 0) {
+    return t.playerTimeMinutes(m: minuteText, s: paddedSecondText);
+  }
+  return t.playerTimeSeconds(s: isChinese ? secondText : paddedSecondText);
+}
+
+/// 短距离滑动显示秒数，达到一分钟后切换为 mm:ss，与播放位置格式一致。
+String formatSeekDuration(Duration duration) {
+  final seconds = duration.inSeconds.abs();
+  if (seconds < 60) return t.seekSeconds(s: seconds);
+  return formatPlayerTime(Duration(seconds: seconds));
 }
 
 /// 快进 / 快退 HUD（左右滑动时显示）。
@@ -69,7 +90,7 @@ class PlayerSeekHud extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isForward = target > current;
-    final diffSec = (target - current).inSeconds.abs().clamp(0, 999);
+    final diff = target - current;
     final totalSec = total.inSeconds > 0 ? total.inSeconds : 1;
     final progress = (target.inMilliseconds / (totalSec * 1000)).clamp(
       0.0,
@@ -100,8 +121,8 @@ class PlayerSeekHud extends StatelessWidget {
               children: [
                 Text(
                   isForward
-                      ? t.seekForward(s: diffSec)
-                      : t.seekBackward(s: diffSec),
+                      ? t.seekForward(s: formatSeekDuration(diff))
+                      : t.seekBackward(s: formatSeekDuration(diff)),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
