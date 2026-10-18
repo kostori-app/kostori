@@ -5,7 +5,6 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
@@ -327,7 +326,8 @@ class _PlayerItemState extends State<PlayerItem>
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         return ClipRect(
           child: Container(
@@ -346,8 +346,7 @@ class _PlayerItemState extends State<PlayerItem>
                 }
               },
               onHover: (PointerEvent pointerEvent) {
-                // workaround for android.
-                // I don't know why, but android tap event will trigger onHover event.
+                // Android 触摸事件可能触发 hover 回调；仅在指针真正进入播放器时显示控制栏。
                 if (App.isDesktop) {
                   if (pointerEvent.position.dy > 50 &&
                       pointerEvent.position.dy <
@@ -355,15 +354,14 @@ class _PlayerItemState extends State<PlayerItem>
                     _handleHove();
                   } else {
                     if (!playerController.showVideoController) {
-                      animationController?.forward();
-                      playerController.showVideoController = true;
+                      displayVideoController();
                     }
                   }
                 }
               },
               child: Listener(
                 onPointerSignal: (pointerSignal) {
-                  //滚轮调节音量
+                  // 滚轮调节音量。
                   if (playerController.isFullScreen) {
                     if (pointerSignal is PointerScrollEvent) {
                       _handleMouseScroller();
@@ -395,7 +393,6 @@ class _PlayerItemState extends State<PlayerItem>
                             autofocus: App.isDesktop,
                             onKeyEvent: (focusNode, KeyEvent event) {
                               if (event is KeyDownEvent) {
-                                // 空格键处理
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.space) {
                                   try {
@@ -406,7 +403,6 @@ class _PlayerItemState extends State<PlayerItem>
                                     return KeyEventResult.ignored;
                                   }
                                 }
-                                // 右方向键处理
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowRight) {
                                   try {
@@ -431,7 +427,6 @@ class _PlayerItemState extends State<PlayerItem>
                                   }
                                 }
 
-                                // 左方向键处理
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowLeft) {
                                   int targetPosition =
@@ -459,19 +454,16 @@ class _PlayerItemState extends State<PlayerItem>
                                     return KeyEventResult.ignored;
                                   }
                                 }
-                                // 上方向键被按下
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowUp) {
                                   increaseVolume();
                                   _handleKeyChangingVolume();
                                 }
-                                // 下方向键被按下
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowDown) {
                                   decreaseVolume();
                                   _handleKeyChangingVolume();
                                 }
-                                // Esc键处理
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.escape) {
                                   if (playerController.isFullScreen) {
@@ -480,14 +472,12 @@ class _PlayerItemState extends State<PlayerItem>
                                   }
                                 }
 
-                                // F键处理
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.keyF) {
                                   playerController.toggleFullScreen(context);
                                   return KeyEventResult.handled;
                                 }
                               } else if (event is KeyRepeatEvent) {
-                                // 右方向键长按
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowRight) {
                                   if (playerController.playbackSpeed <
@@ -501,7 +491,6 @@ class _PlayerItemState extends State<PlayerItem>
                                   }
                                 }
                               } else if (event is KeyUpEvent) {
-                                // 右方向键抬起
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowRight) {
                                   if (playerController.showPlaySpeed) {
@@ -639,7 +628,9 @@ class _PlayerItemState extends State<PlayerItem>
                             // 左右滑动 seek：静默暂停，不显示覆盖层
                             playerController.pause(showIndicator: false);
                             final double scale =
-                                180000 / MediaQuery.sizeOf(context).width;
+                                180000 *
+                                playerSeekMultiplier /
+                                MediaQuery.sizeOf(context).width;
                             int ms =
                                 (playerController
                                             .currentPosition
@@ -733,6 +724,7 @@ class _PlayerItemState extends State<PlayerItem>
                           },
                         ),
                       ),
+                      _NextEpisodeCountdown(playerController: playerController),
                     ],
                   ),
                 ),
@@ -741,6 +733,65 @@ class _PlayerItemState extends State<PlayerItem>
           ),
         );
       },
+    );
+  }
+}
+
+/// 全屏下一集入口。跟随底部面板定位，避免遮挡现有控制项。
+class _NextEpisodeCountdown extends StatelessWidget {
+  const _NextEpisodeCountdown({required this.playerController});
+
+  final PlayerController playerController;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!playerController.isFullScreen ||
+        playerController.loadingNextEpisode ||
+        !playerController.hasNextEpisode ||
+        playerController.duration <= playerController.currentPosition) {
+      return const SizedBox.shrink();
+    }
+    final remaining =
+        playerController.duration - playerController.currentPosition;
+    if (remaining > const Duration(seconds: 10) || remaining <= Duration.zero) {
+      return const SizedBox.shrink();
+    }
+    final seconds = (remaining.inMilliseconds / 1000).ceil();
+    final portrait = playerController.isPortraitFullscreen;
+    final panelOpen = playerController.showVideoController;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      right: portrait ? 14 : 20,
+      bottom:
+          safeBottom +
+          (panelOpen ? (portrait ? 142 : 108) : (portrait ? 30 : 22)),
+      child: CapsuleButtonBar(
+        padding: const EdgeInsets.all(2),
+        children: [
+          CapsuleButton(
+            flat: true,
+            leading: const Icon(Icons.timer_outlined),
+            text: t.playerNextEpisodeCountdown(s: seconds),
+            onTap: () async {
+              await playerController.pause(showIndicator: false);
+              await playerController.playNextEpisode();
+            },
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          ),
+          CapsuleButton(
+            flat: true,
+            leading: const Icon(Icons.skip_next_rounded),
+            text: t.nextEpisode,
+            onTap: () async {
+              await playerController.pause(showIndicator: false);
+              await playerController.playNextEpisode();
+            },
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -805,11 +856,15 @@ class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
             ]),
             child: Stack(
               children: [
-                Video(
-                  controller: widget.controller.playerController,
-                  fit: BoxFit.cover,
-                  controls: null,
-                  subtitleViewConfiguration: kPlayerSubtitleViewConfiguration,
+                ValueListenableBuilder<int>(
+                  valueListenable: widget.controller.videoControllerRevision,
+                  builder: (context, revision, _) => Video(
+                    key: ValueKey(revision),
+                    controller: widget.controller.playerController,
+                    fit: BoxFit.cover,
+                    controls: null,
+                    subtitleViewConfiguration: kPlayerSubtitleViewConfiguration,
+                  ),
                 ),
                 Container(
                   width: double.infinity,

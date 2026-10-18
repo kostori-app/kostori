@@ -25,6 +25,7 @@ import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/player_video_config.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
@@ -64,6 +65,9 @@ abstract class WatcherPlayer {
 
   /// 当前集 index
   int get epIndex;
+
+  /// 当前线路是否还有下一集
+  bool get hasNextEpisode;
 
   /// 绑定的 bangumi 条目 id
   int? get bangumiId;
@@ -172,6 +176,10 @@ class _WatcherState extends State<Watcher>
   @override
   int epIndex = 1;
 
+  @override
+  bool get hasNextEpisode =>
+      epIndex < _episodeCount(playerController.currentRoad);
+
   /// 历史播放进度（毫秒）
   var time = 0;
 
@@ -182,6 +190,10 @@ class _WatcherState extends State<Watcher>
 
   /// 加载代次：切换集/线路时自增，用于丢弃过期异步结果（旧集还在解析时切走）
   int _loadGen = 0;
+
+  /// 下一集按钮的同步互斥锁。按钮回调会先等待静默暂停，
+  /// 在这段等待期间也必须拒绝第二次点击。
+  bool _nextEpisodeRequestActive = false;
 
   /// 系列模式下的系列条目列表（源 loadSeries 返回，复用 Anime 结构）
   List<Anime>? _series;
@@ -212,7 +224,9 @@ class _WatcherState extends State<Watcher>
     super.initState();
     current = this;
     playerController.watcher = this;
-    playerController.changePlayerSettings();
+    // 设备配置会异步创建最终的 VideoController。先完成这一步，再开始
+    // 解析和打开媒体，避免播放过程中替换视频输出导致只有声音没有画面。
+    final playerSettingsReady = playerController.changePlayerSettings();
     epIndex = 1;
     currentRoad = 0;
     updateStats(init: true);
@@ -232,6 +246,7 @@ class _WatcherState extends State<Watcher>
       // 两者都关：停在结束状态，不做任何自动动作
     });
     Future.microtask(() async {
+      await playerSettingsReady;
       headers = animeSource.httpHeaders;
       // 系列模式：先预加载系列列表，后续 _episodeKey/_episodeCount 依赖它
       if (_isSeries) {
@@ -320,6 +335,10 @@ class _WatcherState extends State<Watcher>
   /// 播放下一集（已到最后一集时提示无更多剧集）
   @override
   Future<void> playNextEpisode({bool checkRemainingTime = true}) async {
+    // 下一集解析期间隐藏入口并拒绝重复请求，避免多个异步加载互相覆盖集数。
+    if (_nextEpisodeRequestActive || playerController.loadingNextEpisode) {
+      return;
+    }
     if (epIndex >= _episodeCount(playerController.currentRoad)) {
       playerController.showCenterHint(
         message: t.watcherNoMoreEpisodes,
@@ -329,15 +348,19 @@ class _WatcherState extends State<Watcher>
       PlayLog.info("下一集", "没有更多剧集可播放");
       return;
     }
-    setState(() {
-      epIndex++;
-    });
+    _nextEpisodeRequestActive = true;
+    final previousEpisode = epIndex;
+    final nextEpisode = epIndex + 1;
     // 自动连播：加载覆盖层主文案改为「正在加载下一集」（不再是独立的提示层）；
     // 加载结束（含失败/取消）必须复位，避免后续普通缓冲一直误显示下一集文案
     playerController.loadingNextEpisode = true;
     try {
-      await loadNextEpisode(epIndex);
+      final loaded = await loadNextEpisode(nextEpisode);
+      if (!loaded && mounted) {
+        epIndex = previousEpisode;
+      }
     } catch (e) {
+      if (mounted) epIndex = previousEpisode;
       playerController.showCenterHint(
         message: t.watcherEpisodeLoadError(error: e.toString()),
         success: false,
@@ -346,6 +369,7 @@ class _WatcherState extends State<Watcher>
       PlayLog.info("playNextEpisode", "加载剧集时出错");
     } finally {
       playerController.loadingNextEpisode = false;
+      _nextEpisodeRequestActive = false;
     }
   }
 
@@ -381,8 +405,8 @@ class _WatcherState extends State<Watcher>
   }
 
   /// 加载当前线路的下一集
-  Future<void> loadNextEpisode(int episodeIndex) async {
-    await _loadEpisode(
+  Future<bool> loadNextEpisode(int episodeIndex) async {
+    return _loadEpisode(
       episodeIndex: episodeIndex,
       road: playerController.currentRoad,
     );
@@ -538,7 +562,7 @@ class _WatcherState extends State<Watcher>
   }
 
   /// 核心加载流程：解析播放地址 → 初始化播放器 → 加载媒体 → 缓冲
-  Future<void> _loadEpisode({
+  Future<bool> _loadEpisode({
     required int episodeIndex,
     required int road,
     String? localPath,
@@ -546,22 +570,23 @@ class _WatcherState extends State<Watcher>
     bool cfRetried = false,
   }) async {
     // 一起看成员：禁止手动切换集数，只能跟随房主（房主同步会临时解锁放行）
-    if (playerController.syncLocked) return;
+    if (playerController.syncLocked) return false;
     // 切换集/线路：取消上一个还在进行的 WebView 解析，避免旧任务占用资源
     WebViewResolver.cancel();
     final gen = ++_loadGen;
     if (!_isSeries &&
         (anime.episode == null || road >= anime.episode!.length)) {
       App.rootContext.showMessage(message: t.watcherRouteNotFound);
-      return;
+      return false;
     }
     // 同一集已在播放：本地文件与当前播放源不同时不拦截（可切到本地文件播放）
     if (episodeIndex == loaded &&
         road == playerController.currentRoad &&
         (localPath == null || playerController.playUrl == localPath)) {
       App.rootContext.showMessage(message: t.watcherDuplicateEpisode);
-      return;
+      return false;
     }
+    final previousEpisode = epIndex;
     epIndex = episodeIndex;
     PlayLog.info("加载剧集", "$episodeIndex");
 
@@ -592,7 +617,8 @@ class _WatcherState extends State<Watcher>
         );
         if (progressFind == null) {
           PlayLog.warning('progress create failed', '$episodeIndex-$road');
-          return;
+          if (gen == _loadGen && mounted) epIndex = previousEpisode;
+          return false;
         }
       }
       this.progressFind = progressFind;
@@ -632,7 +658,7 @@ class _WatcherState extends State<Watcher>
             anime.title,
             cancel: () => gen != _loadGen,
           );
-          if (gen != _loadGen || !mounted) return;
+          if (gen != _loadGen || !mounted) return false;
           if (btUrl == null) {
             // BT 线路没有这一集（如组只发了前 12 集）：回退普通源并提示
             App.rootContext.showMessage(message: t.torrentFallbackSource);
@@ -653,7 +679,7 @@ class _WatcherState extends State<Watcher>
         );
 
         // 已切走或播放器已退出：丢弃过期结果，不再初始化播放器
-        if (gen != _loadGen || !mounted) return;
+        if (gen != _loadGen || !mounted) return false;
 
         // 兼容：源可返回 String（纯 URL）或结构化对象（AnimePlayResult）
         (playUrl, playResult) = _parsePlayResult(res);
@@ -664,7 +690,8 @@ class _WatcherState extends State<Watcher>
             message: t.fetchVideoUrlError(detail: res),
             level: LogLevel.error,
           );
-          return;
+          epIndex = previousEpisode;
+          return false;
         }
 
         // 结构化结果优先提供播放请求头（如 emby 鉴权）
@@ -679,10 +706,14 @@ class _WatcherState extends State<Watcher>
       playerController.loadingStep = 1;
       playerController.playResult = playResult;
 
-      await _play(playUrl, time, local: localPath != null);
+      final played = await _play(playUrl, time, local: localPath != null);
+      if (!played) {
+        if (gen == _loadGen && mounted) epIndex = previousEpisode;
+        return false;
+      }
 
       // 播放器已退出：后续状态写入无意义
-      if (!mounted) return;
+      if (!mounted) return false;
 
       // 源提供播放进度上报接口时开始同步（emby/jellyfin 历史）；
       // 本地文件没有源侧会话，不需要上报
@@ -702,10 +733,11 @@ class _WatcherState extends State<Watcher>
 
       loaded = episodeIndex;
       await updateHistory();
+      return true;
     } catch (e, s) {
       PlayLog.error("_loadEpisode", "$e\n$s");
       // 已切走或播放器已退出：过期任务（被取消的 WebView 解析）的报错静默丢弃
-      if (gen != _loadGen || !mounted) return;
+      if (gen != _loadGen || !mounted) return false;
       // loadEp 里触发 CF 验证（视频链接请求被 challenge 拦截）时，
       // 弹验证页让用户过一次，通过后自动重试本集（仅重试一次，避免循环）
       CloudflareException? cfe;
@@ -716,28 +748,34 @@ class _WatcherState extends State<Watcher>
       }
       if (cfe != null && !cfRetried && localPath == null) {
         playerController.isParsing = false;
+        final retryGeneration = gen;
         passCloudflare(cfe, () {
-          if (!mounted) return;
+          // 验证期间用户可能已经手动切换了集数；旧请求不能在验证结束后
+          // 把播放器再次切回过期的下一集。
+          if (!mounted || retryGeneration != _loadGen) return;
           _loadEpisode(episodeIndex: episodeIndex, road: road, cfRetried: true);
         });
-        return;
+        if (gen == _loadGen && mounted) epIndex = previousEpisode;
+        return false;
       }
       // 解析异常也要复位，否则覆盖层会一直显示"正在解析"
       playerController.isParsing = false;
+      if (gen == _loadGen && mounted) epIndex = previousEpisode;
+      return false;
     }
   }
 
   /// 打开媒体并等待缓冲就绪，然后启动历史/进度定时上报
   ///
   /// [local] 为 true 时 [res] 是本地文件路径：不组装请求头、不过代理/广告过滤。
-  Future<void> _play(
+  Future<bool> _play(
     String res,
     int currentPlaybackTime, {
     bool local = false,
   }) async {
     playerController.loadFailed = false;
     try {
-      if (!mounted) return;
+      if (!mounted) return false;
 
       // 先组装请求头（源 httpHeaders + cookie），再决定是否走代理：
       // 走代理时这些头要交给代理使用，播放器只访问本地代理地址。
@@ -779,6 +817,10 @@ class _WatcherState extends State<Watcher>
       // 步骤2：加载媒体数据
       playerController.loadingStep = 2;
 
+      if (playerController.videoRenderer == 'mediacodec_embed') {
+        await waitForAndroidVideoSurface(playerController.playerController);
+      }
+
       await playerController.player.open(
         Media(
           actualPlayUrl,
@@ -803,11 +845,18 @@ class _WatcherState extends State<Watcher>
       if (mounted) {
         playerController.toastPlayFailed(t.failedToLoadPleaseTryAgain);
       }
-      return;
+      return false;
     }
 
-    await _waitForBuffer(currentPlaybackTime);
+    final buffered = await _waitForBuffer(currentPlaybackTime);
+    if (!buffered || playerController.loadFailed) {
+      try {
+        await playerController.player.stop();
+      } catch (_) {}
+      return false;
+    }
     _startHistoryTimer();
+    return true;
   }
 
   /// 取播放地址应携带的 cookie：
@@ -849,18 +898,34 @@ class _WatcherState extends State<Watcher>
 
   /// 等待缓冲流有数据后 seek 到历史进度（media_kit 的 buffer.first
   /// 触发时媒体未完全加载，直接 seek 会不准确，故用首个缓冲事件兜底）
-  Future<void> _waitForBuffer(int currentPlaybackTime) async {
-    final completer = Completer<void>();
-    final sub = playerController.player.stream.buffer.listen(null);
-    sub.onData((event) async {
-      if (event.inMicroseconds <= 0) return;
+  Future<bool> _waitForBuffer(int currentPlaybackTime) async {
+    if (playerController.loadFailed) return false;
+
+    final completer = Completer<bool>();
+    StreamSubscription<Duration>? bufferSub;
+    StreamSubscription<dynamic>? logSub;
+    var finished = false;
+
+    Future<void> finish(bool success) async {
+      if (finished) return;
+      finished = true;
+      completer.complete(success);
+      await bufferSub?.cancel();
+      await logSub?.cancel();
+    }
+
+    bufferSub = playerController.player.stream.buffer.listen((event) async {
+      if (event.inMicroseconds <= 0 || completer.isCompleted) return;
+      if (playerController.loadFailed) {
+        await finish(false);
+        return;
+      }
       // 步骤3：缓冲中
       playerController.loadingStep = 3;
-      await sub.cancel();
       if (mounted) {
         try {
           var remainingPlaybackTime = currentPlaybackTime;
-          if (progressFind!.isCompleted) {
+          if (progressFind?.isCompleted ?? false) {
             final duration =
                 playerController.player.state.duration.inMilliseconds;
             if ((duration - remainingPlaybackTime).abs() <= 5000) {
@@ -872,9 +937,19 @@ class _WatcherState extends State<Watcher>
           );
         } catch (_) {}
       }
-      completer.complete();
+      await finish(true);
     });
-    await completer.future;
+
+    // media-kit 的 open() 有时不会抛异常，而是通过 log 流异步报告失败。
+    // 同时监听该错误，避免下一集请求永远卡在等待缓冲，导致互斥锁不释放。
+    logSub = playerController.player.stream.log.listen((event) {
+      if (event.level == 'error' && event.text.contains('Failed to open')) {
+        playerController.loadFailed = true;
+        finish(false);
+      }
+    });
+
+    return completer.future;
   }
 
   /// 每秒同步历史/进度/时长统计

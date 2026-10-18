@@ -1,12 +1,13 @@
+import 'dart:async';
+
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-/// Android 上 AV1 的 MediaCodec 直通解码需要有 Surface，而 player 建好、
-/// 开始 open 时 Video widget 还没挂载、surface 为空，mpv 会报
-/// 「av1_mediacodec: Both surface and native_window are NULL」后再回落。
-/// 把 av1 从硬解白名单剔除，避免这次无效探测与报错（AV1 仍可用 dav1d 软解）。
+/// AV1 的 MediaCodec 直通解码需要有 Surface；播放开始时 Surface 尚未挂载，
+/// mpv 会先输出 `Both surface and native_window are NULL` 再回落到其他解码器。
+/// AV1 保留软件解码，避免触发这次无效探测。
 const String _kHwdecCodecsWithoutAv1 =
     'h264,vc1,hevc,vp8,vp9,prores,prores_raw,ffv1,dpx,apv';
 
@@ -18,6 +19,46 @@ Future<void> applyAndroidHwdecCodecs(Player player) async {
     try {
       await platform.setProperty('hwdec-codecs', _kHwdecCodecsWithoutAv1);
     } catch (_) {}
+  }
+}
+
+/// GPU 渲染时使用 MediaCodec copy 输出，避免 Android 在 Surface 就绪前
+/// 尝试直通解码。`mediacodec_embed` 需要直通模式，因此保留原配置。
+String resolveAndroidHardwareDecoder(
+  String hardwareDecoder, {
+  String? videoRenderer,
+}) {
+  if (!App.isAndroid || videoRenderer == 'mediacodec_embed') {
+    return hardwareDecoder;
+  }
+
+  if (hardwareDecoder == 'auto' ||
+      hardwareDecoder == 'auto-safe' ||
+      hardwareDecoder == 'mediacodec') {
+    return 'mediacodec-copy';
+  }
+  return hardwareDecoder;
+}
+
+/// `mediacodec_embed` 要求 Android Surface 就绪后才能开始解码。
+Future<void> waitForAndroidVideoSurface(VideoController controller) async {
+  if (!App.isAndroid || controller.id.value != null) return;
+
+  final surfaceAvailable = Completer<void>();
+  void onTextureChanged() {
+    if (controller.id.value != null && !surfaceAvailable.isCompleted) {
+      surfaceAvailable.complete();
+    }
+  }
+
+  controller.id.addListener(onTextureChanged);
+  onTextureChanged();
+  try {
+    await surfaceAvailable.future.timeout(const Duration(seconds: 3));
+  } on TimeoutException {
+    // Surface 创建失败时继续打开媒体，由播放器统一处理后续错误。
+  } finally {
+    controller.id.removeListener(onTextureChanged);
   }
 }
 
@@ -37,7 +78,9 @@ VideoControllerConfiguration playerVideoControllerConfiguration() {
   return VideoControllerConfiguration(
     // vo 留空 = 平台默认（Android 为 gpu），不要显式 gpu-next（部分机型黑屏）
     enableHardwareAcceleration: hardwareAcceleration,
-    hwdec: hardwareAcceleration ? hardwareDecoder : 'no',
+    hwdec: hardwareAcceleration
+        ? resolveAndroidHardwareDecoder(hardwareDecoder)
+        : 'no',
     androidAttachSurfaceAfterVideoParameters: false,
   );
 }

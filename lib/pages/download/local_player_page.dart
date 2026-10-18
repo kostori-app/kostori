@@ -185,6 +185,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
       end: Offset.zero,
     ).animate(moreCurved);
     _moreFade = CurvedAnimation(parent: _moreAnim, curve: Curves.easeInOut);
+    displayVideoController();
   }
 
   @override
@@ -269,8 +270,11 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   void _onHorizontalDragStart() {
     if (!mounted) return;
+    hideTimer?.cancel();
     if (st.showControls) {
       animationController.reverse();
+      // 与 anime page 保持一致：开始滑动定位后保持面板收起，直到用户再次点击。
+      ctrl.showControlsDirect(false);
     }
     // 拖动时停止进度同步 + 暂停，避免进度回退
     ctrl.stopPositionSync();
@@ -280,7 +284,8 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (!mounted) return;
-    final scale = 180000 / MediaQuery.sizeOf(context).width;
+    final scale =
+        180000 * playerSeekMultiplier / MediaQuery.sizeOf(context).width;
     // 基于上次 seekPreview 累积，避免只反映最后一段位移
     final base = st.seekPreview ?? st.position;
     final ms = (base.inMilliseconds + (details.delta.dx * scale).round()).clamp(
@@ -290,16 +295,15 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     ctrl.setSeekPreview(Duration(milliseconds: ms));
   }
 
-  void _onHorizontalDragEnd() {
+  Future<void> _onHorizontalDragEnd() async {
     final preview = st.seekPreview;
-    // 顺序：play → seek → 恢复同步
-    ctrl.play();
     if (preview != null) {
-      ctrl.seek(preview);
+      await ctrl.seek(preview);
     }
+    // 先完成定位，再恢复播放，与 anime page 的行为保持一致。
+    ctrl.play();
     ctrl.startPositionSync();
     ctrl.setShowSeekTime(false);
-    displayVideoController();
   }
 
   Future<void> _onVerticalDragUpdate(DragUpdateDetails details) async {
@@ -433,16 +437,30 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
           ),
         ),
         // 控件层（面板）
-        if (state.showControls)
-          FadeTransition(opacity: fadeAnimation, child: _buildPanel(state)),
-        // 滑动手势层：位于面板之上
-        // translucent：加入 hit path 但不短路，让下层 tap 层也能收事件。
-        // bottom 避开底部控制面板，避免面板内横向拖动（进度条等）误触发 seek
+        _buildBasePanel(state),
+        // HUD 位于面板下方，与 anime page 的层级保持一致。
+        if (state.showSeekTime && state.seekPreview != null)
+          _buildSeekIndicator(state),
+        if (state.showVolume) _buildLevelHUD(state, isBrightness: false),
+        if (state.showBrightness) _buildLevelHUD(state, isBrightness: true),
+        if (state.speed != 1.0 && !state.showControls)
+          _buildSpeedIndicator(state),
+        FadeTransition(
+          opacity: fadeAnimation,
+          child: IgnorePointer(
+            ignoring: !state.showControls,
+            child: _buildPanel(state),
+          ),
+        ),
+        // 滑动手势层位于面板之上，加入命中路径但不阻断下层点击。
+        // 底部避开控制面板；竖屏面板更高，为进度条保留手势区域。
         Positioned.fill(
           left: 16,
           top: 25,
           right: 15,
-          bottom: MediaQuery.paddingOf(context).bottom + 70,
+          bottom:
+              MediaQuery.paddingOf(context).bottom +
+              (state.showControls ? (state.fullscreen ? 120 : 170) : 70),
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onHorizontalDragStart: (_) => _onHorizontalDragStart(),
@@ -452,12 +470,6 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
             onVerticalDragEnd: (_) => _onVerticalDragEnd(),
           ),
         ),
-        if (state.showSeekTime && state.seekPreview != null)
-          _buildSeekIndicator(state),
-        if (state.showVolume) _buildLevelHUD(state, isBrightness: false),
-        if (state.showBrightness) _buildLevelHUD(state, isBrightness: true),
-        if (state.speed != 1.0 && !state.showControls)
-          _buildSpeedIndicator(state),
         // 全屏「更多」从右侧滑出的面板（非全屏用底部 sheet）
         if (state.fullscreen) _buildMorePanel(state),
       ],
@@ -473,8 +485,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
           _handleHove();
         } else {
           if (!state.showControls) {
-            animationController.forward();
-            ctrl.showControlsDirect(true);
+            displayVideoController();
           }
         }
       },
@@ -484,9 +495,68 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   /// 控件层面板：侧边栏/顶部/底部，全屏透明 Stack
   Widget _buildPanel(LocalPlayerState state) {
+    // 非全屏播放器采用接近竖屏的布局，复用 anime page 的紧凑上下控制面板。
+    if (!state.fullscreen) {
+      return Stack(children: [_buildTopBar(state), _buildBottomBar(state)]);
+    }
     return Stack(
       children: [_buildSideBar(), _buildTopBar(state), _buildBottomBar(state)],
     );
+  }
+
+  /// 控制面板收起后保留的细进度轨道，复用完整面板的动画绘制逻辑。
+  Widget _buildBasePanel(LocalPlayerState state) {
+    return AnimatedBuilder(
+      animation: animationController,
+      builder: (context, _) {
+        // 主面板完全淡出后才显示轨道，避免过渡动画期间两条进度条同时出现。
+        final visible =
+            !state.fullscreen &&
+            !state.showControls &&
+            animationController.isDismissed;
+        if (!visible) return const SizedBox.shrink();
+        return Positioned(
+          left: 10,
+          right: 10,
+          bottom: MediaQuery.paddingOf(context).bottom + 4,
+          child: IgnorePointer(
+            child: PlayerProgressBar(
+              showThumb: false,
+              thumbRadius: 0,
+              thumbGlowRadius: 0,
+              barHeight: 3,
+              timeLabelLocation: TimeLabelLocation.none,
+              progress: state.seekPreview ?? state.position,
+              buffered: state.buffer,
+              total: state.duration,
+              onSeek: ctrl.seek,
+              onDragStart: _onProgressBarDragStart,
+              onDragUpdate: _onProgressBarDragUpdate,
+              onDragEnd: _onProgressBarDragEnd,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _onProgressBarDragStart(ThumbDragDetails details) {
+    hideTimer?.cancel();
+    ctrl.stopPositionSync();
+    ctrl.pause();
+    ctrl.setShowSeekTime(true);
+    ctrl.setSeekPreview(details.timeStamp);
+  }
+
+  void _onProgressBarDragUpdate(ThumbDragDetails details) {
+    ctrl.setSeekPreview(details.timeStamp);
+  }
+
+  Future<void> _onProgressBarDragEnd() async {
+    ctrl.play();
+    ctrl.startPositionSync();
+    ctrl.setShowSeekTime(false);
+    startHideTimer();
   }
 
   // 侧边栏
@@ -754,6 +824,13 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         ),
       ),
       PlayerPlaybackSpeedCard(value: state.speed, onChanged: ctrl.setRate),
+      PlayerSeekSensitivityCard(
+        value: playerSeekMultiplier,
+        onChanged: (value) {
+          appdata.implicitData[kPlayerSeekMultiplierKey] = value;
+          appdata.writeImplicitData();
+        },
+      ),
       PlayerSuperResolutionCard(
         value: state.superResolutionType,
         onChanged: ctrl.setSuperResolution,
@@ -926,6 +1003,8 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   // ---- 底部（信息行 + 进度条 + 控制行）----
 
   Widget _buildBottomBar(LocalPlayerState state) {
+    if (!state.fullscreen) return _buildPortraitBottomBar(state);
+
     return Positioned(
       left: 0,
       right: 0,
@@ -951,7 +1030,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${Utils.durationToString(state.position)} / ${Utils.durationToString(state.duration)}',
+                      '${Utils.durationToString(state.seekPreview ?? state.position)} / ${Utils.durationToString(state.duration)}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -980,7 +1059,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                   onPressed: ctrl.playOrPause,
                 ),
                 Expanded(
-                  child: ProgressBar(
+                  child: PlayerProgressBar(
                     thumbRadius: 8,
                     thumbGlowRadius: 18,
                     timeLabelLocation: TimeLabelLocation.none,
@@ -989,10 +1068,13 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                       fontSize: 12.0,
                       fontFeatures: [FontFeature.tabularFigures()],
                     ),
-                    progress: state.position,
+                    progress: state.seekPreview ?? state.position,
                     buffered: state.buffer,
                     total: state.duration,
                     onSeek: ctrl.seek,
+                    onDragStart: _onProgressBarDragStart,
+                    onDragUpdate: _onProgressBarDragUpdate,
+                    onDragEnd: _onProgressBarDragEnd,
                   ),
                 ),
                 // 字幕 / 音轨设置（在 fullscreen 左边）
@@ -1008,6 +1090,101 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 与 anime page 竖屏面板一致的紧凑布局。
+  Widget _buildPortraitBottomBar(LocalPlayerState state) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: PlayerProgressBar(
+                  thumbRadius: 8,
+                  thumbGlowRadius: 18,
+                  timeLabelLocation: TimeLabelLocation.none,
+                  progress: state.seekPreview ?? state.position,
+                  buffered: state.buffer,
+                  total: state.duration,
+                  onSeek: ctrl.seek,
+                  onDragStart: _onProgressBarDragStart,
+                  onDragUpdate: _onProgressBarDragUpdate,
+                  onDragEnd: _onProgressBarDragEnd,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text(
+                        '${Utils.durationToString(state.seekPreview ?? state.position)} / ${Utils.durationToString(state.duration)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      color: Colors.white,
+                      tooltip: t.screenshotShare,
+                      icon: const Icon(Icons.fit_screen),
+                      onPressed: ctrl.captureScreenshot,
+                    ),
+                    IconButton(
+                      color: Colors.white,
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () => ctrl.seekBy(const Duration(seconds: 80)),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    IconButton(
+                      color: Colors.white,
+                      icon: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: Icon(
+                          state.playing ? Icons.pause : Icons.play_arrow,
+                          key: ValueKey<bool>(state.playing),
+                        ),
+                      ),
+                      onPressed: ctrl.playOrPause,
+                    ),
+                    const Spacer(),
+                    _buildTrackSettingsButton(state),
+                    IconButton(
+                      color: Colors.white,
+                      icon: Icon(
+                        state.fullscreen
+                            ? Icons.fullscreen_exit
+                            : Icons.fullscreen,
+                      ),
+                      tooltip: t.fullscreen,
+                      onPressed: ctrl.toggleFullscreen,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

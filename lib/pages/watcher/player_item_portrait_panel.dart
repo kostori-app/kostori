@@ -1,7 +1,7 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/system_status_widget.dart';
+import 'package:kostori/components/player_progress_bar.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
@@ -67,7 +67,8 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         return Stack(
           alignment: Alignment.center,
@@ -384,7 +385,7 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: ProgressBar(
+                          child: PlayerProgressBar(
                             thumbRadius: 8,
                             thumbGlowRadius: 18,
                             timeLabelLocation: TimeLabelLocation.none,
@@ -527,7 +528,9 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                 ),
                                 onPressed: () {
                                   if (playerController.playing) {
-                                    playerController.pause();
+                                    playerController.pause(
+                                      showIndicator: false,
+                                    );
                                   } else {
                                     playerController.play();
                                   }
@@ -537,9 +540,11 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                               IconButton(
                                 color: Colors.white,
                                 icon: const Icon(Icons.skip_next),
-                                onPressed: () {
-                                  playerController.pause();
-                                  playerController.playNextEpisode();
+                                onPressed: () async {
+                                  await playerController.pause(
+                                    showIndicator: false,
+                                  );
+                                  await playerController.playNextEpisode();
                                 },
                               ),
                               // 音量滑条（桌面端）

@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
@@ -55,7 +54,8 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         return Stack(
           alignment: Alignment.center,
@@ -181,8 +181,6 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
   }
 }
 
-// 新建两个小 Widget，分别对应渐变层和进度条
-
 class _SeekGradientLayer extends StatefulWidget {
   const _SeekGradientLayer({required this.isSeek});
   final bool isSeek;
@@ -214,7 +212,7 @@ class _SeekGradientLayerState extends State<_SeekGradientLayer> {
         end: widget.isSeek ? 1.0 : 0.0,
       );
     }
-    // isSeek 没变 → _tween 对象引用不变 → TweenAnimationBuilder 不会重启动画
+    // 状态未变化时复用原 Tween，避免 TweenAnimationBuilder 重启动画。
   }
 
   @override
@@ -222,7 +220,7 @@ class _SeekGradientLayerState extends State<_SeekGradientLayer> {
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      tween: _tween, // ← 引用稳定，只在 isSeek 变化时才是新对象
+      tween: _tween,
       builder: (context, value, child) {
         return Opacity(
           opacity: value,
@@ -266,7 +264,8 @@ class _PlayerCenterOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         final controller = playerController;
         final hint = controller.centerHintMessage;
@@ -358,7 +357,8 @@ class _ScreenshotStatusOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         final message = playerController.screenshotStatusMessage;
         if (message == null || message.isEmpty) {
@@ -440,7 +440,8 @@ class _LevelSliderHUD extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         final showBrightness = playerController.showBrightness;
         final showVolume = playerController.showVolume;
@@ -466,7 +467,8 @@ class _SeekHUD extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         return PlayerSeekHud(
           target: playerController.currentPosition,
@@ -654,7 +656,7 @@ class _SeekProgressBarState extends State<_SeekProgressBar> {
       curve: Curves.easeOut,
       tween: _tween,
       builder: (context, value, child) {
-        return ProgressBar(
+        return PlayerProgressBar(
           thumbRadius: 6 * value,
           thumbGlowRadius: 0,
           barHeight: 2 + 2 * value,

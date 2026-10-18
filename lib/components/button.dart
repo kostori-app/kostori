@@ -488,6 +488,7 @@ class CapsuleButton extends StatefulWidget {
     this.text,
     this.child,
     required this.onTap,
+    this.onLongPress,
     this.primary = false,
     this.leading,
     this.trailing,
@@ -504,6 +505,7 @@ class CapsuleButton extends StatefulWidget {
   final String? text;
   final Widget? child;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   /// 主要动作：主题色填充；否则为浅色胶囊
   final bool primary;
@@ -551,6 +553,7 @@ class _CapsuleButtonState extends State<CapsuleButton> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: enabled ? widget.onTap : null,
+        onLongPress: enabled ? widget.onLongPress : null,
         child: Padding(
           padding: widget.padding,
           child: DefaultTextStyle.merge(

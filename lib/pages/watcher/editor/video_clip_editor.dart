@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:io' as io;
 import 'dart:math';
 
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart'
     if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart'
@@ -19,6 +18,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
+import 'package:kostori/pages/watcher/player_video_config.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
@@ -393,7 +393,10 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       setState(() => _previewStatus = t.loadingPlayer);
 
       final player = Player();
-      final controller = VideoController(player);
+      final controller = VideoController(
+        player,
+        configuration: playerVideoControllerConfiguration(),
+      );
 
       await player.open(
         Media(
@@ -1359,7 +1362,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ProgressBar(
+              PlayerProgressBar(
                 progress: position,
                 total: _videoDuration,
                 buffered: _videoDuration,

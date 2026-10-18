@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
@@ -96,7 +95,8 @@ class _VolumeSliderPanelState extends State<_VolumeSliderPanel> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: widget.playerController,
       builder: (context) {
         final upper = widget.playerController.volumeUpperBound;
         final volume = widget.playerController.volume.clamp(0.0, upper);

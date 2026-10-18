@@ -27,6 +27,7 @@ export 'package:kostori/components/qr_code.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
+export 'package:kostori/components/player_progress_bar.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/database/search_history.dart';

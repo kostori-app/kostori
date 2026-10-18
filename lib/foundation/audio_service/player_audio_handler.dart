@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
-import 'package:media_kit/media_kit.dart';
+import 'package:media_kit/media_kit.dart' as media_kit;
 
 class PlayerAudioHandler extends BaseAudioHandler {
   PlayerController? _controller;
@@ -153,7 +153,7 @@ class PlayerAudioHandler extends BaseAudioHandler {
     );
   }
 
-  AudioProcessingState _getProcessingState(PlayerState playerState) {
+  AudioProcessingState _getProcessingState(media_kit.PlayerState playerState) {
     if (playerState.buffering) return AudioProcessingState.buffering;
     if (playerState.completed) return AudioProcessingState.completed;
     return AudioProcessingState.ready;

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -153,6 +152,70 @@ class PlayerPlaybackSpeedCard extends StatelessWidget {
           ),
           Text(
             '${value.toStringAsFixed(2)}x',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            t.playerSeekSensitivityDesc,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// anime page 与本地播放器共用的横向滑动灵敏度设置。
+class PlayerSeekSensitivityCard extends StatefulWidget {
+  const PlayerSeekSensitivityCard({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  @override
+  State<PlayerSeekSensitivityCard> createState() =>
+      _PlayerSeekSensitivityCardState();
+}
+
+class _PlayerSeekSensitivityCardState extends State<PlayerSeekSensitivityCard> {
+  late double _value = widget.value;
+
+  @override
+  void didUpdateWidget(covariant PlayerSeekSensitivityCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) _value = widget.value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PlayerSettingCard(
+      icon: Icons.swap_horiz_rounded,
+      title: t.playerSeekSensitivity,
+      child: Column(
+        children: [
+          Slider(
+            value: _value.clamp(
+              kMinPlayerSeekMultiplier,
+              kMaxPlayerSeekMultiplier,
+            ),
+            min: kMinPlayerSeekMultiplier,
+            max: kMaxPlayerSeekMultiplier,
+            divisions: 8,
+            label: '${_value.toStringAsFixed(2)}x',
+            onChanged: (value) {
+              setState(() => _value = value);
+              widget.onChanged(value);
+            },
+          ),
+          Text(
+            '${_value.toStringAsFixed(2)}x',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
@@ -412,7 +475,8 @@ class PlayerSettingsCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pc = playerController;
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -486,6 +550,13 @@ class PlayerSettingsCards extends StatelessWidget {
           PlayerPlaybackSpeedCard(
             value: pc.playbackSpeed,
             onChanged: pc.setPlaybackSpeed,
+          ),
+          PlayerSeekSensitivityCard(
+            value: playerSeekMultiplier,
+            onChanged: (value) {
+              appdata.implicitData[kPlayerSeekMultiplierKey] = value;
+              appdata.writeImplicitData();
+            },
           ),
           PlayerSuperResolutionCard(
             value: pc.superResolutionType,

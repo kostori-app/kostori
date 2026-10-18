@@ -1,9 +1,9 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/system_status_widget.dart';
+import 'package:kostori/components/player_progress_bar.dart';
 import 'package:kostori/foundation/anime_source/anime_play_result.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -133,7 +133,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         return Stack(
           alignment: Alignment.center,
@@ -554,7 +555,9 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     color: Colors.white,
                                     icon: const Icon(Icons.skip_next),
                                     onPressed: () async {
-                                      playerController.pause();
+                                      await playerController.pause(
+                                        showIndicator: false,
+                                      );
                                       await playerController.playNextEpisode();
                                     },
                                   )
@@ -593,7 +596,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 },
                               ),
                             Expanded(
-                              child: ProgressBar(
+                              child: PlayerProgressBar(
                                 thumbRadius: 8,
                                 thumbGlowRadius: 18,
                                 timeLabelLocation: TimeLabelLocation.none,

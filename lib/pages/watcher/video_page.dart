@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -57,7 +56,6 @@ class _VideoPageState extends State<VideoPage>
   // 当前播放列表
   late int currentRoad;
 
-  // Tab controller for the side panel
   late TabController _panelTabController;
 
   void menuJumpToCurrentEpisode() {
@@ -150,7 +148,6 @@ class _VideoPageState extends State<VideoPage>
       curve: Curves.easeInOut,
     );
 
-    // Initialize panel tab controller with 3 tabs
     _panelTabController = TabController(length: 3, vsync: this);
   }
 
@@ -276,7 +273,8 @@ class _VideoPageState extends State<VideoPage>
           await playerController.toggleFullScreen(context);
         }
       },
-      child: Observer(
+      child: PlayerControllerBuilder(
+        playerController: playerController,
         builder: (context) => SafeArea(
           bottom: playerController.isPortraitFullscreen,
           top: false,
@@ -480,7 +478,10 @@ class _VideoPageState extends State<VideoPage>
   Widget _buildPlaylistTab() {
     return GridViewObserver(
       controller: observerController,
-      child: Column(children: [_buildPlaylistHeader(), _buildPlaylistBody()]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [_buildPlaylistHeader(), _buildPlaylistBody()],
+      ),
     );
   }
 
@@ -654,6 +655,7 @@ class _VideoPageState extends State<VideoPage>
       child: Padding(
         padding: const EdgeInsets.only(top: 0, right: 8, left: 8),
         child: GridView.builder(
+          padding: EdgeInsets.zero,
           scrollDirection: Axis.vertical,
           controller: scrollController,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -681,7 +683,7 @@ class _VideoPageState extends State<VideoPage>
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: Align(
-          alignment: Alignment.topCenter,
+          alignment: Alignment.topLeft,
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: MediaQuery.sizeOf(context).width,
@@ -787,6 +789,8 @@ class _VideoPageState extends State<VideoPage>
               // 操作按钮（本 tab 即播放器详情，不再重复显示「播放器详情」入口）
               PlayerActionButtons(playerController: playerController),
               const SizedBox(height: 24),
+              // 与「更多」面板保持一致，允许全屏侧栏直接调整控制栏收起时间。
+              const PlayerPanelHideDelayCard(),
               // 其他设置：与「更多」sheet 共用同一卡片组，避免两边各写一遍
               _sectionTitle(t.otherSettings),
               const SizedBox(height: 8),

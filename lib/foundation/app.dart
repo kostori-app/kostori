@@ -52,6 +52,11 @@ class _App {
 
   bool isInitialized = false;
 
+  /// 移动端播放器切换全屏方向时，暂时保持当前导航布局。
+  /// 方向变化会让 MediaQuery 宽度短暂达到宽屏阈值，不能在这段时间
+  /// 把主导航切换成侧栏，否则退出播放器时会先闪过一次错误布局。
+  bool mobileFullscreenTransitioning = false;
+
   late String dataPath;
   late String cachePath;
   String? externalStoragePath;
@@ -123,6 +128,12 @@ class _App {
 
   void forceRebuild() {
     _forceRebuildHandler?.call();
+  }
+
+  void setMobileFullscreenTransitioning(bool value) {
+    if (mobileFullscreenTransitioning == value) return;
+    mobileFullscreenTransitioning = value;
+    forceRebuild();
   }
 }
 

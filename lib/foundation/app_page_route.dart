@@ -70,7 +70,7 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
 
   @override
   bool canTransitionTo(TransitionRoute<dynamic> nextRoute) {
-    // Don't perform outgoing animation if the next route is a fullscreen dialog.
+    // 下一个路由是全屏对话框时，不执行当前路由的退出动画。
     return nextRoute is PageRoute && !nextRoute.fullscreenDialog;
   }
 
@@ -301,8 +301,8 @@ class _IOSBackGestureDetectorState extends State<IOSBackGestureDetector> {
           if (renderObject.axis == Axis.horizontal) {
             return true;
           }
-        } catch (e) {
-          // protected
+        } catch (_) {
+          // 平台实现可能不暴露 axis 属性，无法判断时继续检查其他滚动类型。
         }
       } else if (target is RenderEditable) {
         return true;
@@ -577,10 +577,10 @@ class FullscreenPageRoute<T> extends PageRoute<T> {
   Widget? _child;
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 120);
+  Duration get transitionDuration => const Duration(milliseconds: 280);
 
   @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 100);
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 220);
 
   @override
   Color? get barrierColor => null;
@@ -607,9 +607,24 @@ class FullscreenPageRoute<T> extends PageRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    if (animation.status == AnimationStatus.reverse) {
-      return child;
-    }
-    return FadeTransition(opacity: animation, child: child);
+    // 全屏页面在移动端会同时触发系统方向切换。使用轻微缩放配合淡入，
+    // 避免播放器尺寸从中线向上下撑开时产生突兀的“垂直展开”观感。
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    final scale = Tween<double>(begin: 0.92, end: 1).animate(curved);
+    final fade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0, 0.7, curve: Curves.easeOut),
+        reverseCurve: Curves.easeIn,
+      ),
+    );
+    return FadeTransition(
+      opacity: fade,
+      child: ScaleTransition(scale: scale, child: child),
+    );
   }
 }

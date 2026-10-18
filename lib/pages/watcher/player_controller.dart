@@ -7,8 +7,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/anime_source/anime_play_result.dart';
@@ -37,14 +37,9 @@ import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:mobx/mobx.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
-
-part 'player_controller.g.dart';
-
-class PlayerController = _PlayerController with _$PlayerController;
 
 /// 音频输出设备：`name` 为 mpv 设备标识（设置用），`description` 为友好名称（展示用）。
 class AudioDeviceInfo {
@@ -56,12 +51,45 @@ class AudioDeviceInfo {
   String get label => description.isNotEmpty ? description : name;
 }
 
-abstract class _PlayerController with Store {
+@immutable
+class PlayerState {
+  final int revision;
+
+  const PlayerState({this.revision = 0});
+
+  PlayerState next() => PlayerState(revision: revision + 1);
+}
+
+/// Anime 播放器的 Riverpod Notifier。
+///
+/// 播放器实例和媒体流由控制器持有，Riverpod 状态仅保存用于界面重建的
+/// 版本号。界面通过 [PlayerControllerBuilder] 订阅 provider，统一接收状态变化。
+class PlayerController extends Notifier<PlayerState> {
+  PlayerController(this.scopeKey);
+
+  final String scopeKey;
+
+  @override
+  PlayerState build() {
+    ref.onDispose(() => unawaited(dispose()));
+    return const PlayerState();
+  }
+
+  void _notifyStateChanged() {
+    if (_disposed) return;
+    state = state.next();
+  }
+
   late ShadersController shadersController;
   late final PlayerAudioHandler audioHandler;
   late final Stream<String> timeStream;
 
   final FocusNode keyboardFocus = FocusNode();
+
+  /// 设备设置异步加载完成后会重新创建视频输出控制器。渲染视频的组件必须
+  /// 随之重建，否则播放器可能继续输出音频，而 [Video] 仍绑定旧的视频输出。
+  final ValueNotifier<int> videoControllerRevision = ValueNotifier<int>(0);
+  bool _disposed = false;
 
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
   StreamSubscription<Duration>? _positionSub;
@@ -82,18 +110,43 @@ abstract class _PlayerController with Store {
   late String videoSync;
   late String hardwareDecoder;
 
-  @observable
-  bool loading = true;
-  @observable
-  bool isPortraitFullscreen = false;
+  bool _loading = true;
+
+  bool get loading => _loading;
+  set loading(bool value) {
+    if (_loading == value) return;
+    _loading = value;
+    _notifyStateChanged();
+  }
+
+  bool _isPortraitFullscreen = false;
+
+  bool get isPortraitFullscreen => _isPortraitFullscreen;
+  set isPortraitFullscreen(bool value) {
+    if (_isPortraitFullscreen == value) return;
+    _isPortraitFullscreen = value;
+    _notifyStateChanged();
+  }
 
   /// 加载流程步骤：0 解析地址 → 1 初始化播放器 → 2 加载媒体 → 3 缓冲
-  @observable
-  int loadingStep = 0;
+  int _loadingStep = 0;
+
+  int get loadingStep => _loadingStep;
+  set loadingStep(int value) {
+    if (_loadingStep == value) return;
+    _loadingStep = value;
+    _notifyStateChanged();
+  }
 
   /// 是否正在解析视频地址（解析结束/失败后为 false，用于覆盖层不误导）
-  @observable
-  bool isParsing = false;
+  bool _isParsing = false;
+
+  bool get isParsing => _isParsing;
+  set isParsing(bool value) {
+    if (_isParsing == value) return;
+    _isParsing = value;
+    _notifyStateChanged();
+  }
 
   late Player player = Player(
     configuration: PlayerConfiguration(
@@ -122,70 +175,195 @@ abstract class _PlayerController with Store {
     configuration: VideoControllerConfiguration(
       vo: videoRenderer,
       enableHardwareAcceleration: hAenable,
-      hwdec: hAenable ? hardwareDecoder : 'no',
+      hwdec: hAenable
+          ? resolveAndroidHardwareDecoder(
+              hardwareDecoder,
+              videoRenderer: videoRenderer,
+            )
+          : 'no',
       androidAttachSurfaceAfterVideoParameters: false,
     ),
   );
 
-  @observable
-  bool audioOutType = true;
+  bool _audioOutType = true;
 
-  @observable
-  bool isPiPMode = false;
+  bool get audioOutType => _audioOutType;
+  set audioOutType(bool value) {
+    if (_audioOutType == value) return;
+    _audioOutType = value;
+    _notifyStateChanged();
+  }
 
-  @observable
-  bool isFullScreen = false;
-  @observable
-  bool isSeek = false;
-  @observable
-  bool glimmerEffect = false;
+  bool _isPiPMode = false;
+
+  bool get isPiPMode => _isPiPMode;
+  set isPiPMode(bool value) {
+    if (_isPiPMode == value) return;
+    _isPiPMode = value;
+    _notifyStateChanged();
+  }
+
+  bool _isFullScreen = false;
+
+  bool get isFullScreen => _isFullScreen;
+  set isFullScreen(bool value) {
+    if (_isFullScreen == value) return;
+    _isFullScreen = value;
+    _notifyStateChanged();
+  }
+
+  /// 移动端全屏切换期间，避免重复响应系统返回键/按钮事件。
+  bool _mobileFullscreenTransitioning = false;
+  bool _isSeek = false;
+
+  bool get isSeek => _isSeek;
+  set isSeek(bool value) {
+    if (_isSeek == value) return;
+    _isSeek = value;
+    _notifyStateChanged();
+  }
+
+  bool _glimmerEffect = false;
+
+  bool get glimmerEffect => _glimmerEffect;
+  set glimmerEffect(bool value) {
+    if (_glimmerEffect == value) return;
+    _glimmerEffect = value;
+    _notifyStateChanged();
+  }
 
   /// 视频超分
   /// 1. OFF
   /// 2. Anime4K
-  @observable
-  int superResolutionType = 1;
-  @observable
-  bool showPreviewImage = false;
-  @observable
-  bool playing = false;
-  @observable
-  Duration currentPosition = Duration.zero;
-  @observable
-  bool isBuffering = false;
-  @observable
-  bool completed = false;
+  int _superResolutionType = 1;
+
+  int get superResolutionType => _superResolutionType;
+  set superResolutionType(int value) {
+    if (_superResolutionType == value) return;
+    _superResolutionType = value;
+    _notifyStateChanged();
+  }
+
+  bool _showPreviewImage = false;
+
+  bool get showPreviewImage => _showPreviewImage;
+  set showPreviewImage(bool value) {
+    if (_showPreviewImage == value) return;
+    _showPreviewImage = value;
+    _notifyStateChanged();
+  }
+
+  bool _playing = false;
+
+  bool get playing => _playing;
+  set playing(bool value) {
+    if (_playing == value) return;
+    _playing = value;
+    _notifyStateChanged();
+  }
+
+  Duration _currentPosition = Duration.zero;
+
+  Duration get currentPosition => _currentPosition;
+  set currentPosition(Duration value) {
+    if (_currentPosition == value) return;
+    _currentPosition = value;
+    _notifyStateChanged();
+  }
+
+  bool _isBuffering = false;
+
+  bool get isBuffering => _isBuffering;
+  set isBuffering(bool value) {
+    if (_isBuffering == value) return;
+    _isBuffering = value;
+    _notifyStateChanged();
+  }
+
+  bool _completed = false;
+
+  bool get completed => _completed;
+  set completed(bool value) {
+    if (_completed == value) return;
+    _completed = value;
+    _notifyStateChanged();
+  }
 
   /// 最近一次打开媒体是否失败：覆盖层据此隐藏加载提示
-  @observable
-  bool loadFailed = false;
+  bool _loadFailed = false;
+
+  bool get loadFailed => _loadFailed;
+  set loadFailed(bool value) {
+    if (_loadFailed == value) return;
+    _loadFailed = value;
+    _notifyStateChanged();
+  }
 
   /// 最近一次播放错误（详情页展示）
-  @observable
-  String? lastPlayError;
+  String? _lastPlayError;
+
+  String? get lastPlayError => _lastPlayError;
+  set lastPlayError(String? value) {
+    if (_lastPlayError == value) return;
+    _lastPlayError = value;
+    _notifyStateChanged();
+  }
 
   /// 播放器中央提示（如「正在播放下一集」）：在播放器组件内部居中显示，
   /// 位置与缓冲覆盖层一致（不再用全局 showCenter，避免居中到整个页面）。
-  @observable
-  String? centerHintMessage;
-  @observable
-  bool centerHintSuccess = true;
+  String? _centerHintMessage;
+
+  String? get centerHintMessage => _centerHintMessage;
+  set centerHintMessage(String? value) {
+    if (_centerHintMessage == value) return;
+    _centerHintMessage = value;
+    _notifyStateChanged();
+  }
+
+  bool _centerHintSuccess = true;
+
+  bool get centerHintSuccess => _centerHintSuccess;
+  set centerHintSuccess(bool value) {
+    if (_centerHintSuccess == value) return;
+    _centerHintSuccess = value;
+    _notifyStateChanged();
+  }
+
   Timer? _centerHintTimer;
 
   /// 是否正在加载「自动连播的下一集」：加载覆盖层据此把主文案显示为
   /// 「正在加载下一集」，加载结束后必须复位为 false，
   /// 否则后续普通缓冲会一直误显示「正在加载下一集」。
-  @observable
-  bool loadingNextEpisode = false;
+  bool _loadingNextEpisode = false;
+
+  bool get loadingNextEpisode => _loadingNextEpisode;
+  set loadingNextEpisode(bool value) {
+    if (_loadingNextEpisode == value) return;
+    _loadingNextEpisode = value;
+    _notifyStateChanged();
+  }
 
   /// 截图进行中的状态文案：在播放器内底部以 showMessage 样式显示，
   /// 替代原先的整屏加载弹窗（避免遮挡画面、尺寸过大）。
-  @observable
-  String? screenshotStatusMessage;
+  String? _screenshotStatusMessage;
+
+  String? get screenshotStatusMessage => _screenshotStatusMessage;
+  set screenshotStatusMessage(String? value) {
+    if (_screenshotStatusMessage == value) return;
+    _screenshotStatusMessage = value;
+    _notifyStateChanged();
+  }
 
   /// 截图状态结果：null=进行中，true=成功，false=失败（决定底部提示的图标/颜色）
-  @observable
-  bool? screenshotStatusOk;
+  bool? _screenshotStatusOk;
+
+  bool? get screenshotStatusOk => _screenshotStatusOk;
+  set screenshotStatusOk(bool? value) {
+    if (_screenshotStatusOk == value) return;
+    _screenshotStatusOk = value;
+    _notifyStateChanged();
+  }
+
   Timer? _screenshotStatusTimer;
   bool _screenshotBusy = false;
 
@@ -230,78 +408,219 @@ abstract class _PlayerController with Store {
     App.rootContext.showMessage(message: msg, level: LogLevel.error);
   }
 
-  @observable
-  Duration buffer = Duration.zero;
-  @observable
-  Duration duration = Duration.zero;
-  @observable
-  Uint8List? previewImage;
-  @observable
-  Duration? lastPreviewTime;
-  @observable
-  int currentEpisoded = 1;
-  @observable
-  int currentRoad = 0;
+  Duration _buffer = Duration.zero;
+
+  Duration get buffer => _buffer;
+  set buffer(Duration value) {
+    if (_buffer == value) return;
+    _buffer = value;
+    _notifyStateChanged();
+  }
+
+  Duration _duration = Duration.zero;
+
+  Duration get duration => _duration;
+  set duration(Duration value) {
+    if (_duration == value) return;
+    _duration = value;
+    _notifyStateChanged();
+  }
+
+  Uint8List? _previewImage;
+
+  Uint8List? get previewImage => _previewImage;
+  set previewImage(Uint8List? value) {
+    if (_previewImage == value) return;
+    _previewImage = value;
+    _notifyStateChanged();
+  }
+
+  Duration? _lastPreviewTime;
+
+  Duration? get lastPreviewTime => _lastPreviewTime;
+  set lastPreviewTime(Duration? value) {
+    if (_lastPreviewTime == value) return;
+    _lastPreviewTime = value;
+    _notifyStateChanged();
+  }
+
+  int _currentEpisoded = 1;
+
+  int get currentEpisoded => _currentEpisoded;
+  set currentEpisoded(int value) {
+    if (_currentEpisoded == value) return;
+    _currentEpisoded = value;
+    _notifyStateChanged();
+  }
+
+  int _currentRoad = 0;
+
+  int get currentRoad => _currentRoad;
+  set currentRoad(int value) {
+    if (_currentRoad == value) return;
+    _currentRoad = value;
+    _notifyStateChanged();
+  }
 
   // 视频地址
-  @observable
-  String videoUrl = '';
-  @observable
-  String playUrl = ''; // 实际播放的 URL（可能是代理 URL）
+  String _videoUrl = '';
+
+  String get videoUrl => _videoUrl;
+  set videoUrl(String value) {
+    if (_videoUrl == value) return;
+    _videoUrl = value;
+    _notifyStateChanged();
+  }
+
+  String _playUrl = '';
+
+  String get playUrl => _playUrl;
+  set playUrl(String value) {
+    if (_playUrl == value) return;
+    _playUrl = value;
+    _notifyStateChanged();
+  }
+
   Map<String, String>? videoHeaders; // HTTP headers for video
 
   /// 投屏模式：投屏期间加载剧集只解析地址、不自动本地播放（由 TV 播放）
   bool castMode = false;
 
   /// 当前播放的结构化结果（音轨/字幕/清晰度等媒体信息，由源脚本提供）
-  @observable
-  AnimePlayResult? playResult;
+  AnimePlayResult? _playResult;
 
-  @observable
-  String saveAddress = '';
-  @observable
-  bool showTabBody = false;
+  AnimePlayResult? get playResult => _playResult;
+  set playResult(AnimePlayResult? value) {
+    if (_playResult == value) return;
+    _playResult = value;
+    _notifyStateChanged();
+  }
+
+  String _saveAddress = '';
+
+  String get saveAddress => _saveAddress;
+  set saveAddress(String value) {
+    if (_saveAddress == value) return;
+    _saveAddress = value;
+    _notifyStateChanged();
+  }
+
+  bool _showTabBody = false;
+
+  bool get showTabBody => _showTabBody;
+  set showTabBody(bool value) {
+    if (_showTabBody == value) return;
+    _showTabBody = value;
+    _notifyStateChanged();
+  }
 
   // 视频音量/亮度
-  @observable
-  double volume = -1;
-  @observable
-  double brightness = 0;
+  double _volume = -1;
+
+  double get volume => _volume;
+  set volume(double value) {
+    if (_volume == value) return;
+    _volume = value;
+    _notifyStateChanged();
+  }
+
+  double _brightness = 0;
+
+  double get brightness => _brightness;
+  set brightness(double value) {
+    if (_brightness == value) return;
+    _brightness = value;
+    _notifyStateChanged();
+  }
 
   /// 音量增益开关（桌面端）：开启后音量上限提升至 200%，实现增益
-  @observable
-  bool volumeBoost = false;
+  bool _volumeBoost = false;
+
+  bool get volumeBoost => _volumeBoost;
+  set volumeBoost(bool value) {
+    if (_volumeBoost == value) return;
+    _volumeBoost = value;
+    _notifyStateChanged();
+  }
 
   // 播放器倍速
-  @observable
-  double playerSpeed = 1.0;
+  double _playerSpeed = 1.0;
 
-  @observable
-  double playbackSpeed = 1;
+  double get playerSpeed => _playerSpeed;
+  set playerSpeed(double value) {
+    if (_playerSpeed == value) return;
+    _playerSpeed = value;
+    _notifyStateChanged();
+  }
+
+  double _playbackSpeed = 1;
+
+  double get playbackSpeed => _playbackSpeed;
+  set playbackSpeed(double value) {
+    if (_playbackSpeed == value) return;
+    _playbackSpeed = value;
+    _notifyStateChanged();
+  }
 
   /// 一起看成员锁定：禁止手动拖动进度 / 调整倍速 / 长按快进，只能跟随房主
-  @observable
-  bool syncLocked = false;
+  bool _syncLocked = false;
+
+  bool get syncLocked => _syncLocked;
+  set syncLocked(bool value) {
+    if (_syncLocked == value) return;
+    _syncLocked = value;
+    _notifyStateChanged();
+  }
 
   /// 一起看房间（含房主）锁定倍速：强制 1 倍速
-  @observable
-  bool speedLocked = false;
+  bool _speedLocked = false;
+
+  bool get speedLocked => _speedLocked;
+  set speedLocked(bool value) {
+    if (_speedLocked == value) return;
+    _speedLocked = value;
+    _notifyStateChanged();
+  }
 
   /// 是否处于一起看房间（用于全屏弹幕设置/聊天按钮的显示）
-  @observable
-  bool inRoom = false;
+  bool _inRoom = false;
+
+  bool get inRoom => _inRoom;
+  set inRoom(bool value) {
+    if (_inRoom == value) return;
+    _inRoom = value;
+    _notifyStateChanged();
+  }
 
   /// 一起看房间：同步时长者（房主）的播放位置（ms），-1 表示无同步
-  @observable
-  int ownerSyncPositionMs = -1;
+  int _ownerSyncPositionMs = -1;
+
+  int get ownerSyncPositionMs => _ownerSyncPositionMs;
+  set ownerSyncPositionMs(int value) {
+    if (_ownerSyncPositionMs == value) return;
+    _ownerSyncPositionMs = value;
+    _notifyStateChanged();
+  }
 
   /// 同步时长者（房主）是否在播放
-  @observable
-  bool ownerSyncPlaying = true;
+  bool _ownerSyncPlaying = true;
+
+  bool get ownerSyncPlaying => _ownerSyncPlaying;
+  set ownerSyncPlaying(bool value) {
+    if (_ownerSyncPlaying == value) return;
+    _ownerSyncPlaying = value;
+    _notifyStateChanged();
+  }
 
   /// 同步时长者（房主）广播的 sentAt 时间戳（ms），用于延迟补偿
-  @observable
-  int ownerSyncSentAt = 0;
+  int _ownerSyncSentAt = 0;
+
+  int get ownerSyncSentAt => _ownerSyncSentAt;
+  set ownerSyncSentAt(int value) {
+    if (_ownerSyncSentAt == value) return;
+    _ownerSyncSentAt = value;
+    _notifyStateChanged();
+  }
 
   /// 点击时长触发的「追上房主」回调（由一起看页面注册，复用完整同步逻辑）
   VoidCallback? onSyncToOwner;
@@ -335,26 +654,95 @@ abstract class _PlayerController with Store {
     return const Color(0xFFF44336);
   }
 
-  @observable
-  bool showSeekTime = false;
-  @observable
-  bool showPlaySpeed = false;
-  @observable
-  bool showBrightness = false;
-  @observable
-  bool showVolume = false;
-  @observable
-  bool showVideoController = true;
-  @observable
-  bool volumeSeeking = false;
-  @observable
-  bool brightnessSeeking = false;
-  @observable
-  bool canHidePlayerPanel = true;
-  @observable
-  bool chatOverlayOpen = false;
-  @observable
-  String animeImg = '';
+  bool _showSeekTime = false;
+
+  bool get showSeekTime => _showSeekTime;
+  set showSeekTime(bool value) {
+    if (_showSeekTime == value) return;
+    _showSeekTime = value;
+    _notifyStateChanged();
+  }
+
+  bool _showPlaySpeed = false;
+
+  bool get showPlaySpeed => _showPlaySpeed;
+  set showPlaySpeed(bool value) {
+    if (_showPlaySpeed == value) return;
+    _showPlaySpeed = value;
+    _notifyStateChanged();
+  }
+
+  bool _showBrightness = false;
+
+  bool get showBrightness => _showBrightness;
+  set showBrightness(bool value) {
+    if (_showBrightness == value) return;
+    _showBrightness = value;
+    _notifyStateChanged();
+  }
+
+  bool _showVolume = false;
+
+  bool get showVolume => _showVolume;
+  set showVolume(bool value) {
+    if (_showVolume == value) return;
+    _showVolume = value;
+    _notifyStateChanged();
+  }
+
+  bool _showVideoController = true;
+
+  bool get showVideoController => _showVideoController;
+  set showVideoController(bool value) {
+    if (_showVideoController == value) return;
+    _showVideoController = value;
+    _notifyStateChanged();
+  }
+
+  bool _volumeSeeking = false;
+
+  bool get volumeSeeking => _volumeSeeking;
+  set volumeSeeking(bool value) {
+    if (_volumeSeeking == value) return;
+    _volumeSeeking = value;
+    _notifyStateChanged();
+  }
+
+  bool _brightnessSeeking = false;
+
+  bool get brightnessSeeking => _brightnessSeeking;
+  set brightnessSeeking(bool value) {
+    if (_brightnessSeeking == value) return;
+    _brightnessSeeking = value;
+    _notifyStateChanged();
+  }
+
+  bool _canHidePlayerPanel = true;
+
+  bool get canHidePlayerPanel => _canHidePlayerPanel;
+  set canHidePlayerPanel(bool value) {
+    if (_canHidePlayerPanel == value) return;
+    _canHidePlayerPanel = value;
+    _notifyStateChanged();
+  }
+
+  bool _chatOverlayOpen = false;
+
+  bool get chatOverlayOpen => _chatOverlayOpen;
+  set chatOverlayOpen(bool value) {
+    if (_chatOverlayOpen == value) return;
+    _chatOverlayOpen = value;
+    _notifyStateChanged();
+  }
+
+  String _animeImg = '';
+
+  String get animeImg => _animeImg;
+  set animeImg(String value) {
+    if (_animeImg == value) return;
+    _animeImg = value;
+    _notifyStateChanged();
+  }
 
   /// 当前观看番剧标题（初始化时从 watcher 缓存，供无 context 处使用）
   String animeTitle = '';
@@ -366,18 +754,51 @@ abstract class _PlayerController with Store {
 
   /// 上传者
   String? animeUploader;
-  @observable
-  String currentSetName = '';
+  String _currentSetName = '';
+
+  String get currentSetName => _currentSetName;
+  set currentSetName(String value) {
+    if (_currentSetName == value) return;
+    _currentSetName = value;
+    _notifyStateChanged();
+  }
 
   /// media_kit 解析出的内封轨道（含文件里 mux 的轨道；已过滤 auto/no）
-  @observable
-  List<SubtitleTrack> embeddedSubtitleTracks = const [];
-  @observable
-  List<AudioTrack> embeddedAudioTracks = const [];
-  @observable
-  String? currentSubtitleTrackId;
-  @observable
-  String? currentAudioTrackId;
+  List<SubtitleTrack> _embeddedSubtitleTracks = const [];
+
+  List<SubtitleTrack> get embeddedSubtitleTracks => _embeddedSubtitleTracks;
+  set embeddedSubtitleTracks(List<SubtitleTrack> value) {
+    if (_embeddedSubtitleTracks == value) return;
+    _embeddedSubtitleTracks = value;
+    _notifyStateChanged();
+  }
+
+  List<AudioTrack> _embeddedAudioTracks = const [];
+
+  List<AudioTrack> get embeddedAudioTracks => _embeddedAudioTracks;
+  set embeddedAudioTracks(List<AudioTrack> value) {
+    if (_embeddedAudioTracks == value) return;
+    _embeddedAudioTracks = value;
+    _notifyStateChanged();
+  }
+
+  String? _currentSubtitleTrackId;
+
+  String? get currentSubtitleTrackId => _currentSubtitleTrackId;
+  set currentSubtitleTrackId(String? value) {
+    if (_currentSubtitleTrackId == value) return;
+    _currentSubtitleTrackId = value;
+    _notifyStateChanged();
+  }
+
+  String? _currentAudioTrackId;
+
+  String? get currentAudioTrackId => _currentAudioTrackId;
+  set currentAudioTrackId(String? value) {
+    if (_currentAudioTrackId == value) return;
+    _currentAudioTrackId = value;
+    _notifyStateChanged();
+  }
 
   late WindowFrameController windowFrame;
 
@@ -419,8 +840,6 @@ abstract class _PlayerController with Store {
   StreamSubscription<PlayerLog>? playerLogSubscription;
 
   bool _isInit = false;
-
-  _PlayerController();
 
   Timer? playerTimer;
 
@@ -504,8 +923,10 @@ abstract class _PlayerController with Store {
 
   WatcherPlayer? get _ownerWatcher => watcher ?? WatcherPlayer.currentState;
 
+  bool get hasNextEpisode => _ownerWatcher?.hasNextEpisode ?? false;
+
   Future<void> playNextEpisode() async {
-    _ownerWatcher?.playNextEpisode();
+    await _ownerWatcher?.playNextEpisode();
   }
 
   Future<void> playEpisode(int index, int road) async {
@@ -656,6 +1077,7 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> changePlayerSettings() async {
+    if (_disposed) return;
     shadersController = ShadersController();
     shadersController.copyShadersToExternalDirectory();
     audioOutType = appdata.settings.s.audioOutType;
@@ -668,6 +1090,7 @@ abstract class _PlayerController with Store {
 
     if (App.isAndroid) {
       final info = await DeviceInfo.getDeviceInfo();
+      if (_disposed) return;
 
       final String androidVideoRenderer =
           appdata.settings['androidVideoRenderer'] ?? 'auto';
@@ -694,15 +1117,23 @@ abstract class _PlayerController with Store {
       superResolutionType = 1;
     }
 
+    if (_disposed) return;
+
     playerController = VideoController(
       player,
       configuration: VideoControllerConfiguration(
         vo: videoRenderer,
         enableHardwareAcceleration: hAenable,
-        hwdec: hAenable ? hardwareDecoder : 'no',
+        hwdec: hAenable
+            ? resolveAndroidHardwareDecoder(
+                hardwareDecoder,
+                videoRenderer: videoRenderer,
+              )
+            : 'no',
         androidAttachSurfaceAfterVideoParameters: false,
       ),
     );
+    videoControllerRevision.value++;
     await applyAndroidHwdecCodecs(player);
 
     // 记录播放器内部日志
@@ -789,12 +1220,12 @@ abstract class _PlayerController with Store {
 
     if (App.isAndroid) {
       audioHandler = AudioServiceManager().handler;
-      audioHandler.setController(this as PlayerController);
+      audioHandler.setController(this);
     }
 
     if (App.isWindows) {
-      SMTCManagerWindows.instance.setController(this as PlayerController);
-      TaskbarManager.instance.setController(this as PlayerController);
+      SMTCManagerWindows.instance.setController(this);
+      TaskbarManager.instance.setController(this);
     }
     if (superResolutionType != 1) {
       await setShader(superResolutionType);
@@ -834,6 +1265,8 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
     // 先取消所有流订阅与定时器，避免播放器销毁后继续回调/泄漏
     stopPlayerStreams();
     _positionSub = null;
@@ -865,6 +1298,7 @@ abstract class _PlayerController with Store {
     }
     _pipStatusSubscription?.cancel();
     _pipStatusSubscription = null;
+    videoControllerRevision.dispose();
     await player.dispose();
   }
 
@@ -896,19 +1330,17 @@ abstract class _PlayerController with Store {
     windowFrame.removeCloseListener(onWindowClose);
   }
 
-  void _applyMobileFullscreenSystemUi({
+  Future<void> _applyMobileFullscreenSystemUi({
     required bool fullscreen,
     required bool portrait,
   }) {
-    unawaited(
+    return Future.wait<void>([
       (fullscreen
               ? SystemChrome.setEnabledSystemUIMode(
                   SystemUiMode.immersiveSticky,
                 )
               : SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge))
           .catchError((_) {}),
-    );
-    unawaited(
       SystemChrome.setPreferredOrientations(
         fullscreen
             ? (portrait
@@ -919,15 +1351,19 @@ abstract class _PlayerController with Store {
                     ])
             : const [],
       ).catchError((_) {}),
-    );
-    unawaited(
       (fullscreen ? WakelockPlus.enable() : WakelockPlus.disable()).catchError(
         (_) {},
       ),
-    );
+    ]);
   }
 
-  @action
+  /// 平台方向 API 返回后，MediaQuery 还需要至少一帧才会更新。
+  /// 等待两帧可避免在退出全屏时先绘制一次错误的宽屏布局。
+  Future<void> _waitForMobileLayoutSettle() async {
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
+  }
+
   Future<void> toggleFullScreen(
     BuildContext context, {
     bool isPortraitFullScreen = false,
@@ -941,8 +1377,7 @@ abstract class _PlayerController with Store {
         // 进入全屏
         Future.microtask(() {
           App.rootContext.toFadeScale(
-            () =>
-                FullscreenVideoPage(playerController: this as PlayerController),
+            () => FullscreenVideoPage(playerController: this),
           );
         });
       }
@@ -953,37 +1388,63 @@ abstract class _PlayerController with Store {
 
     // --- 移动端逻辑 ---
     if (isFullScreen) {
-      _applyMobileFullscreenSystemUi(fullscreen: false, portrait: false);
-      App.pop();
+      if (_mobileFullscreenTransitioning) return;
+      _mobileFullscreenTransitioning = true;
+      try {
+        // 先恢复系统方向并等待 MediaQuery 完成重排，再关闭全屏路由。
+        // 路由仍在栈顶时，方向切换过程不会暴露详情页的中间布局。
+        await _applyMobileFullscreenSystemUi(
+          fullscreen: false,
+          portrait: false,
+        );
+        await _waitForMobileLayoutSettle();
+        if (isFullScreen) App.pop();
+      } finally {
+        _mobileFullscreenTransitioning = false;
+      }
     } else {
+      if (_mobileFullscreenTransitioning) return;
+      _mobileFullscreenTransitioning = true;
+      App.setMobileFullscreenTransitioning(true);
       isFullScreen = true;
       isPortraitFullscreen = isPortraitFullScreen;
-      _applyMobileFullscreenSystemUi(
-        fullscreen: true,
-        portrait: isPortraitFullScreen,
-      );
-      unawaited(
-        App.rootContext
-            .toFullscreen(
-              () => FullscreenVideoPage(
-                playerController: this as PlayerController,
-              ),
-            )
-            .whenComplete(() {
-              if (isFullScreen) {
-                _applyMobileFullscreenSystemUi(
-                  fullscreen: false,
-                  portrait: false,
-                );
-                isFullScreen = false;
-                isPortraitFullscreen = false;
-              }
-            }),
-      );
+      unawaited(() async {
+        try {
+          // 先完成方向切换，确保缩放过渡开始时播放器已经是稳定的
+          // 全屏尺寸，不会把方向动画误认为路由动画。
+          await _applyMobileFullscreenSystemUi(
+            fullscreen: true,
+            portrait: isPortraitFullScreen,
+          );
+          await _waitForMobileLayoutSettle();
+          if (!isFullScreen) return;
+          // push 只在全屏路由关闭后才完成。进入路由后必须立即释放
+          // transition lock，否则退出按钮和系统返回会被误判为重复进入。
+          final fullscreenRoute = App.rootContext.toFullscreen(
+            () => FullscreenVideoPage(playerController: this),
+          );
+          App.setMobileFullscreenTransitioning(false);
+          _mobileFullscreenTransitioning = false;
+          await fullscreenRoute;
+
+          // 路由也可能由系统返回手势或外部导航关闭，统一在这里收尾。
+          if (isFullScreen) {
+            await _applyMobileFullscreenSystemUi(
+              fullscreen: false,
+              portrait: false,
+            );
+            await _waitForMobileLayoutSettle();
+            isFullScreen = false;
+            isPortraitFullscreen = false;
+          }
+        } finally {
+          App.setMobileFullscreenTransitioning(false);
+          _mobileFullscreenTransitioning = false;
+        }
+      }());
     }
   }
 
-  @action
   Future<void> setVolume(double value) async {
     value = value.clamp(0.0, volumeUpperBound);
     volume = value;
@@ -1109,7 +1570,7 @@ abstract class _PlayerController with Store {
     if (isAudioHandler) {
       if (App.isAndroid) {
         final audioHandler = AudioServiceManager().handler;
-        audioHandler.setController(this as PlayerController);
+        audioHandler.setController(this);
       }
     }
     await player.play();
@@ -1208,7 +1669,7 @@ abstract class _PlayerController with Store {
 
   Future<void> enterPiPMode() async {
     App.rootContext.toFadeScale(
-      () => FullscreenVideoPage(playerController: this as PlayerController),
+      () => FullscreenVideoPage(playerController: this),
     );
     await Floating().enable(ImmediatePiP(aspectRatio: Rational(16, 9)));
     isPiPMode = true;
@@ -1339,6 +1800,30 @@ abstract class _PlayerController with Store {
   }
 }
 
+/// Anime 播放器状态提供者。使用 family 为每个详情页分配独立的播放器实例，
+/// 页面退出时由详情页 invalidate 对应 scope，触发 Notifier 生命周期释放。
+final playerControllerProvider =
+    NotifierProvider.family<PlayerController, PlayerState, String>(
+      PlayerController.new,
+    );
+
+class PlayerControllerBuilder extends ConsumerWidget {
+  const PlayerControllerBuilder({
+    super.key,
+    required this.playerController,
+    required this.builder,
+  });
+
+  final PlayerController playerController;
+  final WidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(playerControllerProvider(playerController.scopeKey));
+    return builder(context);
+  }
+}
+
 class FullscreenVideoPage extends StatefulWidget {
   const FullscreenVideoPage({super.key, required this.playerController});
 
@@ -1361,13 +1846,18 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
+    return PlayerControllerBuilder(
+      playerController: playerController,
       builder: (context) {
         return playerController.isPiPMode
-            ? Video(
-                controller: playerController.playerController,
-                controls: null,
-                subtitleViewConfiguration: kPlayerSubtitleViewConfiguration,
+            ? ValueListenableBuilder<int>(
+                valueListenable: playerController.videoControllerRevision,
+                builder: (context, revision, _) => Video(
+                  key: ValueKey(revision),
+                  controller: playerController.playerController,
+                  controls: null,
+                  subtitleViewConfiguration: kPlayerSubtitleViewConfiguration,
+                ),
               )
             : VideoPage(playerController: playerController);
       },
