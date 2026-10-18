@@ -650,13 +650,11 @@ class ExpandableTags extends StatefulWidget {
   State<ExpandableTags> createState() => _ExpandableTagsState();
 }
 
-enum ToggleButtonType { showMore, showLess, none }
-
-class _ExpandableTagsState extends State<ExpandableTags>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+class _ExpandableTagsState extends State<ExpandableTags> {
   late int _showingTagsCount;
-  ToggleButtonType _currentButton = ToggleButtonType.showMore;
+
+  static const _animationDuration = Duration(milliseconds: 300);
+  static const _animationCurve = Curves.easeInOutCubic;
 
   @override
   void initState() {
@@ -664,76 +662,17 @@ class _ExpandableTagsState extends State<ExpandableTags>
     _showingTagsCount = widget.fullTag
         ? widget.tags.length
         : min(widget.tags.length, ExpandableTags.previewCount);
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: _totalDuration()),
-    );
-
-    if (widget.fullTag) {
-      _controller.value = 1.0;
-      _currentButton = ToggleButtonType.showLess;
-    } else {
-      _controller.value = 0.0;
-      _currentButton = ToggleButtonType.showMore;
-    }
-
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed ||
-          status == AnimationStatus.dismissed) {
-        setState(() {
-          _currentButton = widget.fullTag
-              ? ToggleButtonType.showLess
-              : ToggleButtonType.showMore;
-          if (!widget.fullTag) {
-            _showingTagsCount = min(
-              widget.tags.length,
-              ExpandableTags.previewCount,
-            );
-          }
-        });
-      }
-    });
-  }
-
-  /// 动画总时长：基础 250ms + 额外标签每个 30ms，与 AnimatedSize 保持一致
-  int _totalDuration() {
-    final extraTags = max(widget.tags.length - ExpandableTags.previewCount, 0);
-    return 250 + extraTags * 30;
   }
 
   @override
   void didUpdateWidget(covariant ExpandableTags oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.fullTag != oldWidget.fullTag) {
-      if (widget.fullTag) {
-        setState(() {
-          _showingTagsCount = widget.tags.length;
-        });
-        _currentButton = ToggleButtonType.none;
-        _controller.forward();
-      } else {
-        _currentButton = ToggleButtonType.none;
-        _controller.reverse();
-      }
+    if (widget.fullTag != oldWidget.fullTag ||
+        widget.tags.length != oldWidget.tags.length) {
+      _showingTagsCount = widget.fullTag
+          ? widget.tags.length
+          : min(widget.tags.length, ExpandableTags.previewCount);
     }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Animation<double> _animationForIndex(int index) {
-    // 交错区间：每个额外标签延迟 5% 出现；start 封顶 0.6，保证所有标签都会出现
-    final stagger = (index - ExpandableTags.previewCount) * 0.05;
-    final start = stagger.clamp(0.0, 0.6);
-    final end = min(start + 0.4, 1.0);
-    return CurvedAnimation(
-      parent: _controller,
-      curve: Interval(start, end, curve: Curves.easeOut),
-    );
   }
 
   void _handleToggle() {
@@ -746,14 +685,14 @@ class _ExpandableTagsState extends State<ExpandableTags>
     }
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
+      duration: _animationDuration,
+      switchInCurve: _animationCurve,
+      switchOutCurve: _animationCurve,
       transitionBuilder: (child, animation) {
         final scaleAnim = Tween<double>(
           begin: 0.1,
           end: 1.0,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+        ).animate(CurvedAnimation(parent: animation, curve: _animationCurve));
         return FadeTransition(
           opacity: animation,
           child: ScaleTransition(
@@ -763,66 +702,51 @@ class _ExpandableTagsState extends State<ExpandableTags>
           ),
         );
       },
-      child: _currentButton == ToggleButtonType.none
-          ? const SizedBox(key: ValueKey('empty_button'))
-          : CapsuleChip(
-              key: ValueKey(_currentButton),
-              isSelected: true,
-              onTap: _handleToggle,
-              text: _currentButton == ToggleButtonType.showLess
-                  ? t.showLess
-                  : t.showMore,
-            ),
+      child: CapsuleChip(
+        key: ValueKey(widget.fullTag),
+        isSelected: true,
+        onTap: _handleToggle,
+        text: widget.fullTag ? t.showLess : t.showMore,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return AnimatedSize(
-      duration: Duration(milliseconds: _totalDuration()),
-      curve: Curves.easeInOut,
-      alignment: Alignment.topLeft,
-      // 轨道随可见标签数量收缩：折叠后不会留下一截空槽
-      child: CapsuleChipGroup(
-        spacing: 2,
-        runSpacing: 2,
-        children: [
-          ...List.generate(_showingTagsCount, (index) {
-            final isPreview = index < ExpandableTags.previewCount;
-            final animation = isPreview
-                ? AlwaysStoppedAnimation(1.0)
-                : _animationForIndex(index);
-
-            return AnimatedBuilder(
-              animation: animation,
-              builder: (context, child) {
-                final scale = 0.9 + 0.1 * animation.value;
-                return Opacity(
-                  opacity: animation.value,
-                  child: Transform.scale(scale: scale, child: child),
+    return CapsuleChipGroup(
+      // 装饰层置于尺寸动画外，背景框随标签内容同步过渡。
+      children: [
+        AnimatedSize(
+          duration: _animationDuration,
+          curve: _animationCurve,
+          alignment: Alignment.topLeft,
+          child: Wrap(
+            spacing: 2,
+            runSpacing: 2,
+            children: [
+              ...List.generate(_showingTagsCount, (index) {
+                return CapsuleChip(
+                  isSelected: false,
+                  onTap: () => widget.onTagTap(index),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${widget.tags[index].name}'),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${widget.tags[index].count}',
+                        style: TextStyle(color: cs.primary),
+                      ),
+                    ],
+                  ),
                 );
-              },
-              child: CapsuleChip(
-                isSelected: false,
-                onTap: () => widget.onTagTap(index),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('${widget.tags[index].name}'),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${widget.tags[index].count}',
-                      style: TextStyle(color: cs.primary),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-          _buildToggleButton(),
-        ],
-      ),
+              }),
+              _buildToggleButton(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
