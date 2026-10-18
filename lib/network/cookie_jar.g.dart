@@ -84,6 +84,18 @@ class $CookiesTableTable extends CookiesTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     name,
@@ -93,6 +105,7 @@ class $CookiesTableTable extends CookiesTable
     expires,
     secure,
     httpOnly,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -154,6 +167,12 @@ class $CookiesTableTable extends CookiesTable
         httpOnly.isAcceptableOrUnknown(data['httpOnly']!, _httpOnlyMeta),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -191,6 +210,10 @@ class $CookiesTableTable extends CookiesTable
         DriftSqlType.bool,
         data['${effectivePrefix}httpOnly'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -209,6 +232,7 @@ class CookiesTableData extends DataClass
   final int? expires;
   final bool secure;
   final bool httpOnly;
+  final int updatedAt;
   const CookiesTableData({
     required this.name,
     required this.value,
@@ -217,6 +241,7 @@ class CookiesTableData extends DataClass
     this.expires,
     required this.secure,
     required this.httpOnly,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -232,6 +257,7 @@ class CookiesTableData extends DataClass
     }
     map['secure'] = Variable<bool>(secure);
     map['httpOnly'] = Variable<bool>(httpOnly);
+    map['updated_at'] = Variable<int>(updatedAt);
     return map;
   }
 
@@ -246,6 +272,7 @@ class CookiesTableData extends DataClass
           : Value(expires),
       secure: Value(secure),
       httpOnly: Value(httpOnly),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -262,6 +289,7 @@ class CookiesTableData extends DataClass
       expires: serializer.fromJson<int?>(json['expires']),
       secure: serializer.fromJson<bool>(json['secure']),
       httpOnly: serializer.fromJson<bool>(json['httpOnly']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
   }
   @override
@@ -275,6 +303,7 @@ class CookiesTableData extends DataClass
       'expires': serializer.toJson<int?>(expires),
       'secure': serializer.toJson<bool>(secure),
       'httpOnly': serializer.toJson<bool>(httpOnly),
+      'updatedAt': serializer.toJson<int>(updatedAt),
     };
   }
 
@@ -286,6 +315,7 @@ class CookiesTableData extends DataClass
     Value<int?> expires = const Value.absent(),
     bool? secure,
     bool? httpOnly,
+    int? updatedAt,
   }) => CookiesTableData(
     name: name ?? this.name,
     value: value ?? this.value,
@@ -294,6 +324,7 @@ class CookiesTableData extends DataClass
     expires: expires.present ? expires.value : this.expires,
     secure: secure ?? this.secure,
     httpOnly: httpOnly ?? this.httpOnly,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   CookiesTableData copyWithCompanion(CookiesTableCompanion data) {
     return CookiesTableData(
@@ -304,6 +335,7 @@ class CookiesTableData extends DataClass
       expires: data.expires.present ? data.expires.value : this.expires,
       secure: data.secure.present ? data.secure.value : this.secure,
       httpOnly: data.httpOnly.present ? data.httpOnly.value : this.httpOnly,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -316,14 +348,23 @@ class CookiesTableData extends DataClass
           ..write('path: $path, ')
           ..write('expires: $expires, ')
           ..write('secure: $secure, ')
-          ..write('httpOnly: $httpOnly')
+          ..write('httpOnly: $httpOnly, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(name, value, domain, path, expires, secure, httpOnly);
+  int get hashCode => Object.hash(
+    name,
+    value,
+    domain,
+    path,
+    expires,
+    secure,
+    httpOnly,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -334,7 +375,8 @@ class CookiesTableData extends DataClass
           other.path == this.path &&
           other.expires == this.expires &&
           other.secure == this.secure &&
-          other.httpOnly == this.httpOnly);
+          other.httpOnly == this.httpOnly &&
+          other.updatedAt == this.updatedAt);
 }
 
 class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
@@ -345,6 +387,7 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
   final Value<int?> expires;
   final Value<bool> secure;
   final Value<bool> httpOnly;
+  final Value<int> updatedAt;
   final Value<int> rowid;
   const CookiesTableCompanion({
     this.name = const Value.absent(),
@@ -354,6 +397,7 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
     this.expires = const Value.absent(),
     this.secure = const Value.absent(),
     this.httpOnly = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CookiesTableCompanion.insert({
@@ -364,6 +408,7 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
     this.expires = const Value.absent(),
     this.secure = const Value.absent(),
     this.httpOnly = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : name = Value(name),
        value = Value(value),
@@ -376,6 +421,7 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
     Expression<int>? expires,
     Expression<bool>? secure,
     Expression<bool>? httpOnly,
+    Expression<int>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -386,6 +432,7 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
       if (expires != null) 'expires': expires,
       if (secure != null) 'secure': secure,
       if (httpOnly != null) 'httpOnly': httpOnly,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -398,6 +445,7 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
     Value<int?>? expires,
     Value<bool>? secure,
     Value<bool>? httpOnly,
+    Value<int>? updatedAt,
     Value<int>? rowid,
   }) {
     return CookiesTableCompanion(
@@ -408,6 +456,7 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
       expires: expires ?? this.expires,
       secure: secure ?? this.secure,
       httpOnly: httpOnly ?? this.httpOnly,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -436,6 +485,9 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
     if (httpOnly.present) {
       map['httpOnly'] = Variable<bool>(httpOnly.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -452,6 +504,7 @@ class CookiesTableCompanion extends UpdateCompanion<CookiesTableData> {
           ..write('expires: $expires, ')
           ..write('secure: $secure, ')
           ..write('httpOnly: $httpOnly, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -478,6 +531,7 @@ typedef $$CookiesTableTableCreateCompanionBuilder =
       Value<int?> expires,
       Value<bool> secure,
       Value<bool> httpOnly,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 typedef $$CookiesTableTableUpdateCompanionBuilder =
@@ -489,6 +543,7 @@ typedef $$CookiesTableTableUpdateCompanionBuilder =
       Value<int?> expires,
       Value<bool> secure,
       Value<bool> httpOnly,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 
@@ -533,6 +588,11 @@ class $$CookiesTableTableFilterComposer
 
   ColumnFilters<bool> get httpOnly => $composableBuilder(
     column: $table.httpOnly,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -580,6 +640,11 @@ class $$CookiesTableTableOrderingComposer
     column: $table.httpOnly,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CookiesTableTableAnnotationComposer
@@ -611,6 +676,9 @@ class $$CookiesTableTableAnnotationComposer
 
   GeneratedColumn<bool> get httpOnly =>
       $composableBuilder(column: $table.httpOnly, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$CookiesTableTableTableManager
@@ -651,6 +719,7 @@ class $$CookiesTableTableTableManager
                 Value<int?> expires = const Value.absent(),
                 Value<bool> secure = const Value.absent(),
                 Value<bool> httpOnly = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CookiesTableCompanion(
                 name: name,
@@ -660,6 +729,7 @@ class $$CookiesTableTableTableManager
                 expires: expires,
                 secure: secure,
                 httpOnly: httpOnly,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -671,6 +741,7 @@ class $$CookiesTableTableTableManager
                 Value<int?> expires = const Value.absent(),
                 Value<bool> secure = const Value.absent(),
                 Value<bool> httpOnly = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CookiesTableCompanion.insert(
                 name: name,
@@ -680,6 +751,7 @@ class $$CookiesTableTableTableManager
                 expires: expires,
                 secure: secure,
                 httpOnly: httpOnly,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

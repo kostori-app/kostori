@@ -54,7 +54,9 @@ class AiCustomProviderDao extends DatabaseAccessor<AiDatabase>
   // ─── 写入 ──────────────────────────────────
 
   Future<void> upsert(AiCustomProvidersCompanion entry) =>
-      into(aiCustomProviders).insertOnConflictUpdate(_secretEntry(entry));
+      into(aiCustomProviders).insertOnConflictUpdate(
+        _secretEntry(entry).copyWith(updatedAt: Value(DateTime.now())),
+      );
 
   Future<void> setEnabled(String provider, {required bool enabled}) {
     return (update(

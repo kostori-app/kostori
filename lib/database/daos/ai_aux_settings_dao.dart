@@ -22,7 +22,11 @@ class AiAuxSettingsDao extends DatabaseAccessor<AiDatabase>
       return;
     }
     await into(aiAuxSettings).insertOnConflictUpdate(
-      AiAuxSettingsCompanion(key: Value(key), value: Value(value)),
+      AiAuxSettingsCompanion(
+        key: Value(key),
+        value: Value(value),
+        updatedAt: Value(DateTime.now()),
+      ),
     );
   }
 }

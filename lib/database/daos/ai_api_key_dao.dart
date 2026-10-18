@@ -52,7 +52,9 @@ class AiApiKeyDao extends DatabaseAccessor<AiDatabase> with _$AiApiKeyDaoMixin {
 
   /// 插入或覆盖（upsert）
   Future<void> upsert(AiApiKeysCompanion entry) {
-    return into(aiApiKeys).insertOnConflictUpdate(_secretEntry(entry));
+    return into(aiApiKeys).insertOnConflictUpdate(
+      _secretEntry(entry).copyWith(updatedAt: Value(DateTime.now())),
+    );
   }
 
   /// 更新 Key 值

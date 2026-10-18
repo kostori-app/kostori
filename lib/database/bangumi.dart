@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/foundation.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/db_common.dart';
 import 'package:kostori/foundation/app.dart';
@@ -254,6 +254,9 @@ class BangumiBindingTable extends Table {
 
   TextColumn get alias => text().nullable()();
 
+  IntColumn get updatedAt =>
+      integer().named('updatedAt').withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -286,11 +289,26 @@ class _BangumiDb extends _$_BangumiDb {
   _BangumiDb() : super(_openConn());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        final columns = await m.database
+            .customSelect(
+              'PRAGMA table_info(${bangumiBindingTable.actualTableName})',
+            )
+            .get();
+        if (!columns.any(
+          (row) => row.data['name'] == bangumiBindingTable.updatedAt.name,
+        )) {
+          await m.addColumn(bangumiBindingTable, bangumiBindingTable.updatedAt);
+        }
+      }
+    },
+  );
 }
 
 LazyDatabase _openConn() => openWalDb('bangumi.db');
@@ -354,7 +372,7 @@ BangumiItem _bindingRowToItem(BangumiBindingTableData r) => BangumiItem(
 // BangumiManager（单例）
 // ═══════════════════════════════════════════════════════════
 
-class BangumiManager with ChangeNotifier {
+class BangumiManager extends RiverpodStore {
   BangumiManager._();
 
   static final BangumiManager instance = BangumiManager._();
@@ -657,6 +675,10 @@ class BangumiManager with ChangeNotifier {
 
   Future<void> addBangumiBinding(BangumiItem item) {
     return _guard(() async {
+      final current = await (_db.select(
+        _db.bangumiBindingTable,
+      )..where((t) => t.id.equals(item.id))).getSingleOrNull();
+      final now = DateTime.now().millisecondsSinceEpoch;
       await _db
           .into(_db.bangumiBindingTable)
           .insertOnConflictUpdate(
@@ -681,6 +703,11 @@ class BangumiManager with ChangeNotifier {
                 jsonEncode(item.tags.map((t) => t.toJson()).toList()),
               ),
               alias: Value(jsonEncode(item.alias)),
+              updatedAt: Value(
+                current == null || now > current.updatedAt
+                    ? now
+                    : current.updatedAt + 1,
+              ),
             ),
           );
     });
@@ -725,14 +752,16 @@ class BangumiManager with ChangeNotifier {
     return _guard(() => _db.select(_db.bangumiBindingTable).get());
   }
 
-  /// 跨端合并绑定条目：本地没有的补齐；本地已有则保留本地
-  /// （绑定是用户手动建立/删除的，没有更新时间列，纯增量合并最安全）。
+  /// 跨端合并绑定条目：按更新时间保留较新的版本。
   Future<void> mergeBindings(List<BangumiBindingTableData> rows) {
     return _guard(() async {
       if (rows.isEmpty) return;
       final local = await getAllBindings();
-      final localIds = local.map((r) => r.id).toSet();
-      final toWrite = rows.where((r) => !localIds.contains(r.id)).toList();
+      final localById = {for (final row in local) row.id: row};
+      final toWrite = rows.where((remote) {
+        final current = localById[remote.id];
+        return current == null || remote.updatedAt > current.updatedAt;
+      }).toList();
       if (toWrite.isEmpty) return;
       await _db.batch((batch) {
         for (final r in toWrite) {
@@ -755,6 +784,7 @@ class BangumiManager with ChangeNotifier {
               collection: Value(r.collection),
               tags: Value(r.tags),
               alias: Value(r.alias),
+              updatedAt: Value(r.updatedAt),
             ),
             mode: InsertMode.insertOrReplace,
           );

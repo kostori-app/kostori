@@ -744,14 +744,11 @@ Future<void> _applyImportedData(String cacheDirPath) async {
         final manager = providerContainer.read(bangumiManagerProvider);
         await manager.init();
         await manager.mergeBindings(
-          list
-              .whereType<Map>()
-              .map(
-                (m) => BangumiBindingTableData.fromJson(
-                  Map<String, dynamic>.from(m),
-                ),
-              )
-              .toList(),
+          list.whereType<Map>().map((m) {
+            final row = Map<String, dynamic>.from(m);
+            row.putIfAbsent('updatedAt', () => 0);
+            return BangumiBindingTableData.fromJson(row);
+          }).toList(),
         );
         mergedBangumi = true;
       }
@@ -901,12 +898,11 @@ Future<void> _applyImportedData(String cacheDirPath) async {
             SingleInstanceCookieJar.instance ??
             await SingleInstanceCookieJar.createInstance();
         await jar.mergeCookies(
-          list
-              .whereType<Map>()
-              .map(
-                (m) => CookiesTableData.fromJson(Map<String, dynamic>.from(m)),
-              )
-              .toList(),
+          list.whereType<Map>().map((m) {
+            final row = Map<String, dynamic>.from(m);
+            row.putIfAbsent('updatedAt', () => 0);
+            return CookiesTableData.fromJson(row);
+          }).toList(),
         );
         mergedCookies = true;
       }

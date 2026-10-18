@@ -24,8 +24,8 @@ class AiMcpServerDao extends DatabaseAccessor<AiDatabase>
 
   // ─── 写入 ──────────────────────────────────
 
-  Future<void> upsert(AiMcpServersCompanion entry) =>
-      into(aiMcpServers).insertOnConflictUpdate(entry);
+  Future<void> upsert(AiMcpServersCompanion entry) => into(aiMcpServers)
+      .insertOnConflictUpdate(entry.copyWith(updatedAt: Value(DateTime.now())));
 
   Future<void> setEnabled(int id, {required bool enabled}) =>
       (update(aiMcpServers)..where((t) => t.id.equals(id))).write(

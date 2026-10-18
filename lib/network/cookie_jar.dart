@@ -34,6 +34,8 @@ class CookiesTable extends Table {
   BoolColumn get httpOnly =>
       boolean().named('httpOnly').withDefault(const Constant(false))();
 
+  IntColumn get updatedAt => integer().withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {name, domain, path};
 }
@@ -47,11 +49,24 @@ class _CookieDb extends _$_CookieDb {
   _CookieDb(String dbPath) : super(_openConn(dbPath));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        final rows = await m.database
+            .customSelect('PRAGMA table_info(cookies)')
+            .get();
+        if (!rows.any(
+          (row) => row.data['name'] == cookiesTable.updatedAt.name,
+        )) {
+          await m.addColumn(cookiesTable, cookiesTable.updatedAt);
+        }
+      }
+    },
+  );
 }
 
 LazyDatabase _openConn(String dbPath) => LazyDatabase(() async {
@@ -130,6 +145,22 @@ class CookieJarSql {
         );
         if (currentCookie != null) cookie.domain = currentCookie.domain;
       }
+      final domain = cookie.domain ?? uri.host;
+      final path = cookie.path ?? '/';
+      final existing = await _withDb(
+        () =>
+            (_db.select(_db.cookiesTable)..where(
+                  (t) =>
+                      t.name.equals(cookie.name) &
+                      t.domain.equals(domain) &
+                      t.path.equals(path),
+                ))
+                .getSingleOrNull(),
+      );
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final updatedAt = existing == null || now > existing.updatedAt
+          ? now
+          : existing.updatedAt + 1;
       await _withDb(
         () => _db
             .into(_db.cookiesTable)
@@ -137,11 +168,12 @@ class CookieJarSql {
               CookiesTableCompanion(
                 name: Value(cookie.name),
                 value: Value(cookie.value),
-                domain: Value(cookie.domain ?? uri.host),
-                path: Value(cookie.path ?? '/'),
+                domain: Value(domain),
+                path: Value(path),
                 expires: Value(cookie.expires?.millisecondsSinceEpoch),
                 secure: Value(cookie.secure),
                 httpOnly: Value(cookie.httpOnly),
+                updatedAt: Value(updatedAt),
               ),
             ),
       );
@@ -287,7 +319,8 @@ class CookieJarSql {
 
   /// 跨端合并 Cookie：
   /// - 本机没有的同名（name+domain+path）Cookie 直接补齐；
-  /// - 双方都有时取过期时间更晚的一条（会话 Cookie 或无法比较时保留本机），
+  /// - 双方都有时优先取更新时间较新的一条；旧同步数据缺少更新时间时，
+  ///   仍取过期时间更晚的一条（无法比较时保留本机），
   ///   避免用另一端的旧登录态覆盖本机；
   /// - `cf_clearance` 与设备/IP 绑定，本机已有就保留本机。
   Future<void> mergeCookies(List<CookiesTableData> rows) async {
@@ -305,6 +338,11 @@ class CookieJarSql {
         continue;
       }
       if (r.name == 'cf_clearance') continue;
+      if (r.updatedAt > l.updatedAt) {
+        toWrite.add(r);
+        continue;
+      }
+      if (r.updatedAt > 0 || l.updatedAt > 0) continue;
       final remoteExpires = r.expires;
       final localExpires = l.expires;
       if (remoteExpires != null &&
@@ -327,6 +365,7 @@ class CookieJarSql {
               expires: Value(r.expires),
               secure: Value(r.secure),
               httpOnly: Value(r.httpOnly),
+              updatedAt: Value(r.updatedAt),
             ),
             mode: InsertMode.insertOrReplace,
           );

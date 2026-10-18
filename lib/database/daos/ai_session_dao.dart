@@ -12,8 +12,8 @@ class AiSessionDao extends DatabaseAccessor<AiDatabase>
 
   // ─── 会话 CRUD ─────────────────────────────
 
-  Future<void> upsertSession(AiSessionsCompanion entry) =>
-      into(aiSessions).insertOnConflictUpdate(entry);
+  Future<void> upsertSession(AiSessionsCompanion entry) => into(aiSessions)
+      .insertOnConflictUpdate(entry.copyWith(updatedAt: Value(DateTime.now())));
 
   Future<int> updateOnlyProvider(String sessionId, String provider) {
     return (update(
@@ -47,7 +47,10 @@ class AiSessionDao extends DatabaseAccessor<AiDatabase>
 
   Future<void> renameSession(String sessionId, String title) =>
       (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
-        AiSessionsCompanion(title: Value(title)),
+        AiSessionsCompanion(
+          title: Value(title),
+          updatedAt: Value(DateTime.now()),
+        ),
       );
 
   Future<void> setCompressedContent(String sessionId, String content) =>

@@ -193,6 +193,8 @@ class AiAuxSettings extends Table {
 
   TextColumn get value => text().nullable()();
 
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
   @override
   Set<Column> get primaryKey => {key};
 }
@@ -265,7 +267,7 @@ class AiDatabase extends _$AiDatabase {
   AiDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -290,6 +292,20 @@ class AiDatabase extends _$AiDatabase {
       }
       if (from < 14) {
         await _addColumnIfMissing(m, aiSessions, aiSessions.summaryMessageId);
+      }
+      if (from < 15) {
+        await _ensureTableExists(m, aiAuxSettings);
+        final columns = await m.database
+            .customSelect('PRAGMA table_info(${aiAuxSettings.actualTableName})')
+            .get();
+        if (!columns.any((row) => row.data['name'] == 'updated_at')) {
+          // SQLite 不允许 ALTER TABLE ADD COLUMN 使用 CURRENT_TIMESTAMP 默认值。
+          // 旧设置视为最早版本，后续本地修改或收到远端版本时再写入真实时间。
+          await m.database.customStatement(
+            'ALTER TABLE ${aiAuxSettings.actualTableName} '
+            'ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0',
+          );
+        }
       }
       if (from < 6) {
         // 余额查询：内置/自定义服务商均可配置查询地址与结果字段
@@ -411,7 +427,7 @@ class AiDatabase extends _$AiDatabase {
   };
 
   /// 合并同步来的用户数据：同键取 `updatedAt` 较新的一方；
-  /// 无时间戳的表（`ai_aux_settings`）本机优先，只补齐本机没有的键。
+  /// `ai_aux_settings` 也按更新时间合并；活动索引/缓存表不参与同步。
   /// MCP 服务器按 `name` 合并（自增 id 跨端没有意义，保留本机 id）。
   Future<void> mergeData(Map<String, dynamic> data) async {
     List<Map<String, dynamic>> rowsOf(String key) =>
@@ -481,13 +497,19 @@ class AiDatabase extends _$AiDatabase {
         }
       }
 
-      // 辅助任务模型设置：只补本机缺失
-      final localAuxKeys = {
-        for (final r in await select(aiAuxSettings).get()) r.key,
+      // 辅助任务模型设置：按更新时间合并
+      final localAuxSettings = {
+        for (final r in await select(aiAuxSettings).get()) r.key: r,
       };
       for (final m in rowsOf('auxSettings')) {
-        final r = AiAuxSetting.fromJson(m);
-        if (localAuxKeys.contains(r.key)) continue;
+        final normalized = Map<String, dynamic>.from(m);
+        normalized.putIfAbsent(
+          'updatedAt',
+          () => DateTime.fromMillisecondsSinceEpoch(0).toIso8601String(),
+        );
+        final r = AiAuxSetting.fromJson(normalized);
+        final local = localAuxSettings[r.key];
+        if (local != null && !r.updatedAt.isAfter(local.updatedAt)) continue;
         await into(aiAuxSettings).insertOnConflictUpdate(r.toCompanion(true));
       }
     });

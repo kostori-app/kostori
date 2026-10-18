@@ -1520,6 +1520,18 @@ class $BangumiBindingTableTable extends BangumiBindingTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1538,6 +1550,7 @@ class $BangumiBindingTableTable extends BangumiBindingTable
     collection,
     tags,
     alias,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1647,6 +1660,12 @@ class $BangumiBindingTableTable extends BangumiBindingTable
         alias.isAcceptableOrUnknown(data['alias']!, _aliasMeta),
       );
     }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1723,6 +1742,10 @@ class $BangumiBindingTableTable extends BangumiBindingTable
         DriftSqlType.string,
         data['${effectivePrefix}alias'],
       ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
     );
   }
 
@@ -1750,6 +1773,7 @@ class BangumiBindingTableData extends DataClass
   final String? collection;
   final String? tags;
   final String? alias;
+  final int updatedAt;
   const BangumiBindingTableData({
     required this.id,
     this.type,
@@ -1767,6 +1791,7 @@ class BangumiBindingTableData extends DataClass
     this.collection,
     this.tags,
     this.alias,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1817,6 +1842,7 @@ class BangumiBindingTableData extends DataClass
     if (!nullToAbsent || alias != null) {
       map['alias'] = Variable<String>(alias);
     }
+    map['updatedAt'] = Variable<int>(updatedAt);
     return map;
   }
 
@@ -1860,6 +1886,7 @@ class BangumiBindingTableData extends DataClass
       alias: alias == null && nullToAbsent
           ? const Value.absent()
           : Value(alias),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -1885,6 +1912,7 @@ class BangumiBindingTableData extends DataClass
       collection: serializer.fromJson<String?>(json['collection']),
       tags: serializer.fromJson<String?>(json['tags']),
       alias: serializer.fromJson<String?>(json['alias']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
   }
   @override
@@ -1907,6 +1935,7 @@ class BangumiBindingTableData extends DataClass
       'collection': serializer.toJson<String?>(collection),
       'tags': serializer.toJson<String?>(tags),
       'alias': serializer.toJson<String?>(alias),
+      'updatedAt': serializer.toJson<int>(updatedAt),
     };
   }
 
@@ -1927,6 +1956,7 @@ class BangumiBindingTableData extends DataClass
     Value<String?> collection = const Value.absent(),
     Value<String?> tags = const Value.absent(),
     Value<String?> alias = const Value.absent(),
+    int? updatedAt,
   }) => BangumiBindingTableData(
     id: id ?? this.id,
     type: type.present ? type.value : this.type,
@@ -1946,6 +1976,7 @@ class BangumiBindingTableData extends DataClass
     collection: collection.present ? collection.value : this.collection,
     tags: tags.present ? tags.value : this.tags,
     alias: alias.present ? alias.value : this.alias,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   BangumiBindingTableData copyWithCompanion(BangumiBindingTableCompanion data) {
     return BangumiBindingTableData(
@@ -1971,6 +2002,7 @@ class BangumiBindingTableData extends DataClass
           : this.collection,
       tags: data.tags.present ? data.tags.value : this.tags,
       alias: data.alias.present ? data.alias.value : this.alias,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1992,7 +2024,8 @@ class BangumiBindingTableData extends DataClass
           ..write('images: $images, ')
           ..write('collection: $collection, ')
           ..write('tags: $tags, ')
-          ..write('alias: $alias')
+          ..write('alias: $alias, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -2015,6 +2048,7 @@ class BangumiBindingTableData extends DataClass
     collection,
     tags,
     alias,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -2035,7 +2069,8 @@ class BangumiBindingTableData extends DataClass
           other.images == this.images &&
           other.collection == this.collection &&
           other.tags == this.tags &&
-          other.alias == this.alias);
+          other.alias == this.alias &&
+          other.updatedAt == this.updatedAt);
 }
 
 class BangumiBindingTableCompanion
@@ -2056,6 +2091,7 @@ class BangumiBindingTableCompanion
   final Value<String?> collection;
   final Value<String?> tags;
   final Value<String?> alias;
+  final Value<int> updatedAt;
   const BangumiBindingTableCompanion({
     this.id = const Value.absent(),
     this.type = const Value.absent(),
@@ -2073,6 +2109,7 @@ class BangumiBindingTableCompanion
     this.collection = const Value.absent(),
     this.tags = const Value.absent(),
     this.alias = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   BangumiBindingTableCompanion.insert({
     this.id = const Value.absent(),
@@ -2091,6 +2128,7 @@ class BangumiBindingTableCompanion
     this.collection = const Value.absent(),
     this.tags = const Value.absent(),
     this.alias = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   static Insertable<BangumiBindingTableData> custom({
     Expression<int>? id,
@@ -2109,6 +2147,7 @@ class BangumiBindingTableCompanion
     Expression<String>? collection,
     Expression<String>? tags,
     Expression<String>? alias,
+    Expression<int>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2127,6 +2166,7 @@ class BangumiBindingTableCompanion
       if (collection != null) 'collection': collection,
       if (tags != null) 'tags': tags,
       if (alias != null) 'alias': alias,
+      if (updatedAt != null) 'updatedAt': updatedAt,
     });
   }
 
@@ -2147,6 +2187,7 @@ class BangumiBindingTableCompanion
     Value<String?>? collection,
     Value<String?>? tags,
     Value<String?>? alias,
+    Value<int>? updatedAt,
   }) {
     return BangumiBindingTableCompanion(
       id: id ?? this.id,
@@ -2165,6 +2206,7 @@ class BangumiBindingTableCompanion
       collection: collection ?? this.collection,
       tags: tags ?? this.tags,
       alias: alias ?? this.alias,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -2219,6 +2261,9 @@ class BangumiBindingTableCompanion
     if (alias.present) {
       map['alias'] = Variable<String>(alias.value);
     }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
     return map;
   }
 
@@ -2240,7 +2285,8 @@ class BangumiBindingTableCompanion
           ..write('images: $images, ')
           ..write('collection: $collection, ')
           ..write('tags: $tags, ')
-          ..write('alias: $alias')
+          ..write('alias: $alias, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -3192,6 +3238,7 @@ typedef $$BangumiBindingTableTableCreateCompanionBuilder =
       Value<String?> collection,
       Value<String?> tags,
       Value<String?> alias,
+      Value<int> updatedAt,
     });
 typedef $$BangumiBindingTableTableUpdateCompanionBuilder =
     BangumiBindingTableCompanion Function({
@@ -3211,6 +3258,7 @@ typedef $$BangumiBindingTableTableUpdateCompanionBuilder =
       Value<String?> collection,
       Value<String?> tags,
       Value<String?> alias,
+      Value<int> updatedAt,
     });
 
 class $$BangumiBindingTableTableFilterComposer
@@ -3299,6 +3347,11 @@ class $$BangumiBindingTableTableFilterComposer
 
   ColumnFilters<String> get alias => $composableBuilder(
     column: $table.alias,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3391,6 +3444,11 @@ class $$BangumiBindingTableTableOrderingComposer
     column: $table.alias,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BangumiBindingTableTableAnnotationComposer
@@ -3455,6 +3513,9 @@ class $$BangumiBindingTableTableAnnotationComposer
 
   GeneratedColumn<String> get alias =>
       $composableBuilder(column: $table.alias, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$BangumiBindingTableTableTableManager
@@ -3516,6 +3577,7 @@ class $$BangumiBindingTableTableTableManager
                 Value<String?> collection = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
                 Value<String?> alias = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
               }) => BangumiBindingTableCompanion(
                 id: id,
                 type: type,
@@ -3533,6 +3595,7 @@ class $$BangumiBindingTableTableTableManager
                 collection: collection,
                 tags: tags,
                 alias: alias,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -3552,6 +3615,7 @@ class $$BangumiBindingTableTableTableManager
                 Value<String?> collection = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
                 Value<String?> alias = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
               }) => BangumiBindingTableCompanion.insert(
                 id: id,
                 type: type,
@@ -3569,6 +3633,7 @@ class $$BangumiBindingTableTableTableManager
                 collection: collection,
                 tags: tags,
                 alias: alias,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(

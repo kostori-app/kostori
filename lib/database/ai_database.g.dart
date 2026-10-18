@@ -4252,8 +4252,20 @@ class $AiAuxSettingsTable extends AiAuxSettings
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [key, value];
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [key, value, updatedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4280,6 +4292,12 @@ class $AiAuxSettingsTable extends AiAuxSettings
         value.isAcceptableOrUnknown(data['value']!, _valueMeta),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -4297,6 +4315,10 @@ class $AiAuxSettingsTable extends AiAuxSettings
         DriftSqlType.string,
         data['${effectivePrefix}value'],
       ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -4309,7 +4331,8 @@ class $AiAuxSettingsTable extends AiAuxSettings
 class AiAuxSetting extends DataClass implements Insertable<AiAuxSetting> {
   final String key;
   final String? value;
-  const AiAuxSetting({required this.key, this.value});
+  final DateTime updatedAt;
+  const AiAuxSetting({required this.key, this.value, required this.updatedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4317,6 +4340,7 @@ class AiAuxSetting extends DataClass implements Insertable<AiAuxSetting> {
     if (!nullToAbsent || value != null) {
       map['value'] = Variable<String>(value);
     }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
 
@@ -4326,6 +4350,7 @@ class AiAuxSetting extends DataClass implements Insertable<AiAuxSetting> {
       value: value == null && nullToAbsent
           ? const Value.absent()
           : Value(value),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -4337,6 +4362,7 @@ class AiAuxSetting extends DataClass implements Insertable<AiAuxSetting> {
     return AiAuxSetting(
       key: serializer.fromJson<String>(json['key']),
       value: serializer.fromJson<String?>(json['value']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
   @override
@@ -4345,20 +4371,24 @@ class AiAuxSetting extends DataClass implements Insertable<AiAuxSetting> {
     return <String, dynamic>{
       'key': serializer.toJson<String>(key),
       'value': serializer.toJson<String?>(value),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
   AiAuxSetting copyWith({
     String? key,
     Value<String?> value = const Value.absent(),
+    DateTime? updatedAt,
   }) => AiAuxSetting(
     key: key ?? this.key,
     value: value.present ? value.value : this.value,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   AiAuxSetting copyWithCompanion(AiAuxSettingsCompanion data) {
     return AiAuxSetting(
       key: data.key.present ? data.key.value : this.key,
       value: data.value.present ? data.value.value : this.value,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -4366,43 +4396,50 @@ class AiAuxSetting extends DataClass implements Insertable<AiAuxSetting> {
   String toString() {
     return (StringBuffer('AiAuxSetting(')
           ..write('key: $key, ')
-          ..write('value: $value')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(key, value);
+  int get hashCode => Object.hash(key, value, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AiAuxSetting &&
           other.key == this.key &&
-          other.value == this.value);
+          other.value == this.value &&
+          other.updatedAt == this.updatedAt);
 }
 
 class AiAuxSettingsCompanion extends UpdateCompanion<AiAuxSetting> {
   final Value<String> key;
   final Value<String?> value;
+  final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const AiAuxSettingsCompanion({
     this.key = const Value.absent(),
     this.value = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AiAuxSettingsCompanion.insert({
     required String key,
     this.value = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : key = Value(key);
   static Insertable<AiAuxSetting> custom({
     Expression<String>? key,
     Expression<String>? value,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (key != null) 'key': key,
       if (value != null) 'value': value,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4410,11 +4447,13 @@ class AiAuxSettingsCompanion extends UpdateCompanion<AiAuxSetting> {
   AiAuxSettingsCompanion copyWith({
     Value<String>? key,
     Value<String?>? value,
+    Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
     return AiAuxSettingsCompanion(
       key: key ?? this.key,
       value: value ?? this.value,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4428,6 +4467,9 @@ class AiAuxSettingsCompanion extends UpdateCompanion<AiAuxSetting> {
     if (value.present) {
       map['value'] = Variable<String>(value.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4439,6 +4481,7 @@ class AiAuxSettingsCompanion extends UpdateCompanion<AiAuxSetting> {
     return (StringBuffer('AiAuxSettingsCompanion(')
           ..write('key: $key, ')
           ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6566,12 +6609,14 @@ typedef $$AiAuxSettingsTableCreateCompanionBuilder =
     AiAuxSettingsCompanion Function({
       required String key,
       Value<String?> value,
+      Value<DateTime> updatedAt,
       Value<int> rowid,
     });
 typedef $$AiAuxSettingsTableUpdateCompanionBuilder =
     AiAuxSettingsCompanion Function({
       Value<String> key,
       Value<String?> value,
+      Value<DateTime> updatedAt,
       Value<int> rowid,
     });
 
@@ -6591,6 +6636,11 @@ class $$AiAuxSettingsTableFilterComposer
 
   ColumnFilters<String> get value => $composableBuilder(
     column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6613,6 +6663,11 @@ class $$AiAuxSettingsTableOrderingComposer
     column: $table.value,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AiAuxSettingsTableAnnotationComposer
@@ -6629,6 +6684,9 @@ class $$AiAuxSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get value =>
       $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$AiAuxSettingsTableTableManager
@@ -6660,19 +6718,28 @@ class $$AiAuxSettingsTableTableManager
               $$AiAuxSettingsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$AiAuxSettingsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> key = const Value.absent(),
-            Value<String?> value = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) => AiAuxSettingsCompanion(key: key, value: value, rowid: rowid),
+          updateCompanionCallback:
+              ({
+                Value<String> key = const Value.absent(),
+                Value<String?> value = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiAuxSettingsCompanion(
+                key: key,
+                value: value,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
           createCompanionCallback:
               ({
                 required String key,
                 Value<String?> value = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AiAuxSettingsCompanion.insert(
                 key: key,
                 value: value,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
