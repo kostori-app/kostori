@@ -97,7 +97,12 @@ class NineGridPainter extends CollagePainter {
       final h = iw / dstAspect;
       src = Rect.fromLTWH(0, (ih - h) / 2, iw, h);
     }
-    canvas.drawImageRect(image, src, dst, Paint());
+    canvas.drawImageRect(
+      image,
+      src,
+      dst,
+      Paint()..filterQuality = FilterQuality.medium,
+    );
   }
 
   @override

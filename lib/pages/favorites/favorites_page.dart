@@ -172,10 +172,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
     try {
       final mgr = LocalFavoritesManager();
       final data = appdata.implicitData['favoriteFolder'];
-      Log.info(
-        'FavoritesPage',
-        '_initLocalFolder data=$data favFolder=${favState.folder} favFolders=${favState.folders}',
-      );
       if (data != null) {
         folder = data['name'] as String?;
         isNetwork = (data['isNetwork'] as bool?) ?? false;

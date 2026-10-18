@@ -84,6 +84,11 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
 
   final int? fixedCrossAxisCount;
 
+  int? get _validFixedCrossAxisCount =>
+      fixedCrossAxisCount != null && fixedCrossAxisCount! > 0
+      ? fixedCrossAxisCount
+      : null;
+
   /// 最小列数（自适应时至少显示这么多列，避免卡片过大）
   final int? minCrossAxisCount;
 
@@ -114,8 +119,8 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
     double scale,
   ) {
     int crossAxisCount;
-    if (fixedCrossAxisCount != null) {
-      crossAxisCount = fixedCrossAxisCount!;
+    if (_validFixedCrossAxisCount != null) {
+      crossAxisCount = _validFixedCrossAxisCount!;
     } else {
       // 卡片更大，列数更少，保证图上部分有足够空间
       final maxCrossAxisExtent = 320.0 * scale;
@@ -153,8 +158,8 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
     final itemHeight = 152 * scale;
     final width = constraints.crossAxisExtent;
     int crossItems;
-    if (fixedCrossAxisCount != null) {
-      crossItems = fixedCrossAxisCount!;
+    if (_validFixedCrossAxisCount != null) {
+      crossItems = _validFixedCrossAxisCount!;
     } else {
       crossItems = width ~/ minCrossAxisExtent;
       crossItems = math.max(minCrossAxisCount ?? 1, crossItems);
@@ -174,8 +179,8 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
     double scale,
   ) {
     int crossAxisCount;
-    if (fixedCrossAxisCount != null) {
-      crossAxisCount = fixedCrossAxisCount!;
+    if (_validFixedCrossAxisCount != null) {
+      crossAxisCount = _validFixedCrossAxisCount!;
     } else {
       final maxCrossAxisExtent = 192.0 * scale;
       const crossAxisSpacing = 0.0;
@@ -239,6 +244,11 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
   final int? fixedCrossAxisCount;
   final double scale = 1.toDouble();
 
+  int? get _validFixedCrossAxisCount =>
+      fixedCrossAxisCount != null && fixedCrossAxisCount! > 0
+      ? fixedCrossAxisCount
+      : null;
+
   @override
   SliverGridLayout getLayout(SliverConstraints constraints) {
     if (useBriefMode) {
@@ -256,8 +266,8 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
     final itemHeight = 192 * scale;
 
     int crossAxisCount;
-    if (fixedCrossAxisCount != null) {
-      crossAxisCount = fixedCrossAxisCount!;
+    if (_validFixedCrossAxisCount != null) {
+      crossAxisCount = _validFixedCrossAxisCount!;
     } else {
       crossAxisCount = (constraints.crossAxisExtent / minCrossAxisExtent)
           .floor();
@@ -285,8 +295,8 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
     const crossAxisSpacing = 0.0;
 
     int crossAxisCount;
-    if (fixedCrossAxisCount != null) {
-      crossAxisCount = fixedCrossAxisCount!;
+    if (_validFixedCrossAxisCount != null) {
+      crossAxisCount = _validFixedCrossAxisCount!;
     } else {
       crossAxisCount =
           (constraints.crossAxisExtent /

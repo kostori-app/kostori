@@ -39,7 +39,7 @@ class HorizontalImagePainter extends CollagePainter {
         img,
         Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
         dstRect,
-        Paint(),
+        Paint()..filterQuality = FilterQuality.medium,
       );
 
       dx += targetWidth;

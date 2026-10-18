@@ -29,7 +29,7 @@ class DialogueImagePainter extends CollagePainter {
         ? Offset(border.outerBorderWidth, border.outerBorderWidth)
         : Offset.zero;
 
-    final paint = Paint();
+    final paint = Paint()..filterQuality = FilterQuality.medium;
 
     // 1. 绘制外边框（如果有）
     if (border.showOuterBorder) {
@@ -62,17 +62,20 @@ class DialogueImagePainter extends CollagePainter {
     double currentY = contentOffset.dy;
     for (int i = 0; i < images.length; i++) {
       final image = images[i];
-      final cropHeight = cropHeights[i];
-
-      final firstImage = images[0];
-      final originalWidth = firstImage.width.toDouble();
-      final originalHeight = firstImage.height.toDouble();
-      final scale = contentWidth / originalWidth;
-      final scaledHeight = originalHeight * scale;
+      final imageWidth = image.width.toDouble();
+      final imageHeight = image.height.toDouble();
+      // 统一到拼接宽度时保留每张源图的宽高比；裁剪值使用各自源图像素。
+      final scale = contentWidth / imageWidth;
+      final cropHeight = i == 0
+          ? imageHeight
+          : cropHeights[i].clamp(0.0, imageHeight);
+      final scaledHeight = cropHeight * scale;
 
       // 第一张绘制整张高度，其余按 [底部留白, 底部留白+裁剪高度] 的区间绘制
-      final cropSrcHeight = cropHeight / scale;
-      final bottomSrc = i == 0 ? 0.0 : bottomCropOffsets[i] / scale;
+      final cropSrcHeight = cropHeight;
+      final bottomSrc = i == 0
+          ? 0.0
+          : bottomCropOffsets[i].clamp(0.0, imageHeight - cropHeight);
       final srcTop = i == 0 ? 0.0 : image.height - bottomSrc - cropSrcHeight;
       final safeSrcTop = srcTop.clamp(0.0, image.height.toDouble());
       final safeCropSrcHeight = cropSrcHeight.clamp(
@@ -82,8 +85,8 @@ class DialogueImagePainter extends CollagePainter {
 
       if (i == 0) {
         canvas.drawImageRect(
-          firstImage,
-          Rect.fromLTWH(0, 0, originalWidth, originalHeight),
+          image,
+          Rect.fromLTWH(0, 0, imageWidth, imageHeight),
           Rect.fromLTWH(contentOffset.dx, currentY, contentWidth, scaledHeight),
           paint,
         );
@@ -96,12 +99,12 @@ class DialogueImagePainter extends CollagePainter {
             image.width.toDouble(),
             safeCropSrcHeight,
           ),
-          Rect.fromLTWH(contentOffset.dx, currentY, contentWidth, cropHeight),
+          Rect.fromLTWH(contentOffset.dx, currentY, contentWidth, scaledHeight),
           paint,
         );
       }
 
-      currentY += i == 0 ? originalHeight : cropHeight;
+      currentY += scaledHeight;
 
       // 内部分隔线（如果有）
       if (border.showInnerBorders && i < images.length - 1) {
@@ -246,16 +249,15 @@ class _RenderDialogueComposePageState
   @override
   Size computeCanvasSize(List<ui.Image> images, CollageBorderStyle border) {
     final maxWidth = images.first.width.toDouble();
-    double totalCropHeight;
-
-    if (cropHeights.isNotEmpty) {
-      // 第一张按原图全高
-      totalCropHeight = images.first.height.toDouble();
-      for (int i = 1; i < cropHeights.length && i < images.length; i++) {
-        totalCropHeight += cropHeights[i];
-      }
-    } else {
-      totalCropHeight = cropHeights.fold(0.0, (sum, h) => sum + h);
+    // 与 DialogueImagePainter 保持一致：每个裁剪区域都按源图宽度缩放到
+    // 第一张图片的画布宽度。
+    double totalCropHeight = images.first.height.toDouble();
+    for (int i = 1; i < cropHeights.length && i < images.length; i++) {
+      final image = images[i];
+      if (image.width <= 0) continue;
+      final scale = maxWidth / image.width;
+      final cropHeight = cropHeights[i].clamp(0.0, image.height.toDouble());
+      totalCropHeight += cropHeight * scale;
     }
 
     if (border.showInnerBorders && images.length > 1) {
@@ -328,176 +330,200 @@ class _RenderDialogueComposePageState
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 扣除左右各 16 的 padding，避免窄屏溢出导致比例失真
-        final displayWidth = constraints.maxWidth - 32;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 120),
-          child: ListView.builder(
-            itemCount: imageList.length,
-            itemBuilder: (context, index) {
-              final image = imageList[index];
-              final imageSize = imageSizes[index];
-              final crop = cropHeights[index].clamp(0.0, imageSize.height);
-              final bottom = bottomCropOffsets[index].clamp(
-                0.0,
-                (imageSize.height - crop).clamp(0.0, imageSize.height),
-              );
+        // ListView 占满可用宽度，图片卡片在宽屏时保持居中。这样两侧
+        // 留白仍属于滚动视口，拖动时不会因为点在留白处而失去滚动手势。
+        final contentWidth = math.min(constraints.maxWidth, 650.0);
+        final displayWidth = math.max(0.0, contentWidth - 32);
+        return ListView.builder(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.paddingOf(context).bottom + 104,
+          ),
+          itemCount: imageList.length,
+          itemBuilder: (context, index) {
+            return Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: contentWidth,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Builder(
+                    builder: (context) {
+                      final image = imageList[index];
+                      final imageSize = imageSizes[index];
+                      final crop = cropHeights[index].clamp(
+                        0.0,
+                        imageSize.height,
+                      );
+                      final bottom = bottomCropOffsets[index].clamp(
+                        0.0,
+                        (imageSize.height - crop).clamp(0.0, imageSize.height),
+                      );
 
-              final scale = imageSize.width > 0
-                  ? displayWidth / imageSize.width
-                  : 1.0;
-              final displayHeight = imageSize.height * scale;
-              final bandHeightDisplay = crop * scale;
-              final bandBottomDisplay = bottom * scale;
-              final bandTopDisplay =
-                  (imageSize.height - bottom - crop).clamp(
-                    0.0,
-                    imageSize.height,
-                  ) *
-                  scale;
+                      final scale = imageSize.width > 0
+                          ? displayWidth / imageSize.width
+                          : 1.0;
+                      final displayHeight = imageSize.height * scale;
+                      final bandHeightDisplay = crop * scale;
+                      final bandBottomDisplay = bottom * scale;
+                      final bandTopDisplay =
+                          (imageSize.height - bottom - crop).clamp(
+                            0.0,
+                            imageSize.height,
+                          ) *
+                          scale;
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Stack(
-                      children: [
-                        SizedBox(
-                          width: displayWidth,
-                          height: displayHeight,
-                          child: Image.file(image, fit: BoxFit.fill),
-                        ),
-                        Positioned(
-                          top: 6,
-                          left: 6,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '#${index + 1}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Stack(
+                            children: [
+                              SizedBox(
+                                width: displayWidth,
+                                height: displayHeight,
+                                child: Image.file(image, fit: BoxFit.contain),
                               ),
-                            ),
-                          ),
-                        ),
-                        // 只压暗裁掉的部分，保留区保持清晰（避免字幕看起来被切一半）
-                        if (index != 0) ...[
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: bandTopDisplay,
-                            child: const ColoredBox(color: Colors.black45),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            height: bandBottomDisplay,
-                            child: const ColoredBox(color: Colors.black45),
-                          ),
-                          Positioned(
-                            top: bandTopDisplay,
-                            left: 0,
-                            right: 0,
-                            height: bandHeightDisplay,
-                            child: IgnorePointer(
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  border: Border.symmetric(
-                                    horizontal: BorderSide(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                      width: 2,
+                              Positioned(
+                                top: 6,
+                                left: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '#${index + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
+                              // 只压暗裁掉的部分，保留区保持清晰（避免字幕看起来被切一半）
+                              if (index != 0) ...[
+                                Positioned(
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: bandTopDisplay,
+                                  child: const ColoredBox(
+                                    color: Colors.black45,
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: bandBottomDisplay,
+                                  child: const ColoredBox(
+                                    color: Colors.black45,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: bandTopDisplay,
+                                  left: 0,
+                                  right: 0,
+                                  height: bandHeightDisplay,
+                                  child: IgnorePointer(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        border: Border.symmetric(
+                                          horizontal: BorderSide(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            width: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: bandTopDisplay + 4,
+                                  left: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      t.cropHeightCPx(
+                                        c: crop.toStringAsFixed(0),
+                                      ),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          Positioned(
-                            top: bandTopDisplay + 4,
-                            left: 6,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
+                          if (index == 0)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Text(
-                                t.cropHeightCPx(c: crop.toStringAsFixed(0)),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
+                                t.firstImageFullHeight,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                               ),
+                            )
+                          else ...[
+                            _buildCropSlider(
+                              label: t.cropHeightLabel,
+                              value: crop,
+                              max: imageSize.height - bottom,
+                              onChanged: (v) => setState(() {
+                                cropHeights[index] = v.clamp(
+                                  0.0,
+                                  imageSize.height - bottomCropOffsets[index],
+                                );
+                              }),
                             ),
-                          ),
+                            _buildCropSlider(
+                              label: t.cropBottomMargin,
+                              value: bottom,
+                              // 上边固定：下边距只能移动到当前带的上边
+                              // （= 下边距 + 高度），拖动时同步缩减高度
+                              max: bottom + crop,
+                              onChanged: (v) => setState(() {
+                                final prevBottom = bottomCropOffsets[index];
+                                final prevHeight = cropHeights[index];
+                                final target = v.clamp(
+                                  0.0,
+                                  prevBottom + prevHeight,
+                                );
+                                bottomCropOffsets[index] = target;
+                                cropHeights[index] =
+                                    prevHeight - (target - prevBottom);
+                              }),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                    if (index == 0)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          t.firstImageFullHeight,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                        ),
-                      )
-                    else ...[
-                      _buildCropSlider(
-                        label: t.cropHeightLabel,
-                        value: crop,
-                        max: imageSize.height - bottom,
-                        onChanged: (v) => setState(() {
-                          cropHeights[index] = v.clamp(
-                            0.0,
-                            imageSize.height - bottomCropOffsets[index],
-                          );
-                        }),
-                      ),
-                      _buildCropSlider(
-                        label: t.cropBottomMargin,
-                        value: bottom,
-                        // 上边固定：下边距只能移动到当前带的上边
-                        // （= 下边距 + 高度），拖动时同步缩减高度
-                        max: bottom + crop,
-                        onChanged: (v) => setState(() {
-                          final prevBottom = bottomCropOffsets[index];
-                          final prevHeight = cropHeights[index];
-                          final target = v.clamp(0.0, prevBottom + prevHeight);
-                          bottomCropOffsets[index] = target;
-                          cropHeights[index] =
-                              prevHeight - (target - prevBottom);
-                        }),
-                      ),
-                    ],
-                  ],
+                      );
+                    },
+                  ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );

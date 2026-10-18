@@ -635,27 +635,35 @@ class ParamCard extends StatelessWidget {
               const SizedBox(height: 8),
               ...params.entries
                   .where((e) => e.value != null)
-                  .map(
-                    (e) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: AppSelectableText.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '${e.key}: ',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            TextSpan(text: e.value.toString()),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  .map((e) => _alignedInfoRow(context, e.key, e.value!)),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _alignedInfoRow(BuildContext context, String label, Object value) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            ),
+          ),
+          Expanded(
+            child: AppSelectableText(
+              value.toString(),
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -679,44 +687,72 @@ Map<String, Object?> _compact(Map<String, Object?> map) {
   };
 }
 
-/// mpv 调试属性的本地化名称；未覆盖的保留原始键名（便于排查）。
-String _mpvPropertyLabel(String property) => switch (property) {
-  'filename' => t.mpvFilename,
-  'media-title' => t.mpvMediaTitle,
-  'file-format' => t.mpvFileFormat,
-  'file-size' => t.mpvFileSize,
-  'duration' => t.mpvDuration,
-  'demuxer' => t.mpvDemuxer,
-  'video-codec' => t.mpvVideoCodec,
-  'video-format' => t.mpvVideoFormat,
-  'width' => t.mpvWidth,
-  'height' => t.mpvHeight,
-  'container-fps' => t.mpvContainerFps,
-  'estimated-vf-fps' => t.mpvEstimatedFps,
-  'video-bitrate' => t.mpvVideoBitrate,
-  'video-params/pixelformat' => t.pixelFormat,
-  'video-params/aspect' => t.aspect,
-  'video-params/colormatrix' => t.colormatrix,
-  'video-params/primaries' => t.primaries,
-  'video-params/gamma' => t.gamma,
-  'video-params/hw-pixelformat' => t.hwPixelFormat,
-  'hwdec' => t.vtHwAccelRequested,
-  'hwdec-current' => t.vtHwAccelCurrent,
-  'hwdec-interop' => t.mpvHwdecInterop,
-  'hw-pixelformat' => t.hwPixelFormat,
-  'vo' => t.vtRenderer,
-  'gpu-api' => t.mpvGpuApi,
-  'gpu-context' => t.vtGpuContext,
-  'audio-codec' => t.mpvAudioCodec,
-  'audio-params/format' => t.format,
-  'audio-params/samplerate' => t.sampleRate,
-  'audio-params/channel-count' => t.channelCount,
-  'audio-bitrate' => t.audioBitrate,
-  'track-list/count' => t.mpvTrackCount,
-  'frame-drop-count' => t.mpvFrameDropCount,
-  'decoder-frame-drop-count' => t.mpvDecoderFrameDropCount,
-  _ => property,
-};
+String? _formatMpvResolution(Object? width, Object? height) {
+  final w = int.tryParse(width?.toString() ?? '');
+  final h = int.tryParse(height?.toString() ?? '');
+  if (w == null || h == null || w <= 0 || h <= 0) return null;
+  return '$w × $h px';
+}
+
+String? _formatMpvFps(Object? value) {
+  final fps = double.tryParse(value?.toString() ?? '');
+  if (fps == null || !fps.isFinite || fps <= 0) return null;
+  return _formatMpvNumber(fps);
+}
+
+String? _formatMpvFpsPair(Object? containerFps, Object? outputFps) {
+  final container = _formatMpvFps(containerFps);
+  final output = _formatMpvFps(outputFps);
+  if (container == null && output == null) return null;
+  if (container == null || output == null || container == output) {
+    return '${output ?? container} fps';
+  }
+  return '$container → $output fps';
+}
+
+String? _formatMpvBitrate(Object? value) {
+  final bitrate = double.tryParse(value?.toString() ?? '');
+  if (bitrate == null || !bitrate.isFinite || bitrate <= 0) return null;
+  if (bitrate >= 1000000) {
+    return '${_formatMpvNumber(bitrate / 1000000)} Mbps';
+  }
+  if (bitrate >= 1000) {
+    return '${_formatMpvNumber(bitrate / 1000)} kbps';
+  }
+  return '${bitrate.round()} bps';
+}
+
+String? _formatMpvSampleRate(Object? value) {
+  final sampleRate = double.tryParse(value?.toString() ?? '');
+  if (sampleRate == null || !sampleRate.isFinite || sampleRate <= 0) {
+    return null;
+  }
+  if (sampleRate >= 1000) {
+    return '${_formatMpvNumber(sampleRate / 1000)} kHz';
+  }
+  return '${_formatMpvNumber(sampleRate)} Hz';
+}
+
+String? _formatMpvDuration(Object? value) {
+  final seconds = double.tryParse(value?.toString() ?? '');
+  if (seconds == null || !seconds.isFinite || seconds < 0) return null;
+  final duration = Duration(seconds: seconds.round());
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final remainder = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return hours > 0 ? '$hours:$minutes:$remainder' : '$minutes:$remainder';
+}
+
+String _formatMpvNumber(double value) {
+  final formatted = value.toStringAsFixed(3);
+  return formatted.replaceFirst(RegExp(r'\.?0+$'), '');
+}
+
+String? _formatMpvBytes(Object? value) {
+  final bytes = int.tryParse(value?.toString() ?? '');
+  if (bytes == null || bytes < 0) return null;
+  return formatBytesShort(bytes);
+}
 
 class MediaInfoWidget extends StatelessWidget {
   final VideoParams? videoParams;
@@ -742,16 +778,16 @@ class MediaInfoWidget extends StatelessWidget {
     if (vp != null) {
       final resolution = (vp.w == null || vp.h == null)
           ? null
-          : '${vp.w}x${vp.h}';
+          : _formatMpvResolution(vp.w, vp.h);
       final display = (vp.dw == null || vp.dh == null)
           ? null
-          : '${vp.dw}x${vp.dh}';
+          : _formatMpvResolution(vp.dw, vp.dh);
       final videoMap = _compact({
         // 先放最有用的信息，读不到的不展示
         t.trackCodec: videoTrack?.codec,
         t.resolution: resolution,
-        t.trackFps: videoTrack?.fps,
-        t.trackBitrate: videoTrack?.bitrate,
+        t.trackFps: _formatMpvFps(videoTrack?.fps),
+        t.trackBitrate: _formatMpvBitrate(videoTrack?.bitrate),
         t.pixelFormat: vp.pixelformat,
         t.hwPixelFormat: vp.hwPixelformat,
         t.displayResolution: display,
@@ -779,11 +815,13 @@ class MediaInfoWidget extends StatelessWidget {
     if (ap != null) {
       final audioMap = _compact({
         t.trackCodec: audioTrack?.codec,
-        t.sampleRate: ap.sampleRate,
+        t.sampleRate: _formatMpvSampleRate(ap.sampleRate),
         t.channels: ap.channels,
-        t.channelCount: ap.channelCount,
-        t.bitrate: audioTrack?.bitrate,
-        t.audioBitrate: audioBitrate,
+        t.channelCount: ap.channelCount == null
+            ? null
+            : '${ap.channelCount} ch',
+        t.bitrate: _formatMpvBitrate(audioTrack?.bitrate),
+        t.audioBitrate: _formatMpvBitrate(audioBitrate),
         t.format: ap.format,
         t.hrChannels: ap.hrChannels,
         t.trackDecoder: audioTrack?.decoder,
@@ -1206,42 +1244,13 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               MapEntry(
                 t.media,
                 '${widget.source.medias.length} · '
-                '${widget.source.videoParams.w ?? '-'}x'
-                '${widget.source.videoParams.h ?? '-'}',
+                '${_formatMpvResolution(widget.source.videoParams.w, widget.source.videoParams.h) ?? '-'}',
               ),
               if (widget.playbackError != null)
                 MapEntry(t.vtProbeError, widget.playbackError!),
             ],
           ),
-          _diagCard(
-            title: t.vtHwAccel,
-            icon: Icons.memory,
-            trailing: IconButton(
-              icon: const Icon(Icons.refresh, size: 18),
-              tooltip: t.vtRecheck,
-              onPressed: _loadMpvProperties,
-            ),
-            rows: [
-              MapEntry(t.vtHwAccelCurrent, switch (isHardwareDecoding(
-                _mpvProperties,
-              )) {
-                true =>
-                  '${t.vtHwAccelOn}'
-                      '${_mpvProperties['hwdec-current']?.isNotEmpty == true ? ' (${_mpvProperties['hwdec-current']})' : ''}',
-                false => t.vtHwAccelOff,
-                _ => t.vtHwAccelUnknown,
-              }),
-              MapEntry(t.vtHwAccelRequested, _mpvProperties['hwdec'] ?? '-'),
-              MapEntry(
-                t.hwPixelFormat,
-                _mpvProperties['video-params/hw-pixelformat'] ??
-                    _mpvProperties['hw-pixelformat'] ??
-                    '-',
-              ),
-              MapEntry(t.vtRenderer, _mpvProperties['vo'] ?? '-'),
-              MapEntry(t.vtGpuContext, _mpvProperties['gpu-context'] ?? '-'),
-            ],
-          ),
+          _buildMediaPropertiesCard(),
           Padding(
             padding: const EdgeInsets.only(left: 4, right: 4, bottom: 12),
             child: Text(
@@ -1253,22 +1262,119 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               ),
             ),
           ),
-          _diagCard(
-            title: t.vtMediaProperties,
-            icon: Icons.tune,
-            trailing: IconButton(
-              icon: const Icon(Icons.refresh, size: 18),
-              tooltip: t.vtRecheck,
-              onPressed: _loadMpvProperties,
-            ),
-            rows: _mpvProperties.isEmpty
-                ? [MapEntry(t.vtMediaPropertiesHint, '')]
-                : _mpvProperties.entries
-                      .map((e) => MapEntry(_mpvPropertyLabel(e.key), e.value))
-                      .toList(),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMediaPropertiesCard() {
+    final properties = _mpvProperties;
+    final video = <MapEntry<String, String>>[];
+    final audio = <MapEntry<String, String>>[];
+    final media = <MapEntry<String, String>>[];
+    final system = <MapEntry<String, String>>[];
+
+    void add(List<MapEntry<String, String>> rows, String label, String? value) {
+      if (value == null || value.isEmpty || value == '-') {
+        return;
+      }
+      rows.add(MapEntry(label, value));
+    }
+
+    add(video, t.mpvVideoCodec, properties['video-codec']);
+    add(
+      video,
+      t.resolution,
+      _formatMpvResolution(properties['width'], properties['height']),
+    );
+    add(
+      video,
+      t.trackFps,
+      _formatMpvFpsPair(
+        properties['container-fps'],
+        properties['estimated-vf-fps'],
+      ),
+    );
+    add(
+      video,
+      t.mpvVideoBitrate,
+      _formatMpvBitrate(properties['video-bitrate']),
+    );
+    add(video, t.mpvVideoFormat, properties['video-format']);
+    add(video, t.pixelFormat, properties['video-params/pixelformat']);
+    add(video, t.aspect, properties['video-params/aspect']);
+    add(video, t.colormatrix, properties['video-params/colormatrix']);
+    add(video, t.primaries, properties['video-params/primaries']);
+    add(video, t.gamma, properties['video-params/gamma']);
+
+    add(audio, t.mpvAudioCodec, properties['audio-codec']);
+    add(
+      audio,
+      t.sampleRate,
+      _formatMpvSampleRate(properties['audio-params/samplerate']),
+    );
+    final channelCount = properties['audio-params/channel-count'];
+    add(
+      audio,
+      t.channelCount,
+      channelCount == null ? null : '$channelCount ch',
+    );
+    add(audio, t.channels, properties['audio-params/channels']);
+    add(audio, t.audioBitrate, _formatMpvBitrate(properties['audio-bitrate']));
+    add(audio, t.format, properties['audio-params/format']);
+
+    add(media, t.mpvMediaTitle, properties['media-title']);
+    add(media, t.mpvFilename, properties['filename']);
+    add(media, t.mpvFileFormat, properties['file-format']);
+    add(media, t.mpvFileSize, _formatMpvBytes(properties['file-size']));
+    add(media, t.mpvDuration, _formatMpvDuration(properties['duration']));
+    add(media, t.mpvDemuxer, properties['demuxer']);
+    add(media, t.mpvTrackCount, properties['track-list/count']);
+    add(media, t.mpvFrameDropCount, properties['frame-drop-count']);
+    add(
+      media,
+      t.mpvDecoderFrameDropCount,
+      properties['decoder-frame-drop-count'],
+    );
+
+    if (properties.isNotEmpty) {
+      add(system, t.vtHwAccelCurrent, switch (isHardwareDecoding(properties)) {
+        true =>
+          '${t.vtHwAccelOn}'
+              '${properties['hwdec-current']?.isNotEmpty == true ? ' (${properties['hwdec-current']})' : ''}',
+        false => t.vtHwAccelOff,
+        _ => t.vtHwAccelUnknown,
+      });
+    }
+    add(system, t.vtHwAccelRequested, properties['hwdec']);
+    add(
+      system,
+      t.hwPixelFormat,
+      properties['video-params/hw-pixelformat'] ?? properties['hw-pixelformat'],
+    );
+    add(system, t.mpvHwdecInterop, properties['hwdec-interop']);
+    add(system, t.vtRenderer, properties['vo']);
+    add(system, t.mpvGpuApi, properties['gpu-api']);
+    add(system, t.vtGpuContext, properties['gpu-context']);
+
+    final sections = <(String, List<MapEntry<String, String>>)>[
+      if (video.isNotEmpty) (t.video, video),
+      if (audio.isNotEmpty) (t.audio, audio),
+      if (media.isNotEmpty) (t.media, media),
+      if (system.isNotEmpty) (t.system, system),
+    ];
+    return _diagCard(
+      title: t.vtMediaProperties,
+      icon: Icons.tune,
+      trailing: IconButton(
+        icon: const Icon(Icons.refresh, size: 18),
+        tooltip: t.vtRecheck,
+        onPressed: _loadMpvProperties,
+      ),
+      rows: sections.isEmpty
+          ? [MapEntry(t.vtMediaPropertiesHint, '')]
+          : const [],
+      sections: sections.isEmpty ? null : sections,
     );
   }
 
@@ -1276,6 +1382,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
     required String title,
     required IconData icon,
     required List<MapEntry<String, String>> rows,
+    List<(String, List<MapEntry<String, String>>)>? sections,
     Widget? trailing,
   }) {
     final cs = Theme.of(context).colorScheme;
@@ -1310,37 +1417,68 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                 ],
               ),
               const SizedBox(height: 6),
-              for (final row in rows)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4, right: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 110,
-                        child: Text(
-                          row.key,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: AppSelectableText(
-                          row.value.isEmpty ? '-' : row.value,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              if (sections == null)
+                for (final row in rows) _diagRow(row, cs)
+              else
+                for (final section in sections)
+                  _diagSection(section.$1, section.$2, cs),
             ],
           ),
         ),
       ),
     );
   }
+
+  Widget _diagSection(
+    String title,
+    List<MapEntry<String, String>> rows,
+    ColorScheme colorScheme,
+  ) => Padding(
+    padding: const EdgeInsets.only(top: 6),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 5),
+          child: Text(
+            title,
+            style: TextStyle(
+              color: colorScheme.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        for (final row in rows) _diagRow(row, colorScheme),
+      ],
+    ),
+  );
+
+  Widget _diagRow(MapEntry<String, String> row, ColorScheme colorScheme) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 5, right: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 110,
+              child: Text(
+                row.key,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Expanded(
+              child: AppSelectableText(
+                row.value.isEmpty ? '-' : row.value,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      );
 
   Widget _buildVideoLogTab() {
     final logs = widget.source.logs;

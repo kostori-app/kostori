@@ -237,7 +237,9 @@ abstract class CollageEditorState<T extends CollageEditorPage>
     return composePainterToPng(
       painter: buildPainter(images, border),
       size: computeCanvasSize(images, border),
-      pixelRatio: MediaQuery.devicePixelRatioOf(context),
+      // 画布直接使用原图像素；额外提高设备 DPR 只会增大文件体积，
+      // 不会增加源图中不存在的细节。
+      pixelRatio: 1,
     );
   }
 
@@ -300,31 +302,43 @@ abstract class CollageEditorState<T extends CollageEditorPage>
   Widget buildMainCanvasPreview() {
     final border = CollageBorderStyle.watch(ref);
     final images = uiImages;
-    if (images == null) {
-      return const Center(child: PolygonRefreshIndicator());
-    }
-    if (images.isEmpty) {
-      return Center(child: Text(emptyHint));
-    }
-    final size = computeCanvasSize(images, border);
-    return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: previewMaxWidth(size)),
-          child: FittedBox(
-            fit: BoxFit.contain,
-            alignment: Alignment.topCenter,
-            child: SizedBox(
-              width: size.width,
-              height: size.height,
-              child: CustomPaint(
-                size: size,
-                painter: buildPainter(images, border),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (images == null) {
+          return const Center(child: PolygonRefreshIndicator());
+        }
+        if (images.isEmpty) {
+          return Center(child: Text(emptyHint));
+        }
+        final size = computeCanvasSize(images, border);
+        final maxWidth = math.min(constraints.maxWidth, previewMaxWidth(size));
+        final scale = size.width <= 0
+            ? 1.0
+            : math.min(1.0, maxWidth / size.width);
+        final displaySize = Size(size.width * scale, size.height * scale);
+
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: SizedBox.fromSize(
+                size: displaySize,
+                child: FittedBox(
+                  fit: BoxFit.fill,
+                  child: SizedBox(
+                    width: size.width,
+                    height: size.height,
+                    child: CustomPaint(
+                      size: size,
+                      painter: buildPainter(images, border),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -414,19 +428,18 @@ abstract class CollageEditorState<T extends CollageEditorPage>
         body: Stack(
           children: [
             Positioned.fill(
-              child: Center(
-                child: isReorderMode
-                    ? ConstrainedBox(
+              child: isReorderMode
+                  ? Center(
+                      child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 650),
                         child: buildReorderView(),
-                      )
-                    : isCroppingMode
-                    ? ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 650),
-                        child: buildCropBody(),
-                      )
-                    : buildMainCanvasPreview(),
-              ),
+                      ),
+                    )
+                  : isCroppingMode
+                  // 让滚动视口占满宽度，裁剪卡片保持居中；两侧留白仍属于
+                  // 同一 ListView，可正常触发拖动手势。
+                  ? buildCropBody()
+                  : buildMainCanvasPreview(),
             ),
             buildBottomButtons(),
             ...extraOverlayWidgets(),
