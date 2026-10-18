@@ -289,6 +289,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  code_builder:
+    dependency: transitive
+    description:
+      name: code_builder
+      sha256: "811709c1badd02fc054039a13f66e0db1961865f9a314175f68c3eaeebec786f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.13.0"
   collection:
     dependency: "direct main"
     description:
@@ -889,14 +897,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_mobx:
-    dependency: "direct main"
-    description:
-      name: flutter_mobx
-      sha256: ba5e93467866a2991259dc51cffd41ef45f695c667c2b8e7b087bf24118b50fe
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -1505,22 +1505,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.4.2"
-  mobx:
-    dependency: "direct main"
+  mockito:
+    dependency: transitive
     description:
-      name: mobx
-      sha256: a14558d22e2d3b0edf9151c75b67638c3907123046e96e1d1ee05e23c6a82a56
+      name: mockito
+      sha256: "6c1970612452260366064d4df80fdb3eece1ec5e52610ae34a0e51f2f3d8e64f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.6.1"
-  mobx_codegen:
-    dependency: "direct dev"
-    description:
-      name: mobx_codegen
-      sha256: e90238a74e1e6cd7886228552006db73cd7768ce1584ffa13112332df8565853
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.7.8"
+    version: "5.8.1"
   msix:
     dependency: "direct dev"
     description:
@@ -1537,14 +1529,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.17.6"
-  nested:
-    dependency: transitive
-    description:
-      name: nested
-      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   network_info_plus:
     dependency: "direct main"
     description:
@@ -1802,14 +1786,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.6"
-  provider:
-    dependency: transitive
-    description:
-      name: provider
-      sha256: "4abbd070a04e9ddc287673bf5a030c7ca8b685ff70218720abab8b092f53dd84"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.1.5"
   pub_semver:
     dependency: transitive
     description:
@@ -1858,6 +1834,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.2"
+  riverpod_analyzer_utils:
+    dependency: transitive
+    description:
+      name: riverpod_analyzer_utils
+      sha256: "46a8dd0461080fde8f886f65f87580758dae8495e352f9ea6a09953abc3df7bd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0-dev.11"
   riverpod_annotation:
     dependency: "direct main"
     description:
@@ -1866,6 +1850,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.6"
+  riverpod_generator:
+    dependency: "direct dev"
+    description:
+      name: riverpod_generator
+      sha256: "2e66b5691cf5d50d6a409904b0477e869e0ecbdd5ada1535d263a95d44439e75"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.8"
   rxdart:
     dependency: transitive
     description:

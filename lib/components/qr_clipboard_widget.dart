@@ -4,7 +4,6 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -20,13 +19,9 @@ import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/character_page.dart';
 import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/pages/qr_scanner_page.dart';
-import 'package:kostori/utils/clipboard_provider.dart';
+import 'package:kostori/utils/clipboard_provider.dart' as clipboard;
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:kostori/utils/qr_analysis_service.dart';
-
-final clipboardNotifierProvider = ChangeNotifierProvider<ClipboardProvider>(
-  (ref) => ClipboardProvider(autoCheckOnInit: false),
-);
 
 class QrClipboardWidget extends ConsumerStatefulWidget {
   const QrClipboardWidget({super.key});
@@ -336,7 +331,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
   }
 
   Future<void> _checkClipboard(BuildContext context) async {
-    final cp = ref.read(clipboardNotifierProvider);
+    final cp = ref.read(clipboard.clipboardProvider.notifier);
     await cp.checkClipboard();
 
     if (!mounted) return;
@@ -425,7 +420,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         FilledButton(
           onPressed: () async {
             navigator.pop();
-            ref.read(clipboardNotifierProvider).consume();
+            ref.read(clipboard.clipboardProvider.notifier).consume();
             await _navigate(context, parsed);
           },
           child: Text(t.go),
@@ -498,9 +493,14 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<ClipboardProvider>(clipboardNotifierProvider, (_, cp) {
-      if (cp.hasPendingProtocol && cp.parsed != null && mounted) {
-        _showFoundDialog(context, cp.parsed!);
+    ref.listen<clipboard.ClipboardState>(clipboard.clipboardProvider, (
+      _,
+      state,
+    ) {
+      if (state.status == clipboard.ClipboardStatus.found &&
+          state.parsed != null &&
+          mounted) {
+        _showFoundDialog(context, state.parsed!);
       }
     });
 

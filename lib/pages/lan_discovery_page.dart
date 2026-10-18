@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -14,6 +13,9 @@ import 'package:kostori/pages/main_page.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'lan_discovery_page.g.dart';
 
 class _LanPlayerControlHandler implements LanPlayerControlHandler {
   @override
@@ -131,44 +133,93 @@ class _LanPlayerControlHandler implements LanPlayerControlHandler {
   WatcherPlayer? _getWatcher() => WatcherPlayer.currentState;
 }
 
-final lanDiscoveryProvider = ChangeNotifierProvider<LanDiscoveryController>((
-  ref,
-) {
-  return LanDiscoveryController();
-});
+const _lanDiscoveryUnset = Object();
 
-class LanDiscoveryController extends ChangeNotifier {
-  LanDiscoveryController() {
-    _init();
+@immutable
+class LanDiscoveryState {
+  const LanDiscoveryState({
+    this.isInitialized = false,
+    this.serviceState = LanDiscoveryServiceState.idle,
+    this.devices = const [],
+    this.selectedDevice,
+    this.qrContent,
+    this.qrRemainingSeconds = 0,
+    this.isConnecting = false,
+    this.isRefreshing = false,
+  });
+
+  final bool isInitialized;
+  final LanDiscoveryServiceState serviceState;
+  final List<LanDiscoveredDevice> devices;
+  final LanDiscoveredDevice? selectedDevice;
+  final String? qrContent;
+  final int qrRemainingSeconds;
+  final bool isConnecting;
+  final bool isRefreshing;
+
+  LanDiscoveryState copyWith({
+    bool? isInitialized,
+    LanDiscoveryServiceState? serviceState,
+    List<LanDiscoveredDevice>? devices,
+    Object? selectedDevice = _lanDiscoveryUnset,
+    Object? qrContent = _lanDiscoveryUnset,
+    int? qrRemainingSeconds,
+    bool? isConnecting,
+    bool? isRefreshing,
+  }) {
+    return LanDiscoveryState(
+      isInitialized: isInitialized ?? this.isInitialized,
+      serviceState: serviceState ?? this.serviceState,
+      devices: devices ?? this.devices,
+      selectedDevice: identical(selectedDevice, _lanDiscoveryUnset)
+          ? this.selectedDevice
+          : selectedDevice as LanDiscoveredDevice?,
+      qrContent: identical(qrContent, _lanDiscoveryUnset)
+          ? this.qrContent
+          : qrContent as String?,
+      qrRemainingSeconds: qrRemainingSeconds ?? this.qrRemainingSeconds,
+      isConnecting: isConnecting ?? this.isConnecting,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+    );
+  }
+}
+
+@Riverpod(keepAlive: true)
+class LanDiscovery extends _$LanDiscovery {
+  LanDiscoveryService get _service => LanDiscoveryService.instance;
+
+  Timer? _qrRefreshTimer;
+  bool _disposed = false;
+
+  @override
+  LanDiscoveryState build() {
+    ref.onDispose(() {
+      _disposed = true;
+      _disposeService();
+    });
+    Future<void>.microtask(_init);
+    return const LanDiscoveryState();
   }
 
-  final LanDiscoveryService _service = LanDiscoveryService.instance;
-  Timer? _qrRefreshTimer;
+  bool get isInitialized => state.isInitialized;
 
-  bool _isInitialized = false;
-  LanDiscoveryServiceState _serviceState = LanDiscoveryServiceState.idle;
-  final List<LanDiscoveredDevice> _devices = [];
-  LanDiscoveredDevice? _selectedDevice;
-  String? _qrContent;
-  int _qrRemainingSeconds = 0;
-  bool _isConnecting = false;
-  bool _isRefreshing = false;
+  LanDiscoveryServiceState get serviceState => state.serviceState;
 
-  bool get isInitialized => _isInitialized;
+  List<LanDiscoveredDevice> get devices => state.devices;
 
-  LanDiscoveryServiceState get serviceState => _serviceState;
+  LanDiscoveredDevice? get selectedDevice => state.selectedDevice;
 
-  List<LanDiscoveredDevice> get devices => _devices;
+  String? get qrContent => state.qrContent;
 
-  LanDiscoveredDevice? get selectedDevice => _selectedDevice;
+  int get qrRemainingSeconds => state.qrRemainingSeconds;
 
-  String? get qrContent => _qrContent;
+  bool get isConnecting => state.isConnecting;
 
-  int get qrRemainingSeconds => _qrRemainingSeconds;
+  bool get isRefreshing => state.isRefreshing;
 
-  bool get isConnecting => _isConnecting;
-
-  bool get isRefreshing => _isRefreshing;
+  void _update(LanDiscoveryState Function(LanDiscoveryState) transform) {
+    if (!_disposed) state = transform(state);
+  }
 
   void _init() {
     _service.addDeviceDiscoveredListener(_onDeviceDiscovered);
@@ -223,26 +274,30 @@ class LanDiscoveryController extends ChangeNotifier {
   void _onDeviceDiscovered(LanDiscoveredDevice device) {
     if (LanControlClient.instance.isConnected) return;
 
-    final idx = _devices.indexWhere((d) => d.id == device.id);
+    final devices = List<LanDiscoveredDevice>.of(state.devices);
+    final idx = devices.indexWhere((d) => d.id == device.id);
     if (idx >= 0) {
-      _devices[idx] = device;
+      devices[idx] = device;
     } else {
-      _devices.add(device);
+      devices.add(device);
     }
-    notifyListeners();
+    _update((value) => value.copyWith(devices: devices));
   }
 
   void _onDeviceLeft(LanDiscoveredDevice device) {
-    _devices.removeWhere((d) => d.id == device.id);
-    if (_selectedDevice?.id == device.id) {
-      _selectedDevice = null;
-    }
-    notifyListeners();
+    final devices = state.devices.where((d) => d.id != device.id).toList();
+    _update(
+      (value) => value.copyWith(
+        devices: devices,
+        selectedDevice: value.selectedDevice?.id == device.id
+            ? null
+            : value.selectedDevice,
+      ),
+    );
   }
 
   void _onStateChanged(LanDiscoveryServiceState s, String? _) {
-    _serviceState = s;
-    notifyListeners();
+    _update((value) => value.copyWith(serviceState: s));
   }
 
   void _onPairingRequest(LanPairingRequest request) {
@@ -269,7 +324,7 @@ class LanDiscoveryController extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (isInitialized) return;
 
     await _service.init(
       deviceId: _getDeviceId(),
@@ -279,67 +334,67 @@ class LanDiscoveryController extends ChangeNotifier {
       hubPort: _getHubPort(),
       multicastGroup: _getMulticastGroup(),
     );
-    _isInitialized = true;
-    notifyListeners();
+    _update((value) => value.copyWith(isInitialized: true));
   }
 
   Future<void> startDiscovery() async {
-    if (!_isInitialized) {
+    if (!isInitialized) {
       await initialize();
     }
 
-    _isRefreshing = true;
-    notifyListeners();
+    _update((value) => value.copyWith(isRefreshing: true));
 
     await _service.startDiscovery();
     await Future.delayed(const Duration(milliseconds: 500));
-    _isRefreshing = false;
-    notifyListeners();
+    _update((value) => value.copyWith(isRefreshing: false));
   }
 
   void stopDiscovery() => _service.stopDiscovery();
 
   Future<void> refresh() async {
-    _isRefreshing = true;
-    _devices.clear();
-    _selectedDevice = null;
-    notifyListeners();
+    _update(
+      (value) => value.copyWith(
+        isRefreshing: true,
+        devices: const [],
+        selectedDevice: null,
+      ),
+    );
     await _service.refresh();
     await Future.delayed(const Duration(milliseconds: 500));
-    _isRefreshing = false;
-    notifyListeners();
+    _update((value) => value.copyWith(isRefreshing: false));
   }
 
   void generatePairingQr() {
-    if (!_isInitialized) {
+    if (!isInitialized) {
       initialize().then((_) => generatePairingQr());
       return;
     }
 
     _qrRefreshTimer?.cancel();
-    _qrContent = _service.generatePairingQrContent();
-    _qrRemainingSeconds = 10;
-    notifyListeners();
+    _update(
+      (value) => value.copyWith(
+        qrContent: _service.generatePairingQrContent(),
+        qrRemainingSeconds: 10,
+      ),
+    );
 
     _qrRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      _qrRemainingSeconds--;
-      if (_qrRemainingSeconds <= 0) {
+      final remaining = qrRemainingSeconds - 1;
+      if (remaining <= 0) {
         generatePairingQr();
       } else {
-        notifyListeners();
+        _update((value) => value.copyWith(qrRemainingSeconds: remaining));
       }
     });
   }
 
   void stopPairingQr() {
     _qrRefreshTimer?.cancel();
-    _qrContent = null;
-    _qrRemainingSeconds = 0;
-    notifyListeners();
+    _update((value) => value.copyWith(qrContent: null, qrRemainingSeconds: 0));
   }
 
   Future<void> reinitialize(int newPort) async {
-    _isInitialized = false;
+    _update((value) => value.copyWith(isInitialized: false));
     await _service.init(
       deviceId: _getDeviceId(),
       deviceName: _getDeviceName(),
@@ -348,9 +403,8 @@ class LanDiscoveryController extends ChangeNotifier {
       hubPort: newPort,
       multicastGroup: _getMulticastGroup(),
     );
-    _isInitialized = true;
+    _update((value) => value.copyWith(isInitialized: true));
     generatePairingQr();
-    notifyListeners();
   }
 
   Future<void> applySettings(int newPort, String group) async {
@@ -375,14 +429,12 @@ class LanDiscoveryController extends ChangeNotifier {
   }
 
   void selectDevice(LanDiscoveredDevice? device) {
-    _selectedDevice = device;
-    notifyListeners();
+    _update((value) => value.copyWith(selectedDevice: device));
   }
 
   Future<void> connectToDevice(LanDiscoveredDevice device) async {
-    if (_isConnecting) return;
-    _isConnecting = true;
-    notifyListeners();
+    if (isConnecting) return;
+    _update((value) => value.copyWith(isConnecting: true));
 
     try {
       final ok = await LanControlClient.instance.connect(device);
@@ -392,26 +444,26 @@ class LanDiscoveryController extends ChangeNotifier {
               LanControlClient.instance.lastError ??
               t.lanRemoteControlConnectionFailed,
         );
-        _selectedDevice = null;
+        _update((value) => value.copyWith(selectedDevice: null));
         return;
       }
-      _selectedDevice = device;
+      _update((value) => value.copyWith(selectedDevice: device));
       App.rootContext.showMessage(message: t.lanRemoteControlConnected);
       _service.stopDiscovery();
-      _serviceState = LanDiscoveryServiceState.idle;
+      _update(
+        (value) => value.copyWith(serviceState: LanDiscoveryServiceState.idle),
+      );
     } catch (e) {
       App.rootContext.showMessage(message: t.lanRemoteControlConnectionFailed);
-      _selectedDevice = null;
+      _update((value) => value.copyWith(selectedDevice: null));
     } finally {
-      _isConnecting = false;
-      notifyListeners();
+      _update((value) => value.copyWith(isConnecting: false));
     }
   }
 
   void disconnectFromDevice() {
     LanControlClient.instance.disconnect();
-    _selectedDevice = null;
-    notifyListeners();
+    _update((value) => value.copyWith(selectedDevice: null));
   }
 
   Future<void> disconnectControlledSession() async {
@@ -427,7 +479,7 @@ class LanDiscoveryController extends ChangeNotifier {
     LanControlService.instance.stop();
     final port = _getHubPort();
     await LanControlService.instance.start(port);
-    notifyListeners();
+    _update((value) => value);
   }
 
   String _getDeviceId() {
@@ -480,8 +532,7 @@ class LanDiscoveryController extends ChangeNotifier {
     await LanDiscoveryService.instance.setMulticastGroup(group);
   }
 
-  @override
-  void dispose() {
+  void _disposeService() {
     _qrRefreshTimer?.cancel();
     _service.stopDiscovery();
     if (LanControlService.instance.connectionCount == 0) {
@@ -491,7 +542,6 @@ class LanDiscoveryController extends ChangeNotifier {
     _service.removeDeviceLeftListener(_onDeviceLeft);
     _service.removeStateChangedListener(_onStateChanged);
     _service.removePairingRequestListener(_onPairingRequest);
-    super.dispose();
   }
 }
 
@@ -505,7 +555,7 @@ class LanDiscoveryPage extends ConsumerStatefulWidget {
 class _LanDiscoveryPageState extends ConsumerState<LanDiscoveryPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  LanDiscoveryController? _savedCtrl;
+  LanDiscovery? _savedCtrl;
 
   @override
   void initState() {

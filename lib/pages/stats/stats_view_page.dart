@@ -353,10 +353,14 @@ class _StatsViewPageState extends State<StatsViewPage> {
   }
 }
 
-class _StatsCalendarPage extends StatelessWidget {
-  _StatsCalendarPage();
+class _StatsCalendarPage extends ConsumerStatefulWidget {
+  const _StatsCalendarPage();
 
-  final StatsController controller = StatsController();
+  @override
+  ConsumerState<_StatsCalendarPage> createState() => _StatsCalendarRouteState();
+}
+
+class _StatsCalendarRouteState extends ConsumerState<_StatsCalendarPage> {
   final ScrollController scrollController = ScrollController();
 
   @override
@@ -365,7 +369,7 @@ class _StatsCalendarPage extends StatelessWidget {
       controller: scrollController,
       slivers: [
         SliverAppbar(title: Text(t.statsCalendar)),
-        SliverToBoxAdapter(child: StatsCalendarPage(controller: controller)),
+        const SliverToBoxAdapter(child: StatsCalendarPage()),
       ],
     );
     widget = AppScrollBar(
@@ -377,6 +381,13 @@ class _StatsCalendarPage extends StatelessWidget {
       ),
     );
     return widget;
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    ref.invalidate(statsControllerProvider);
+    super.dispose();
   }
 }
 

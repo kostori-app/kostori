@@ -2,6 +2,7 @@
 
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -11,56 +12,100 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:mobx/mobx.dart';
 
-part 'stats_controller.g.dart';
+@immutable
+class StatsState {
+  const StatsState({
+    required this.focusedDay,
+    required this.selectedDay,
+    required this.calendarFormat,
+    required this.eventMap,
+  });
 
-class StatsController = _StatsController with _$StatsController;
+  final DateTime focusedDay;
+  final DateTime? selectedDay;
+  final CalendarFormat calendarFormat;
+  final Map<DateTime, List<StatsDataImpl>> eventMap;
 
-abstract class _StatsController with Store {
+  StatsState copyWith({
+    DateTime? focusedDay,
+    DateTime? selectedDay,
+    CalendarFormat? calendarFormat,
+    Map<DateTime, List<StatsDataImpl>>? eventMap,
+  }) {
+    return StatsState(
+      focusedDay: focusedDay ?? this.focusedDay,
+      selectedDay: selectedDay ?? this.selectedDay,
+      calendarFormat: calendarFormat ?? this.calendarFormat,
+      eventMap: eventMap ?? this.eventMap,
+    );
+  }
+}
+
+class StatsController extends AsyncNotifier<StatsState> {
   final StatsManager statsManager = StatsManager();
 
-  _StatsController() {
-    loadEvents();
+  @override
+  Future<StatsState> build() async {
+    return _loadState();
   }
 
-  @observable
-  DateTime focusedDay = DateTime.now();
+  Future<StatsState> _loadState() async {
+    final map = await statsManager.getEventMap();
+    final focused = DateTime.now();
+    return StatsState(
+      focusedDay: focused,
+      selectedDay: focused,
+      calendarFormat: CalendarFormat.month,
+      eventMap: Map.of(map),
+    );
+  }
 
-  @observable
-  DateTime? selectedDay;
+  DateTime get focusedDay => state.requireValue.focusedDay;
+  set focusedDay(DateTime value) {
+    if (focusedDay == value) return;
+    state = AsyncData(state.requireValue.copyWith(focusedDay: value));
+  }
 
-  @observable
-  CalendarFormat calendarFormat = CalendarFormat.month;
+  DateTime? get selectedDay => state.requireValue.selectedDay;
+  set selectedDay(DateTime? value) {
+    if (selectedDay == value || value == null) return;
+    state = AsyncData(state.requireValue.copyWith(selectedDay: value));
+  }
 
-  @observable
-  bool isLoading = true;
+  CalendarFormat get calendarFormat => state.requireValue.calendarFormat;
+  set calendarFormat(CalendarFormat value) {
+    if (calendarFormat == value) return;
+    state = AsyncData(state.requireValue.copyWith(calendarFormat: value));
+  }
 
-  @observable
-  ObservableMap<DateTime, List<StatsDataImpl>> eventMap = ObservableMap();
+  Map<DateTime, List<StatsDataImpl>> get eventMap =>
+      state.requireValue.eventMap;
 
-  @computed
   List<StatsDataImpl> get entriesForSelectedDay {
     return getEntriesForTimeRange(TimeRange.daily);
   }
 
-  @computed
   int get totalEventCount =>
       eventMap.values.fold(0, (sum, list) => sum + list.length);
 
-  @action
   Future<void> loadEvents() async {
-    isLoading = true;
-    final map = await statsManager.getEventMap();
-
-    runInAction(() {
-      eventMap = ObservableMap.of(map);
-      selectedDay ??= focusedDay;
-      isLoading = false;
-    });
+    final previous = state.asData?.value;
+    state = const AsyncLoading();
+    try {
+      final loaded = await _loadState();
+      state = AsyncData(
+        loaded.copyWith(
+          focusedDay: previous?.focusedDay,
+          selectedDay: previous?.selectedDay,
+          calendarFormat: previous?.calendarFormat,
+        ),
+      );
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+    }
   }
 
-  @action
   void onDaySelected(DateTime newSelectedDay, DateTime newFocusedDay) {
     if (!isSameDay(selectedDay, newSelectedDay)) {
       selectedDay = newSelectedDay;
@@ -68,19 +113,16 @@ abstract class _StatsController with Store {
     }
   }
 
-  @action
   void onPageChanged(DateTime newFocusedDay) {
     focusedDay = newFocusedDay;
   }
 
-  @action
   void onFormatChanged(CalendarFormat format) {
     if (calendarFormat != format) {
       calendarFormat = format;
     }
   }
 
-  @action
   void jumpToDate(DateTime targetDate) {
     focusedDay = targetDate;
     selectedDay = targetDate;
@@ -248,3 +290,6 @@ abstract class _StatsController with Store {
     return latestTime;
   }
 }
+
+final statsControllerProvider =
+    AsyncNotifierProvider<StatsController, StatsState>(StatsController.new);

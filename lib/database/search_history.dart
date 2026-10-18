@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
+import 'package:kostori/utils/riverpod_store.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/db_common.dart';
 
@@ -59,7 +59,7 @@ class SearchHistoryItem {
       );
 }
 
-class SearchHistoryManager with ChangeNotifier {
+class SearchHistoryManager extends RiverpodStore {
   static SearchHistoryManager? _cache;
 
   SearchHistoryManager._();

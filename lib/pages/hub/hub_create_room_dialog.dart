@@ -94,9 +94,10 @@ class HubCreateRoomResult {
 
 // ── 状态 notifier ─────────────────────────────────────────────────────────────
 
-class _CreateRoomNotifier extends ChangeNotifier {
+class _CreateRoomNotifier {
   double _maxParticipants = 2;
   bool _hasLimit = false;
+  final ValueNotifier<int> _revision = ValueNotifier(0);
 
   double get maxParticipants => _maxParticipants;
 
@@ -104,13 +105,17 @@ class _CreateRoomNotifier extends ChangeNotifier {
 
   void setHasLimit(bool v) {
     _hasLimit = v;
-    notifyListeners();
+    _revision.value++;
   }
 
   void setMax(double v) {
     _maxParticipants = v;
-    notifyListeners();
+    _revision.value++;
   }
+
+  void addListener(VoidCallback listener) => _revision.addListener(listener);
+
+  void dispose() => _revision.dispose();
 }
 
 // ── 对话框 widget ─────────────────────────────────────────────────────────────
