@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
@@ -38,8 +37,9 @@ class _DragState {
   );
 }
 
-class _DragNotifier extends StateNotifier<_DragState> {
-  _DragNotifier() : super(const _DragState());
+class _DragNotifier extends Notifier<_DragState> {
+  @override
+  _DragState build() => const _DragState();
 
   DateTime? _cooldownUntil;
 
@@ -94,10 +94,9 @@ class _DragNotifier extends StateNotifier<_DragState> {
   }
 }
 
-final _dragProvider =
-    StateNotifierProvider.autoDispose<_DragNotifier, _DragState>(
-      (ref) => _DragNotifier(),
-    );
+final _dragProvider = NotifierProvider.autoDispose<_DragNotifier, _DragState>(
+  _DragNotifier.new,
+);
 
 class RemoteControlPage extends ConsumerStatefulWidget {
   final LanDiscoveredDevice device;
@@ -686,7 +685,7 @@ class _TimeProgressSectionState extends ConsumerState<_TimeProgressSection> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: widget.isWaiting
                         ? _WaitingProgressBar()
-                        : ProgressBar(
+                        : PlayerProgressBar(
                             thumbRadius: 8,
                             thumbGlowRadius: 18,
                             timeLabelLocation: TimeLabelLocation.none,

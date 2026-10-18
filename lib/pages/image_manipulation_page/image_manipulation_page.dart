@@ -30,9 +30,9 @@ part 'render_long_pic_page.dart';
 
 part 'render_nine_grid_page.dart';
 
-final imagesProvider = StateNotifierProvider<ImagesNotifier, List<File>>((ref) {
-  return ImagesNotifier();
-});
+final imagesProvider = NotifierProvider<ImagesNotifier, List<File>>(
+  ImagesNotifier.new,
+);
 
 final showOuterBorderProvider = StateProvider<bool>((ref) => false);
 final outerBorderColorProvider = StateProvider<Color>(
@@ -47,8 +47,9 @@ final innerBorderColorProvider = StateProvider<Color>(
 );
 final innerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
 
-class ImagesNotifier extends StateNotifier<List<File>> {
-  ImagesNotifier() : super([]);
+class ImagesNotifier extends Notifier<List<File>> {
+  @override
+  List<File> build() => const [];
 
   void setImages(List<File> imgs) => state = imgs;
 
@@ -272,7 +273,9 @@ class _ImageManipulationBodyState extends ConsumerState<ImageManipulationBody> {
         }
       } else {
         final picker = ImagePicker();
-        final picked = await picker.pickMultiImage(imageQuality: 90);
+        // 保留设备原图；拼接/裁剪阶段使用原始像素计算比例，避免导入时
+        // 先被 image_picker 压缩导致后续导出画质下降。
+        final picked = await picker.pickMultiImage();
         for (final f in picked) {
           final bytes = await f.readAsBytes();
           final name = '${DateTime.now().millisecondsSinceEpoch}_${f.name}';

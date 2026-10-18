@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -14,6 +13,8 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:kostori/pages/watcher/player_panel_settings.dart';
+import 'package:kostori/pages/watcher/player_hud.dart';
+import 'package:kostori/pages/watcher/player_video_config.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
@@ -114,7 +115,7 @@ class VideoTestState {
   );
 }
 
-class VideoTestNotifier extends StateNotifier<VideoTestState> {
+class VideoTestNotifier extends Notifier<VideoTestState> {
   final Player player = Player(
     configuration: PlayerConfiguration(
       bufferSize: 64 * 1024 * 1024,
@@ -142,10 +143,16 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
 
   final List<StreamSubscription> _subs = [];
 
-  VideoTestNotifier() : super(const VideoTestState()) {
-    videoController = VideoController(player);
+  @override
+  VideoTestState build() {
+    videoController = VideoController(
+      player,
+      configuration: playerVideoControllerConfiguration(),
+    );
     _applyProxy();
     _listenStreams();
+    ref.onDispose(_dispose);
+    return const VideoTestState();
   }
 
   void _listenStreams() {
@@ -193,7 +200,7 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
   /// 读取实际生效的硬件解码器：空字符串表示软件解码
   Future<void> _readHwdec() async {
     final props = await readMpvProperties(player);
-    if (!mounted) return;
+    if (!ref.mounted) return;
     state = state.copyWith(hwdec: props['hwdec-current'] ?? '');
   }
 
@@ -211,7 +218,7 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
       target,
       headers: headerMap.isEmpty ? null : headerMap,
     );
-    if (mounted) state = state.copyWith(probe: result, probing: false);
+    if (ref.mounted) state = state.copyWith(probe: result, probing: false);
   }
 
   Future<void> load(String url, List<HeaderEntry> headers) async {
@@ -233,6 +240,17 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
       firstFrame: false,
       probing: true,
     );
+    // 首帧回调可能早于 VideoController 的原生初始化。若视频输出尚未建立就
+    // 打开媒体，音频可能先开始而视频 Surface 未挂载，最终表现为黑屏有声。
+    // 因此必须等待原生控制器完成初始化后再打开媒体。
+    try {
+      await videoController.platform.future;
+    } catch (e) {
+      state = state.copyWith(mediaError: e.toString(), playbackOk: false);
+      return;
+    }
+    await applyAndroidHwdecCodecs(player);
+    await _applyProxy();
     // 地址探测与播放并行，互不阻塞
     unawaited(probe(url: url, headers: headers));
     await player.open(
@@ -269,19 +287,17 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
     }
   }
 
-  @override
-  void dispose() {
+  void _dispose() {
     for (final s in _subs) {
       s.cancel();
     }
     player.dispose();
-    super.dispose();
   }
 }
 
 final videoTestProvider =
-    StateNotifierProvider.autoDispose<VideoTestNotifier, VideoTestState>(
-      (ref) => VideoTestNotifier(),
+    NotifierProvider.autoDispose<VideoTestNotifier, VideoTestState>(
+      VideoTestNotifier.new,
     );
 
 class VideoTestPage extends ConsumerStatefulWidget {
@@ -549,15 +565,6 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
             onVerticalDragEnd: (_) => _onVerticalDragEnd(),
           ),
         ),
-        // 底部控件
-        if (_showControls)
-          FadeTransition(
-            opacity: _fade,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: _buildBottomBar(state, displaySpeed),
-            ),
-          ),
         // HUD
         if (_showSeekTime) _buildSeekHud(state),
         if (_showVolume) _buildLevelHud(volume: _volume, isBrightness: false),
@@ -568,58 +575,12 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
     );
   }
 
-  Widget _buildBottomBar(VideoTestState state, double speed) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [Colors.black54, Colors.transparent],
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            IconButton(
-              color: Colors.white,
-              icon: Icon(
-                state.playing ? Icons.pause : Icons.play_arrow,
-                size: 30,
-              ),
-              onPressed: () =>
-                  ref.read(videoTestProvider.notifier).togglePlay(),
-            ),
-            Expanded(
-              child: ProgressBar(
-                thumbRadius: 8,
-                thumbGlowRadius: 18,
-                timeLabelLocation: TimeLabelLocation.none,
-                progress: state.position,
-                buffered: state.buffer,
-                total: state.duration,
-                onSeek: (d) => ref.read(videoTestProvider.notifier).seek(d),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                '${speed}x',
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildSeekHud(VideoTestState state) {
     final target = _seekPreview ?? state.position;
     final current = state.position;
     final total = state.duration;
     final isForward = target > current;
-    final diffSec = (target - current).inSeconds.abs().clamp(0, 999);
+    final diff = target - current;
     final totalSec = total.inSeconds > 0 ? total.inSeconds : 1;
     final progress = (target.inMilliseconds / (totalSec * 1000)).clamp(
       0.0,
@@ -649,8 +610,8 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
                   children: [
                     Text(
                       isForward
-                          ? t.seekForward(s: diffSec)
-                          : t.seekBackward(s: diffSec),
+                          ? t.seekForward(s: formatSeekDuration(diff))
+                          : t.seekBackward(s: formatSeekDuration(diff)),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -1110,35 +1071,76 @@ class _ProgressRowState extends ConsumerState<_ProgressRow> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      child: ProgressBar(
-        thumbRadius: 8,
-        thumbGlowRadius: 18,
-        timeLabelLocation: TimeLabelLocation.sides,
-        timeLabelTextStyle: TextStyle(
-          color: cs.onSurfaceVariant,
-          fontSize: 11,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
-        progressBarColor: cs.primary,
-        bufferedBarColor: cs.primary.withValues(alpha: 0.25),
-        baseBarColor: cs.outlineVariant.withValues(alpha: 0.4),
-        thumbColor: cs.primary,
-        thumbGlowColor: cs.primary.withValues(alpha: 0.2),
-        progress: _dragPosition ?? position,
-        buffered: buffer,
-        total: duration > Duration.zero ? duration : const Duration(seconds: 1),
-        onSeek: (d) {
-          ref.read(videoTestProvider.notifier).seek(d);
-        },
-        onDragStart: (_) {
-          setState(() => _dragPosition = position);
-        },
-        onDragUpdate: (details) {
-          setState(() => _dragPosition = details.timeStamp);
-        },
-        onDragEnd: () {
-          setState(() => _dragPosition = null);
-        },
+      child: Row(
+        children: [
+          _ProgressTimeLabel(
+            position: _dragPosition ?? position,
+            color: cs.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              // 为圆点和流光预留空间，避免覆盖两侧的时间标签。
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: PlayerProgressBar(
+                thumbRadius: 8,
+                thumbGlowRadius: 18,
+                timeLabelLocation: TimeLabelLocation.none,
+                progressBarColor: cs.primary,
+                bufferedBarColor: cs.primary.withValues(alpha: 0.25),
+                baseBarColor: cs.outlineVariant.withValues(alpha: 0.4),
+                progress: _dragPosition ?? position,
+                buffered: buffer,
+                total: duration > Duration.zero
+                    ? duration
+                    : const Duration(seconds: 1),
+                onSeek: (d) {
+                  ref.read(videoTestProvider.notifier).seek(d);
+                },
+                onDragStart: (_) {
+                  setState(() => _dragPosition = position);
+                },
+                onDragUpdate: (details) {
+                  setState(() => _dragPosition = details.timeStamp);
+                },
+                onDragEnd: () {
+                  setState(() => _dragPosition = null);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _ProgressTimeLabel(
+            position: duration > Duration.zero ? duration : Duration.zero,
+            color: cs.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressTimeLabel extends StatelessWidget {
+  const _ProgressTimeLabel({required this.position, required this.color});
+
+  final Duration position;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final hours = position.inHours;
+    final minutes = position.inMinutes % 60;
+    final seconds = position.inSeconds % 60;
+    final text = hours > 0
+        ? '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
+        : '${position.inMinutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+    return Text(
+      text,
+      style: TextStyle(
+        color: color,
+        fontSize: 11,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
   }
@@ -1362,8 +1364,7 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
-        // 多行输入框撑高时按钮贴底对齐
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: TextField(
@@ -1379,14 +1380,6 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
               decoration: InputDecoration(
                 hintText: t.vtInputUrlHint,
                 hintStyle: const TextStyle(fontSize: 13),
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.only(left: 12, top: 12),
-                  child: Icon(Icons.link_rounded, size: 18),
-                ),
-                prefixIconConstraints: const BoxConstraints(
-                  minWidth: 34,
-                  minHeight: 34,
-                ),
                 suffixIcon: _urlCtrl.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 16),
