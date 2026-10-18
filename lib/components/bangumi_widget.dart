@@ -630,7 +630,7 @@ class _ExpandableTextState extends State<ExpandableText>
   }
 }
 
-class ExpandableTags extends StatefulWidget {
+class ExpandableTags extends StatelessWidget {
   final List<dynamic> tags;
   final bool fullTag;
   final VoidCallback onToggle;
@@ -646,74 +646,24 @@ class ExpandableTags extends StatefulWidget {
 
   static const int previewCount = 12;
 
-  @override
-  State<ExpandableTags> createState() => _ExpandableTagsState();
-}
-
-class _ExpandableTagsState extends State<ExpandableTags> {
-  late int _showingTagsCount;
-
-  static const _animationDuration = Duration(milliseconds: 300);
   static const _animationCurve = Curves.easeInOutCubic;
 
-  @override
-  void initState() {
-    super.initState();
-    _showingTagsCount = widget.fullTag
-        ? widget.tags.length
-        : min(widget.tags.length, ExpandableTags.previewCount);
-  }
+  Duration get _animationDuration => Duration(
+    milliseconds: 250 + max(tags.length - ExpandableTags.previewCount, 0) * 30,
+  );
 
-  @override
-  void didUpdateWidget(covariant ExpandableTags oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.fullTag != oldWidget.fullTag ||
-        widget.tags.length != oldWidget.tags.length) {
-      _showingTagsCount = widget.fullTag
-          ? widget.tags.length
-          : min(widget.tags.length, ExpandableTags.previewCount);
-    }
-  }
-
-  void _handleToggle() {
-    widget.onToggle();
-  }
-
-  Widget _buildToggleButton() {
-    if (widget.tags.length < ExpandableTags.previewCount) {
-      return const SizedBox();
-    }
-
-    return AnimatedSwitcher(
-      duration: _animationDuration,
-      switchInCurve: _animationCurve,
-      switchOutCurve: _animationCurve,
-      transitionBuilder: (child, animation) {
-        final scaleAnim = Tween<double>(
-          begin: 0.1,
-          end: 1.0,
-        ).animate(CurvedAnimation(parent: animation, curve: _animationCurve));
-        return FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            alignment: Alignment.centerLeft,
-            scale: scaleAnim,
-            child: child,
-          ),
-        );
-      },
-      child: CapsuleChip(
-        key: ValueKey(widget.fullTag),
-        isSelected: true,
-        onTap: _handleToggle,
-        text: widget.fullTag ? t.showLess : t.showMore,
-      ),
+  Widget _buildTagWrap(BuildContext context, bool expanded) {
+    return _ExpandableTagWrap(
+      key: ValueKey(expanded),
+      tags: tags,
+      expanded: expanded,
+      onToggle: onToggle,
+      onTagTap: onTagTap,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return CapsuleChipGroup(
       // 装饰层置于尺寸动画外，背景框随标签内容同步过渡。
       children: [
@@ -721,32 +671,167 @@ class _ExpandableTagsState extends State<ExpandableTags> {
           duration: _animationDuration,
           curve: _animationCurve,
           alignment: Alignment.topLeft,
-          child: Wrap(
-            spacing: 2,
-            runSpacing: 2,
-            children: [
-              ...List.generate(_showingTagsCount, (index) {
-                return CapsuleChip(
-                  isSelected: false,
-                  onTap: () => widget.onTagTap(index),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('${widget.tags[index].name}'),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${widget.tags[index].count}',
-                        style: TextStyle(color: cs.primary),
-                      ),
-                    ],
+          child: AnimatedSwitcher(
+            duration: _animationDuration,
+            switchInCurve: _animationCurve,
+            switchOutCurve: _animationCurve,
+            layoutBuilder: (currentChild, previousChildren) {
+              return Stack(
+                alignment: Alignment.topLeft,
+                clipBehavior: Clip.none,
+                children: [
+                  ...previousChildren.map(
+                    (child) => Positioned(top: 0, left: 0, child: child),
                   ),
-                );
-              }),
-              _buildToggleButton(),
-            ],
+                  if (currentChild != null) currentChild,
+                ],
+              );
+            },
+            transitionBuilder: (child, animation) {
+              final curved = CurvedAnimation(
+                parent: animation,
+                curve: _animationCurve,
+                reverseCurve: _animationCurve,
+              );
+              return _ExpandableTagAnimationScope(
+                animation: curved,
+                child: child,
+              );
+            },
+            child: _buildTagWrap(context, fullTag),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ExpandableTagAnimationScope extends InheritedWidget {
+  const _ExpandableTagAnimationScope({
+    required this.animation,
+    required super.child,
+  });
+
+  final Animation<double> animation;
+
+  static Animation<double>? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<_ExpandableTagAnimationScope>()
+        ?.animation;
+  }
+
+  @override
+  bool updateShouldNotify(_ExpandableTagAnimationScope oldWidget) {
+    return animation != oldWidget.animation;
+  }
+}
+
+class _ExpandableTagWrap extends StatelessWidget {
+  const _ExpandableTagWrap({
+    super.key,
+    required this.tags,
+    required this.expanded,
+    required this.onToggle,
+    required this.onTagTap,
+  });
+
+  final List<dynamic> tags;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final Function(int index) onTagTap;
+
+  Widget _buildTag(BuildContext context, int index) {
+    final cs = Theme.of(context).colorScheme;
+    final tag = CapsuleChip(
+      isSelected: false,
+      onTap: () => onTagTap(index),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('${tags[index].name}'),
+          const SizedBox(width: 4),
+          Text('${tags[index].count}', style: TextStyle(color: cs.primary)),
+        ],
+      ),
+    );
+    final transition = _ExpandableTagAnimationScope.maybeOf(context);
+    if (transition == null || index < ExpandableTags.previewCount) {
+      return tag;
+    }
+
+    final start = ((index - ExpandableTags.previewCount) * 0.05).clamp(
+      0.0,
+      0.6,
+    );
+    final end = min(start + 0.4, 1.0);
+    final tagAnimation = CurvedAnimation(
+      parent: transition,
+      curve: Interval(start, end, curve: Curves.easeOut),
+      reverseCurve: Interval(start, end, curve: Curves.easeOut),
+    );
+    return AnimatedBuilder(
+      animation: tagAnimation,
+      builder: (context, child) {
+        return Opacity(
+          opacity: tagAnimation.value,
+          child: Transform.scale(
+            alignment: Alignment.topLeft,
+            scale: 0.9 + tagAnimation.value * 0.1,
+            child: child,
+          ),
+        );
+      },
+      child: tag,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final showingTagsCount = expanded
+        ? tags.length
+        : min(tags.length, ExpandableTags.previewCount);
+    return Wrap(
+      spacing: 2,
+      runSpacing: 2,
+      children: [
+        ...List.generate(showingTagsCount, (index) {
+          return _buildTag(context, index);
+        }),
+        if (tags.length >= ExpandableTags.previewCount)
+          _buildToggle(context, expanded),
+      ],
+    );
+  }
+
+  Widget _buildToggle(BuildContext context, bool expanded) {
+    final chip = CapsuleChip(
+      isSelected: true,
+      onTap: onToggle,
+      text: expanded ? t.showLess : t.showMore,
+    );
+    final animation = _ExpandableTagAnimationScope.maybeOf(context);
+    if (animation == null) return chip;
+
+    final scale = Tween<double>(begin: 0.1, end: 1).animate(
+      CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeInOut,
+        reverseCurve: Curves.easeInOut,
+      ),
+    );
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            alignment: Alignment.centerLeft,
+            scale: scale,
+            child: child,
+          ),
+        );
+      },
+      child: chip,
     );
   }
 }
