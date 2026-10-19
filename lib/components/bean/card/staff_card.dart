@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -18,7 +19,20 @@ class StaffCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isBone) return _buildBone(context);
-    final avatarUrl = staffFullItem!.staff.images?.grid;
+    final images = staffFullItem!.staff.images;
+    final avatarUrl = [
+      images?.grid ?? '',
+      images?.medium ?? '',
+      images?.large ?? '',
+      images?.small ?? '',
+    ].firstWhere((url) => url.isNotEmpty, orElse: () => '');
+    final previewUrl = [
+      images?.large ?? '',
+      images?.medium ?? '',
+      images?.grid ?? '',
+      images?.small ?? '',
+    ].firstWhere((url) => url.isNotEmpty, orElse: () => '');
+    final avatarHeroTag = 'bangumi-staff-avatar-${staffFullItem!.staff.id}';
     final isDesktop = MediaQuery.sizeOf(context).width > 600;
     final maxWidth = isDesktop ? 600.0 : double.infinity;
 
@@ -41,7 +55,21 @@ class StaffCard extends StatelessWidget {
               padding: const EdgeInsets.all(12.0),
               child: Row(
                 children: [
-                  BangumiAvatar(url: avatarUrl ?? '', radius: 24),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: previewUrl.isEmpty
+                        ? null
+                        : () => BangumiWidget.showImagePreview(
+                            context: context,
+                            url: previewUrl,
+                            title: staffFullItem!.staff.name,
+                            heroTag: avatarHeroTag,
+                          ),
+                    child: KostoriHero(
+                      tag: avatarHeroTag,
+                      child: BangumiAvatar(url: avatarUrl, radius: 24),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

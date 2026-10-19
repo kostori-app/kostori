@@ -493,27 +493,6 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
     );
   }
 
-  /// 区块标题 + 计数徽章（重复出现多次）
-  Widget _sectionTitle(BuildContext context, String title, String count) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(count, style: ts.s12),
-        ),
-      ],
-    );
-  }
-
   Widget _animeInfoPage() {
     return _captureShell(
       Column(
@@ -759,34 +738,40 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                _sectionTitle(context, t.tags, '${bangumiItem.tags.length}'),
+                BangumiSectionTitle(
+                  title: t.tags,
+                  count: bangumiItem.tags.length,
+                ),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: CapsuleChipGroup(
-              children: List<Widget>.generate(bangumiItem.tags.length, (
-                int index,
-              ) {
-                return CapsuleChip(
-                  isSelected: false,
-                  onTap: () {},
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(bangumiItem.tags[index].name),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${bangumiItem.tags[index].count}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
+            child: SizedBox(
+              width: double.infinity,
+              child: CapsuleChipGroup(
+                children: List<Widget>.generate(bangumiItem.tags.length, (
+                  int index,
+                ) {
+                  return CapsuleChip(
+                    isSelected: false,
+                    onTap: () {},
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(bangumiItem.tags[index].name),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${bangumiItem.tags[index].count}',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
           if (bangumiSRI.isNotEmpty) ...[
@@ -795,7 +780,10 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
               child: Row(
                 children: [
-                  _sectionTitle(context, t.linkedItems, '${bangumiSRI.length}'),
+                  BangumiSectionTitle(
+                    title: t.linkedItems,
+                    count: bangumiSRI.length,
+                  ),
                 ],
               ),
             ),
@@ -894,10 +882,9 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
               child: Row(
                 children: [
-                  _sectionTitle(
-                    context,
-                    t.latestComments,
-                    '${_shareComments.length}',
+                  BangumiSectionTitle(
+                    title: t.latestComments,
+                    count: _shareComments.length,
                   ),
                 ],
               ),

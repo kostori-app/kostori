@@ -10,6 +10,7 @@ import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/empty_state.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -18,7 +19,6 @@ import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart'
@@ -48,7 +48,6 @@ class BottomInfoState extends ConsumerState<BottomInfo>
   static BottomInfoState? currentState;
   late TabController infoTabController;
   late InfoController infoController;
-  late final TranslationController _translationController;
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   bool commentsIsLoading = false;
@@ -65,7 +64,6 @@ class BottomInfoState extends ConsumerState<BottomInfo>
   double _previousPixels = 0;
 
   final maxWidth = 950.0;
-  bool fullIntro = false;
   bool fullTag = false;
 
   int? get bangumiId => widget.bangumiId;
@@ -78,7 +76,6 @@ class BottomInfoState extends ConsumerState<BottomInfo>
   void initState() {
     super.initState();
     currentState = this;
-    _translationController = TranslationController();
     infoController = widget.infoController;
     // Riverpod 不允许在 initState 同步修改 provider，延迟到 microtask 后。
     // 全局单例在二次进入时残留上次的 isLoading=false，先强制为 true 触发骨架。
@@ -127,16 +124,11 @@ class BottomInfoState extends ConsumerState<BottomInfo>
       BottomInfoState.currentState = null;
     }
     infoTabController.dispose();
-    _translationController.dispose();
     super.dispose();
   }
 
   void updata() {
     setState(() {});
-  }
-
-  Future<void> _handleTranslation(String text) async {
-    await _translationController.translate(text);
   }
 
   Future<void> queryBangumiInfoByID(int id) async {
@@ -266,28 +258,6 @@ class BottomInfoState extends ConsumerState<BottomInfo>
     return KostoriRefreshIndicator();
   }
 
-  /// 区块标题 + 计数徽章（infoBody 中多处重复）
-  Widget _sectionTitle(BuildContext context, String title, num count) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text('$count', style: ts.s12),
-        ),
-      ],
-    );
-  }
-
   Widget get infoBody {
     if (bangumiId == null) {
       return Center(child: infoBodyBone);
@@ -303,7 +273,7 @@ class BottomInfoState extends ConsumerState<BottomInfo>
       bangumiItem.score,
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,9 +283,10 @@ class BottomInfoState extends ConsumerState<BottomInfo>
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  double height =
-                      constraints.maxWidth * (App.isDesktop ? 9 / 16 : 9 / 16);
+                  double height = constraints.maxWidth * 9 / 16;
                   double width = height * 0.72;
+                  final coverUrl = bangumiItem.cardImage;
+                  final coverHeroTag = 'bottom-info-cover-${bangumiItem.id}';
 
                   return Container(
                     width: constraints.maxWidth,
@@ -325,13 +296,33 @@ class BottomInfoState extends ConsumerState<BottomInfo>
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
+                        InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          child: BangumiWidget.kostoriImage(
-                            context,
-                            bangumiItem.images['large']!,
-                            width: width,
-                            height: height,
+                          onTap: coverUrl.isEmpty
+                              ? null
+                              : () => BangumiWidget.showImagePreview(
+                                  context: context,
+                                  url: coverUrl,
+                                  title: bangumiItem.nameCn.isNotEmpty
+                                      ? bangumiItem.nameCn
+                                      : bangumiItem.name,
+                                  heroTag: coverHeroTag,
+                                ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: KostoriHero(
+                              tag: coverHeroTag,
+                              child: SizedBox(
+                                width: width,
+                                height: height,
+                                child: BangumiWidget.kostoriImage(
+                                  context,
+                                  coverUrl,
+                                  width: width,
+                                  height: height,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         Expanded(
@@ -480,55 +471,16 @@ class BottomInfoState extends ConsumerState<BottomInfo>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Builder(
-                    builder: (context) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: <Widget>[
-                              Text(
-                                t.introduction,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Spacer(),
-                              IconButton(
-                                onPressed: _translationController.isTranslating
-                                    ? null
-                                    : () => _handleTranslation(
-                                        bangumiItem.summary,
-                                      ),
-                                icon: _translationController.isTranslating
-                                    ? SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: PolygonRefreshIndicator(),
-                                      )
-                                    : Icon(
-                                        Icons.translate,
-                                        size: 24,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                      ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: ExpandableText(
-                              text: bangumiItem.summary,
-                              translationController: _translationController,
-                              isLoading: infoController.isLoading,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                  TranslationWidget(
+                    data: bangumiItem.summary,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    title: Text(
+                      t.introduction,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -539,7 +491,10 @@ class BottomInfoState extends ConsumerState<BottomInfo>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _sectionTitle(context, t.tags, bangumiItem.tags.length),
+                  BangumiSectionTitle(
+                    title: t.tags,
+                    count: bangumiItem.tags.length,
+                  ),
                   SizedBox(height: 12),
                   ExpandableTags(
                     tags: bangumiItem.tags,
@@ -563,10 +518,9 @@ class BottomInfoState extends ConsumerState<BottomInfo>
                   vertical: 6,
                   horizontal: 16,
                 ),
-                child: _sectionTitle(
-                  context,
-                  t.linkedItems,
-                  infoController.bangumiSRI.length,
+                child: BangumiSectionTitle(
+                  title: t.linkedItems,
+                  count: infoController.bangumiSRI.length,
                 ),
               ),
               Padding(
@@ -693,7 +647,10 @@ class BottomInfoState extends ConsumerState<BottomInfo>
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-              child: _sectionTitle(context, t.ratingChart, bangumiItem.score),
+              child: BangumiSectionTitle(
+                title: t.ratingChart,
+                count: bangumiItem.score,
+              ),
             ),
             const SizedBox(height: 12),
             Padding(
@@ -881,7 +838,6 @@ class BottomInfoState extends ConsumerState<BottomInfo>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    ref.watch(translationControllerProvider(_translationController.scopeKey));
     return DefaultTabController(
       length: 7,
       child: Scaffold(

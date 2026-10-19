@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/bangumi/character/actor_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_item.dart';
 import 'package:kostori/pages/bangumi/character_page.dart';
@@ -24,9 +25,23 @@ class CharacterCard extends StatelessWidget {
     final isDesktop = MediaQuery.sizeOf(context).width > 600;
     final contentMaxWidth = isDesktop ? 600.0 : double.infinity;
 
-    final avatarUrl = characterItem!.avator.grid.isEmpty
-        ? 'https://bangumi.tv/img/info_only.png'
-        : characterItem!.avator.grid;
+    final avatarUrls = [
+      characterItem!.avator.grid,
+      characterItem!.avator.medium,
+      characterItem!.avator.large,
+      characterItem!.avator.small,
+    ];
+    final avatarUrl = avatarUrls.firstWhere(
+      (url) => url.isNotEmpty,
+      orElse: () => 'https://bangumi.tv/img/info_only.png',
+    );
+    final previewUrl = [
+      characterItem!.avator.large,
+      characterItem!.avator.medium,
+      characterItem!.avator.grid,
+      characterItem!.avator.small,
+    ].firstWhere((url) => url.isNotEmpty, orElse: () => '');
+    final avatarHeroTag = 'bangumi-character-avatar-${characterItem!.id}';
 
     final actors = characterItem!.actorList;
 
@@ -50,7 +65,21 @@ class CharacterCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BangumiAvatar(url: avatarUrl, radius: 24),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: previewUrl.isEmpty
+                        ? null
+                        : () => BangumiWidget.showImagePreview(
+                            context: context,
+                            url: previewUrl,
+                            title: characterItem!.name,
+                            heroTag: avatarHeroTag,
+                          ),
+                    child: KostoriHero(
+                      tag: avatarHeroTag,
+                      child: BangumiAvatar(url: avatarUrl, radius: 24),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

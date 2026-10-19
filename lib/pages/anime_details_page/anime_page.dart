@@ -945,21 +945,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           onLongPress: quickFavorite,
           color: context.useTextColor(Colors.purple),
         ),
-        IconTileButton(
-          icon: const Icon(Icons.share),
-          label: t.share,
-          onTap: share,
-          onLongPress: () => showKostoriShareSheet(
-            context,
-            ref,
-            type: KostoriRouteType.anime,
-            payload: '$_animeId|$_sourceKey',
-            title: anime.title,
-            subtitle: _sourceKey,
-            backgroundImagePath: anime.cover,
-          ),
-          color: Theme.of(context).colorScheme.inversePrimary,
-        ),
         if (isBangumi) ...[
           IconTileButton(
             icon: const Icon(Icons.favorite_border),
@@ -1010,6 +995,21 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
               bangumiBottomInfo(context);
             },
           ),
+        IconTileButton(
+          icon: const Icon(Icons.share),
+          label: t.share,
+          onTap: share,
+          onLongPress: () => showKostoriShareSheet(
+            context,
+            ref,
+            type: KostoriRouteType.anime,
+            payload: '$_animeId|$_sourceKey',
+            title: anime.title,
+            subtitle: _sourceKey,
+            backgroundImagePath: anime.cover,
+          ),
+          color: Theme.of(context).colorScheme.inversePrimary,
+        ),
         if (anime.url != null)
           IconTileButton(
             icon: const Icon(Icons.open_in_browser),

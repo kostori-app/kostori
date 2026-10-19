@@ -341,6 +341,11 @@ class BangumiWidget {
               ? FileImage(File(url)) as ImageProvider
               : CachedImageProvider(url, sourceKey: 'bangumi'));
 
+      // 详情封面使用 ResizeImage，预热原图会增加 Hero 动画期间的解码开销。
+      if (!isLocal) {
+        precacheImage(img, context).ignore();
+      }
+
       // 本地文件推入前预热“与预览画廊一致的 ResizeImage 解码”，
       // 保证目标首帧已有图（否则首次无 hero 飞行，二次缓存后才正常）
       if (isLocal) {
@@ -436,6 +441,39 @@ class BangumiWidget {
   }
 }
 
+class BangumiSectionTitle extends StatelessWidget {
+  const BangumiSectionTitle({
+    super.key,
+    required this.title,
+    required this.count,
+  });
+
+  final String title;
+  final Object count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text('$count', style: const TextStyle(fontSize: 12)),
+        ),
+      ],
+    );
+  }
+}
+
 class StatItem {
   final String key;
   final String label;
@@ -449,6 +487,7 @@ class ExpandableText extends StatefulWidget {
   final int maxLines;
   final TranslationController? translationController;
   final bool isLoading;
+  final Widget Function(String data)? contentBuilder;
 
   const ExpandableText({
     super.key,
@@ -456,6 +495,7 @@ class ExpandableText extends StatefulWidget {
     this.maxLines = 7,
     this.translationController,
     this.isLoading = false,
+    this.contentBuilder,
   });
 
   @override
@@ -538,15 +578,22 @@ class _ExpandableTextState extends State<ExpandableText>
         final text = widget.text;
         final collapsedLines = widget.maxLines;
 
+        Widget renderContent(String data) =>
+            widget.contentBuilder?.call(data) ??
+            CustomMarkdownWidget(data: data);
+
         Widget content() => Column(
           key: _contentKey,
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CustomMarkdownWidget(data: text),
+            renderContent(text),
             if (widget.translationController != null) ...[
               const SizedBox(height: 4),
-              TranslationOutput(controller: widget.translationController!),
+              TranslationOutput(
+                controller: widget.translationController!,
+                contentBuilder: widget.contentBuilder,
+              ),
             ],
           ],
         );
@@ -700,11 +747,11 @@ class _ExpandableTagsState extends State<ExpandableTags>
     if (widget.fullTag == oldWidget.fullTag) return;
 
     if (_extraTagCount == 0) {
-      _controller.value = widget.fullTag ? 1 : 0;
       _showingTagCount = widget.fullTag
           ? widget.tags.length
           : min(widget.tags.length, ExpandableTags.previewCount);
       _isAnimating = false;
+      _controller.value = widget.fullTag ? 1 : 0;
       return;
     }
 
@@ -844,19 +891,16 @@ class _ExpandableTagsState extends State<ExpandableTags>
 
   @override
   Widget build(BuildContext context) {
-    return CapsuleChipGroup(
-      children: [
-        Wrap(
-          spacing: 2,
-          runSpacing: 2,
-          children: [
-            ...List.generate(_visibleTagCount, (index) {
-              return _buildTag(context, index);
-            }),
-            _buildToggle(),
-          ],
-        ),
-      ],
+    return SizedBox(
+      width: double.infinity,
+      child: CapsuleChipGroup(
+        children: [
+          ...List.generate(_visibleTagCount, (index) {
+            return _buildTag(context, index);
+          }),
+          _buildToggle(),
+        ],
+      ),
     );
   }
 

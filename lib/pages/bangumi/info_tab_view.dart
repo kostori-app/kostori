@@ -127,28 +127,9 @@ class _InfoTabViewState extends State<InfoTabView>
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ),
-              Row(
-                children: [
-                  Text(
-                    t.tags,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${widget.bangumiItem.tags.length}',
-                      style: ts.s12,
-                    ),
-                  ),
-                ],
+              BangumiSectionTitle(
+                title: t.tags,
+                count: widget.bangumiItem.tags.length,
               ),
               const SizedBox(height: 16),
               ExpandableTags(
@@ -166,27 +147,9 @@ class _InfoTabViewState extends State<InfoTabView>
               if (widget.allEpisodes.isNotEmpty) ...[
                 Row(
                   children: [
-                    Text(
-                      t.allEpisodes,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${widget.allEpisodes.length}',
-                        style: ts.s12,
-                      ),
+                    BangumiSectionTitle(
+                      title: t.allEpisodes,
+                      count: widget.allEpisodes.length,
                     ),
                     const Spacer(),
                     TextButton(
@@ -352,24 +315,9 @@ class _InfoTabViewState extends State<InfoTabView>
               if (widget.bangumiSRI.isNotEmpty) ...[
                 Row(
                   children: [
-                    Text(
-                      t.linkedItems,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text('${widget.bangumiSRI.length}', style: ts.s12),
+                    BangumiSectionTitle(
+                      title: t.linkedItems,
+                      count: widget.bangumiSRI.length,
                     ),
                   ],
                 ),
@@ -519,24 +467,9 @@ class _InfoTabViewState extends State<InfoTabView>
                   widget.bangumiItem.total > 20) ...[
                 Row(
                   children: [
-                    Text(
-                      t.ratingChart,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text('${widget.bangumiItem.score}', style: ts.s12),
+                    BangumiSectionTitle(
+                      title: t.ratingChart,
+                      count: widget.bangumiItem.score,
                     ),
                   ],
                 ),

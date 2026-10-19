@@ -4,6 +4,7 @@ import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bean/card/episode_comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/empty_state.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -137,11 +138,24 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                             Text(t.durationLabel(duration: episode.duration)),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: BBCodeWidget(bbcode: episode.desc),
-                        ),
+                        if (episode.desc.trim().isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          TranslationWidget(
+                            data: episode.desc,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
+                            title: Text(
+                              t.introduction,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            contentBuilder: (data) =>
+                                BBCodeWidget(bbcode: data),
+                          ),
+                        ],
                         Row(
                           children: [
                             Text(

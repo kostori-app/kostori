@@ -114,10 +114,18 @@ class _TranslatedContentState extends ConsumerState<TranslatedContent> {
 }
 
 class TranslationWidget extends ConsumerStatefulWidget {
-  const TranslationWidget({super.key, required this.data, required this.title});
+  const TranslationWidget({
+    super.key,
+    required this.data,
+    required this.title,
+    this.contentPadding = const EdgeInsets.symmetric(horizontal: 16),
+    this.contentBuilder,
+  });
 
   final String data;
   final Widget title;
+  final EdgeInsets contentPadding;
+  final Widget Function(String data)? contentBuilder;
 
   @override
   ConsumerState<TranslationWidget> createState() => _TranslationWidgetState();
@@ -357,10 +365,11 @@ class _TranslationWidgetState extends ConsumerState<TranslationWidget> {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: widget.contentPadding,
               child: ExpandableText(
                 text: widget.data,
                 translationController: translationController,
+                contentBuilder: widget.contentBuilder,
               ),
             ),
           ],
@@ -495,15 +504,21 @@ class TranslationOutput extends StatelessWidget {
     super.key,
     required this.controller,
     this.padding = const EdgeInsets.symmetric(horizontal: 0),
+    this.contentBuilder,
   });
 
   final TranslationController controller;
   final EdgeInsetsGeometry padding;
+  final Widget Function(String data)? contentBuilder;
 
   @override
   Widget build(BuildContext context) => UncontrolledProviderScope(
     container: providerContainer,
-    child: _TranslationOutputBody(controller: controller, padding: padding),
+    child: _TranslationOutputBody(
+      controller: controller,
+      padding: padding,
+      contentBuilder: contentBuilder,
+    ),
   );
 }
 
@@ -511,10 +526,12 @@ class _TranslationOutputBody extends ConsumerWidget {
   const _TranslationOutputBody({
     required this.controller,
     required this.padding,
+    required this.contentBuilder,
   });
 
   final TranslationController controller;
   final EdgeInsetsGeometry padding;
+  final Widget Function(String data)? contentBuilder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -575,7 +592,8 @@ class _TranslationOutputBody extends ConsumerWidget {
                 if (controller.isTranslating)
                   Skeletonizer.zone(child: Bone.multiText(lines: 3))
                 else if (controller.hasTranslation)
-                  CustomMarkdownWidget(data: controller.translatedText!),
+                  contentBuilder?.call(controller.translatedText!) ??
+                      CustomMarkdownWidget(data: controller.translatedText!),
               ],
             ),
           ),
