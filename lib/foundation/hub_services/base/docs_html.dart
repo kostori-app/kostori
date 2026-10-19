@@ -646,6 +646,17 @@ function renderCard(r, open = false) {
   const params = (op.parameters ?? []);
   const needsAuth = (op.security?.length ?? 0) > 0;
 
+  // OpenAPI 将 security 单独定义；试用请求需将令牌放入 Authorization 请求头。
+  const authField = needsAuth ? `
+    <div class="field auth-field">
+      <label>token<span class="req">*</span></label>
+      <input id="auth_${domId}" data-param-name="Authorization"
+             data-param-in="header" type="password"
+             placeholder="输入用户令牌或管理令牌"
+             autocomplete="off" spellcheck="false">
+      <div class="note">发送时自动使用 Authorization: Bearer &lt;token&gt;；管理接口需要管理令牌。</div>
+    </div>` : '';
+
   const fields = params.map((p, i) => `
     <div class="field">
       <label>${esc(p.name)}${p.required ? '<span class="req">*</span>' : ''}</label>
@@ -682,7 +693,7 @@ function renderCard(r, open = false) {
           </div>` : '<div class="kv"><div class="kv-label">参数</div><div class="kv-val">无</div></div>'}
         </div>
         <div class="pane" data-pane="try">
-          ${fields || '<div class="field"><label>无参数</label></div>'}
+          ${authField}${fields || '<div class="field"><label>无参数</label></div>'}
           <div class="btn-row">
             <button class="btn btn-primary" onclick="sendReq(this)">发送请求</button>
             <button class="btn btn-ghost" onclick="clearReq(this)">清空</button>
@@ -703,7 +714,7 @@ async function sendReq(btn) {
     pane.appendChild(resBox);
   }
 
-  const path = $('.ep-path', card).textContent;
+  let path = $('.ep-path', card).textContent;
   const method = $('.badge', card).textContent.trim().toUpperCase();
   const inputs = $$('.field input', pane);
 
