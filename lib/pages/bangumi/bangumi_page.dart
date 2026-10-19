@@ -730,6 +730,10 @@ class _TimetableState extends State<_Timetable> {
                           () => BangumiInfoPage(
                             bangumiItem: bangumiCalendar[index],
                             heroTag: 'Timetable',
+                            heroCacheWidth:
+                                (itemWidth *
+                                        MediaQuery.devicePixelRatioOf(context))
+                                    .round(),
                           ),
                         );
                       },

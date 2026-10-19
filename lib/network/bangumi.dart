@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:kostori/database/bangumi.dart';
@@ -314,25 +315,51 @@ class Bangumi {
 
   /// 本次会话内的详情缓存：同一 id 不重复请求（启动时多个入口可能同时发起）
   static final Map<int, BangumiItem> _infoMemo = {};
+  static final Map<int, Future<BangumiItem?>> _infoRequests = {};
 
-  Future<BangumiItem?> getBangumiInfoByID(int id) async {
+  Future<BangumiItem?> getBangumiInfoByID(int id) {
     // 会话内缓存：同一 id 一次启动内只请求一次
     // （跨启动的持久缓存交给日历补全的 binding 检查，避免详情页拿到过期数据）
     final memo = _infoMemo[id];
-    if (memo != null) return memo;
+    if (memo != null) return Future.value(memo);
+
+    // 详情页和本地绑定可能并发请求同一条目，复用在途请求。
+    final pending = _infoRequests[id];
+    if (pending != null) return pending;
+
+    // 为共享请求设置上限，避免调用方遗漏超时配置后持续等待。
+    final request = _fetchBangumiInfoByID(id)
+        .timeout(const Duration(seconds: 20), onTimeout: () => null);
+    _infoRequests[id] = request;
+    return request.whenComplete(() {
+      if (identical(_infoRequests[id], request)) {
+        _infoRequests.remove(id);
+      }
+    });
+  }
+
+  Future<BangumiItem?> _fetchBangumiInfoByID(int id) async {
     try {
       final res = await _dio.request(
         Api.bangumiInfoByID + id.toString(),
-        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+        options: Options(
+          method: 'GET',
+          headers: bangumiHTTPHeader,
+          connectTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+        ),
       );
       final item = BangumiItem.fromJson(res.data);
       _infoMemo[id] = item;
-      // 写入本地库，后续启动直接命中；失败只影响下次冷启动速度，记一行
-      try {
-        await manager.addBangumiBinding(item);
-      } catch (e) {
-        NetLog.info('getBangumiInfoByID', 'local cache write failed: $e');
-      }
+      // 不等待本地缓存写入，避免数据库延迟阻塞详情展示。
+      unawaited(() async {
+        try {
+          await manager.addBangumiBinding(item);
+        } catch (e) {
+          NetLog.info('getBangumiInfoByID', 'local cache write failed: $e');
+        }
+      }());
       return item;
     } catch (e, s) {
       NetLog.error('getBangumiInfoByID', '$e\n$s');

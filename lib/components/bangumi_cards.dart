@@ -117,6 +117,9 @@ class BangumiBriefCard extends StatelessWidget {
             final height = masonry
                 ? constraints.maxWidth * masonryFactor!
                 : constraints.maxHeight - 16;
+            final imageCacheWidth =
+                (constraints.maxWidth * MediaQuery.devicePixelRatioOf(context))
+                    .round();
             Widget image = Container(
               decoration: BoxDecoration(
                 color: context.colorScheme.secondaryContainer,
@@ -140,10 +143,7 @@ class BangumiBriefCard extends StatelessWidget {
                   width: constraints.maxWidth,
                   height: height,
                   // 按显示宽度解码（非原图尺寸），减小缓存占用并加快重新加载
-                  cacheWidth:
-                      (constraints.maxWidth *
-                              MediaQuery.devicePixelRatioOf(context))
-                          .round(),
+                  cacheWidth: imageCacheWidth,
                 ),
               ),
             );
@@ -167,6 +167,7 @@ class BangumiBriefCard extends StatelessWidget {
                     () => BangumiInfoPage(
                       bangumiItem: bangumiItem,
                       heroTag: heroTag,
+                      heroCacheWidth: imageCacheWidth,
                     ),
                   );
                 }
@@ -420,6 +421,8 @@ class BangumiDetailedCard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight - 16;
+        final imageCacheWidth =
+            (height * 0.72 * MediaQuery.devicePixelRatioOf(context)).round();
 
         Widget image = Container(
           width: height * 0.72,
@@ -443,6 +446,7 @@ class BangumiDetailedCard extends StatelessWidget {
               bangumiItem.cardImage,
               width: height * 0.72,
               height: height,
+              cacheWidth: imageCacheWidth,
             ),
           ),
         );
@@ -455,8 +459,11 @@ class BangumiDetailedCard extends StatelessWidget {
               onTap!(bangumiItem);
             } else {
               App.mainNavigatorKey?.currentContext?.to(
-                () =>
-                    BangumiInfoPage(bangumiItem: bangumiItem, heroTag: heroTag),
+                () => BangumiInfoPage(
+                  bangumiItem: bangumiItem,
+                  heroTag: heroTag,
+                  heroCacheWidth: imageCacheWidth,
+                ),
               );
             }
           },
@@ -935,12 +942,16 @@ class _BangumiCardState extends State<BangumiCard> {
           builder: (context, constraints) {
             // 无图时用占位色块，避免空指针
             final hasImage = image != null && image.isNotEmpty;
+            final imageCacheWidth =
+                (constraints.maxWidth * MediaQuery.devicePixelRatioOf(context))
+                    .round();
             Widget backgroundImage = hasImage
                 ? BangumiWidget.kostoriImage(
                     context,
                     image,
                     width: constraints.maxWidth,
                     height: constraints.maxHeight,
+                    cacheWidth: imageCacheWidth,
                   )
                 : const SizedBox.shrink();
 
@@ -960,6 +971,7 @@ class _BangumiCardState extends State<BangumiCard> {
                       image,
                       width: constraints.maxWidth,
                       height: constraints.maxHeight * 0.85,
+                      cacheWidth: imageCacheWidth,
                     )
                   : const SizedBox.shrink(),
             );

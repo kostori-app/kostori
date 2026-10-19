@@ -1051,13 +1051,6 @@ class StatsManager extends RiverpodStore {
     return a.isAfter(b) ? a : b;
   }
 
-  Stream<List<StatsDataImpl>> watchAll() {
-    return _db
-        .select(_db.statsTable)
-        .watch()
-        .map((rows) => rows.map(StatsDataImpl.fromDrift).toList());
-  }
-
   Future<bool> getGroupLikedStatus({required String id, required int type}) =>
       _guard(() async {
         final item = await getStatsByIdAndType(id: id, type: type);
@@ -1504,20 +1497,6 @@ extension StatsHelper on StatsManager {
 // ═══════════════════════════════════════════════════════════
 // Riverpod
 // ═══════════════════════════════════════════════════════════
-
-final statsAllProvider =
-    StreamNotifierProvider<StatsAllNotifier, List<StatsDataImpl>>(
-      StatsAllNotifier.new,
-    );
-
-class StatsAllNotifier extends StreamNotifier<List<StatsDataImpl>> {
-  @override
-  Stream<List<StatsDataImpl>> build() async* {
-    final manager = StatsManager();
-    await manager.init();
-    yield* manager.watchAll();
-  }
-}
 
 /// 统计记录 → 占位 BangumiItem：bangumi.db 数据缺失（重建/清空）时，
 /// 用统计里自带的 title/cover 兜底展示，避免统计页条目消失

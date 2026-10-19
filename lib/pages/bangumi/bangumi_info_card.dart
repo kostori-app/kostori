@@ -15,7 +15,6 @@ import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/line_chart_page.dart';
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -26,12 +25,14 @@ class BangumiInfoCardV extends ConsumerStatefulWidget {
     required this.bangumiItem,
     required this.isLoading,
     this.heroTag,
+    this.heroCacheWidth,
     required this.infoController,
   });
 
   final BangumiItem bangumiItem;
   final bool isLoading;
   final Object? heroTag;
+  final int? heroCacheWidth;
   final InfoController infoController;
 
   @override
@@ -154,31 +155,22 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
   void initState() {
     super.initState();
     _init();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.listenManual(statsAllProvider, (_, next) {
-        final updated = next
-            .when(
-              data: (data) => data,
-              loading: () => <StatsDataImpl>[],
-              error: (_, _) => <StatsDataImpl>[],
-            )
-            .firstWhereOrNull(
-              (s) =>
-                  s.id == bangumiItem.id.toString() &&
-                  s.type == 'bangumi'.hashCode,
-            );
-        if (mounted) {
-          setState(() {
-            latestRating = updated
-                ?.rating
-                .lastOrNull
-                ?.platformEventRecords
-                .lastOrNull
-                ?.rating;
-          });
-        }
-      });
+    final itemId = bangumiItem.id.toString();
+    ref.listenManual(statsManagerProvider, (_, _) {
+      _refreshLatestRating(itemId);
     });
+  }
+
+  Future<void> _refreshLatestRating(String itemId) async {
+    final updated = await manager.getStatsByIdAndType(
+      id: itemId,
+      type: 'bangumi'.hashCode,
+    );
+    if (!mounted || bangumiItem.id.toString() != itemId) return;
+    final rating =
+        updated?.rating.lastOrNull?.platformEventRecords.lastOrNull?.rating;
+    if (latestRating == rating) return;
+    setState(() => latestRating = rating);
   }
 
   Future<void> _init() async {
@@ -279,6 +271,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                 maxWidth: MediaQuery.sizeOf(context).width <= 550 ? 450 : 475,
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -324,12 +317,12 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                         Positioned.fill(
                                           child: BangumiWidget.kostoriImage(
                                             context,
-                                            widget.bangumiItem.images['large']!,
+                                            widget.bangumiItem.cardImage,
                                             width: width,
                                             height: height,
-                                            // 按显示宽度解码：避免详情页封面按原图全分辨率解码
-                                            // 造成进页首帧卡顿（与列表卡片不同尺寸，必然 miss 缓存）
+                                            // 沿用列表卡片的解码尺寸，避免 Hero 飞行末端再次解码。
                                             cacheWidth:
+                                                widget.heroCacheWidth ??
                                                 (width *
                                                         MediaQuery.devicePixelRatioOf(
                                                           context,
@@ -526,7 +519,10 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                               ),
                                             ),
                                           ),
-                                    Spacer(),
+                                    if (widget.isLoading)
+                                      const SizedBox(height: 8)
+                                    else
+                                      const Spacer(),
                                     (!widget.isLoading)
                                         ? Align(
                                             alignment: Alignment.bottomRight,
@@ -741,8 +737,10 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                       );
                     },
                   ),
-                  Expanded(
+                  Flexible(
+                    fit: FlexFit.loose,
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         (bangumiItem.collection != null && !widget.isLoading)
@@ -770,7 +768,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                 ),
                               ),
                         if (showBottomButton) ...[
-                          Spacer(),
+                          const SizedBox(height: 8),
                           (!widget.isLoading)
                               ? _button()
                               : Padding(

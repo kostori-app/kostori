@@ -9,9 +9,7 @@ import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
-import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_card.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/bangumi/info_tab_view.dart';
@@ -19,10 +17,16 @@ import 'package:kostori/utils/protocol_parser.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BangumiInfoPage extends ConsumerStatefulWidget {
-  const BangumiInfoPage({super.key, required this.bangumiItem, this.heroTag});
+  const BangumiInfoPage({
+    super.key,
+    required this.bangumiItem,
+    this.heroTag,
+    this.heroCacheWidth,
+  });
 
   final BangumiItem bangumiItem;
   final Object? heroTag;
+  final int? heroCacheWidth;
 
   @override
   ConsumerState<BangumiInfoPage> createState() => _BangumiInfoPageState();
@@ -140,34 +144,21 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
   );
 
   Future<void> queryBangumiHistory(int id) async {
-    infoController.bangumiHistory = await HistoryManager().bangumiByIDFind(id);
+    final history = await HistoryManager().bangumiByIDFind(id);
+    if (!mounted || infoController.bangumiId != id) return;
+    infoController.bangumiHistory = history;
   }
 
   @override
   void initState() {
     super.initState();
-    // 全局单例二次进入时残留上次的 isLoading=false。置位必须和查询在同一帧后回调里：
-    // 若用延迟 Future 置 true，缓存命中时查询可能先跑完（置回 false），随后又被置 true
-    // 卡死骨架 → 表现为“第二次概览加载不出来”。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      infoController.setIsLoading(true);
-      infoController.clearBangumiLists();
-      infoController.bangumiItem = bangumiItem;
+      // 全局控制器切换条目时同步重置加载状态和列表，避免显示上一条目的数据。
+      infoController.reset(bangumiItem);
       queryBangumiEpisodeByID(bangumiId);
       queryBangumiInfoByID(bangumiId);
-      Bangumi.instance.getBangumiInfoBind(bangumiId);
       queryBangumiHistory(bangumiId);
-      // 进页即预热“图片预览将使用的原图 provider”（与 showImagePreview 内部一致），
-      // 这样封面点开预览时目标首帧已有图 → 第一次就有 Hero，且打开预览无需等待。
-      // 注意：封面用的是带 cacheWidth 的 ResizeImage（另一个 key），帮不到预览。
-      final coverUrl = bangumiItem.images['large'] ?? '';
-      if (coverUrl.isNotEmpty) {
-        precacheImage(
-          CachedImageProvider(coverUrl, sourceKey: 'bangumi'),
-          context,
-        ).ignore();
-      }
     });
     infoTabController = TabController(
       length: infoController.tabs.length,
@@ -208,8 +199,6 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
   Future<void> queryBangumiInfoByID(int id) async {
     try {
       await infoController.queryBangumiInfoByID(id);
-      if (!mounted) return;
-      setState(() {});
     } catch (e) {
       Log.error('queryBangumiInfoByID', e.toString());
     }
@@ -218,8 +207,6 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
   Future<void> queryBangumiEpisodeByID(int id) async {
     try {
       await infoController.queryBangumiEpisodeByID(id);
-      if (!mounted) return;
-      setState(() {});
     } catch (e) {
       Log.error('queryBangumiEpisodeByID', e.toString());
     }
@@ -238,6 +225,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(infoControllerProvider);
     return PopScope(
       canPop: true,
       child: DefaultTabController(
@@ -297,7 +285,10 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                     toolbarHeight: kToolbarHeight,
                     stretch: true,
                     centerTitle: false,
-                    expandedHeight: 308 + kTextTabBarHeight + kToolbarHeight,
+                    expandedHeight:
+                        (MediaQuery.sizeOf(context).width < 626 ? 300 : 308) +
+                        kTextTabBarHeight +
+                        kToolbarHeight,
                     collapsedHeight:
                         kTextTabBarHeight +
                         kToolbarHeight +
@@ -387,6 +378,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                           bangumiItem: loadedItem,
                                           isLoading: isInfoLoading,
                                           heroTag: widget.heroTag,
+                                          heroCacheWidth: widget.heroCacheWidth,
                                           infoController: infoController,
                                         ),
                                       ),

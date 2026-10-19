@@ -29,8 +29,10 @@ class KostoriHero extends StatelessWidget {
       tag: tag,
       flightShuttleBuilder:
           (flightContext, animation, direction, fromContext, toContext) {
-            final toHero = toContext.widget as Hero;
-            return HeroShuttleScope(child: toHero.child);
+            // 飞行期间复用当前可见一侧的图片 provider。详情封面常按目标尺寸
+            // 使用 ResizeImage，改用目标 child 会在首次 Hero 飞行中触发第二次解码。
+            final fromHero = fromContext.widget as Hero;
+            return HeroShuttleScope(child: fromHero.child);
           },
       child: child,
     );

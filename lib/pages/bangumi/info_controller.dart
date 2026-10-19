@@ -200,24 +200,36 @@ class InfoController extends Notifier<InfoState> {
   }
 
   Future<void> queryBangumiInfoByID(int id, {bool defaultToDb = false}) async {
-    state = state.copyWith(isLoading: true, bangumiId: id);
+    if (state.bangumiId != id || !state.isLoading) {
+      state = state.copyWith(isLoading: true, bangumiId: id);
+    }
     try {
       BangumiItem? item;
       if (defaultToDb) {
-        item = await Bangumi.instance.bindFind(id);
+        item = await Bangumi.instance
+            .bindFind(id)
+            .timeout(const Duration(seconds: 15));
       } else {
-        item = await Bangumi.instance.getBangumiInfoByID(id);
+        item = await Bangumi.instance
+            .getBangumiInfoByID(id)
+            .timeout(const Duration(seconds: 15));
       }
+      if (state.bangumiId != id) return;
       // 详情接口失败时保持可渲染的空状态，不再用 ! 触发整页异常。
       if (item == null) {
         state = state.copyWith(isLoading: false);
         return;
       }
       state = state.copyWith(bangumiItem: item, isLoading: false);
-      final sri = await Bangumi.instance.getBangumiSRIByID(id);
+      final sri = await Bangumi.instance
+          .getBangumiSRIByID(id)
+          .timeout(const Duration(seconds: 15));
+      if (state.bangumiId != id) return;
       state = state.copyWith(bangumiSRI: List<BangumiSRI>.of(sri));
     } catch (e) {
-      state = state.copyWith(isLoading: false);
+      if (state.bangumiId == id) {
+        state = state.copyWith(isLoading: false);
+      }
       Log.error('queryBangumiInfoByID', e.toString());
     }
   }
@@ -237,6 +249,7 @@ class InfoController extends Notifier<InfoState> {
                 )
           : await Bangumi.instance.getBangumiEpisodeAllByID(id);
 
+      if (state.bangumiId != id) return;
       state = state.copyWith(allEpisodes: List<EpisodeInfo>.of(result));
 
       // 加载完直接计算
@@ -244,6 +257,7 @@ class InfoController extends Notifier<InfoState> {
         final item = bangumiItemOrNull;
         if (item == null) return;
         final week = await BangumiUtils.findCurrentWeekEpisode(result, item);
+        if (state.bangumiId != id) return;
         state = state.copyWith(currentWeekEp: week);
       }
     } catch (e) {
@@ -256,6 +270,7 @@ class InfoController extends Notifier<InfoState> {
       id,
       offset: offset,
     );
+    if (state.bangumiId != id) return;
     final existing = state.commentsList;
     state = state.copyWith(
       commentsList: offset == 0
@@ -266,6 +281,7 @@ class InfoController extends Notifier<InfoState> {
 
   Future<void> queryBangumiTopicsByID(int id, {int offset = 0}) async {
     final value = await Bangumi.instance.getTopicsByID(id, offset: offset);
+    if (state.bangumiId != id) return;
     final existing = state.topicsList;
     state = state.copyWith(
       topicsList: offset == 0
@@ -304,6 +320,7 @@ class InfoController extends Notifier<InfoState> {
 
   Future<void> queryBangumiReviewsByID(int id, {int offset = 0}) async {
     final value = await Bangumi.instance.getReviewsByID(id, offset: offset);
+    if (state.bangumiId != id) return;
     final existing = state.reviewsList;
     state = state.copyWith(
       reviewsList: offset == 0
@@ -314,6 +331,7 @@ class InfoController extends Notifier<InfoState> {
 
   Future<void> queryBangumiCharactersByID(int id) async {
     final value = await Bangumi.instance.getCharatersByID(id);
+    if (state.bangumiId != id) return;
     final list = List<CharacterItem>.of(value.characterList);
     Map<String, int> relationValue = {
       '主角': 1,
@@ -335,6 +353,7 @@ class InfoController extends Notifier<InfoState> {
 
   Future<void> queryBangumiStaffsByID(int id) async {
     final value = await Bangumi.instance.getBangumiStaffByID(id);
+    if (state.bangumiId != id) return;
     state = state.copyWith(staffList: List<StaffFullItem>.of(value.data));
   }
 
@@ -344,7 +363,9 @@ class InfoController extends Notifier<InfoState> {
     int offset = 0,
   }) async {
     final info = await Bangumi.instance.getBangumiEpisodeByID(id, episode);
+    if (state.bangumiId != id) return;
     final value = await Bangumi.instance.getEpisodeCommentsByEpisodeID(info.id);
+    if (state.bangumiId != id) return;
     final existing = state.episodeCommentsList;
     state = state.copyWith(
       episodeInfo: info,
