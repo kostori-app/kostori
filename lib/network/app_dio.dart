@@ -332,11 +332,17 @@ class RHttpAdapter implements HttpClientAdapter {
 
   Future<rhttp.ClientSettings> settings(RequestOptions options) async {
     final proxy = await getProxy();
+    // 由部署环境显式注入的代理优先级高于应用内的「无代理」域名规则。
+    // 否则旧配置中启用 bgm/bangumi 直连时，KOSTORI_PROXY 虽然已读到，
+    // 仍会在这里被 noProxy() 覆盖，表现为无头服务没有走代理。
+    final hasDeploymentProxy = hasProxyOverride;
 
     final rules = loadDomainRules();
 
     final isNoProxy =
-        noProxyOverridesEnabled && shouldBypassProxy(rules, options.uri.host);
+        !hasDeploymentProxy &&
+        noProxyOverridesEnabled &&
+        shouldBypassProxy(rules, options.uri.host);
 
     // 尊重 dio 的重定向设置：maxRedirects:0 / followRedirects:false 时不跟随，
     // 便于登录/授权等流程拦截 302（chii_auth、location 等关键信息在 302 响应里）
@@ -351,12 +357,16 @@ class RHttpAdapter implements HttpClientAdapter {
         ? rhttp.HttpVersionPref.http1_1
         : rhttp.HttpVersionPref.all;
 
-    // 显式传 noProxy() 会连带关掉 reqwest 的环境变量代理，故 system 模式传 null
+    // 显式传 noProxy() 会连带关掉 reqwest 的环境变量代理。代理地址本身
+    // 优先于应用里保存的 direct：无头部署可能在 GUI 配置仍为 direct 时
+    // 通过 KOSTORI_PROXY 注入代理，不能在这里又把它覆盖掉。
     final rhttp.ProxySettings? proxySettings;
-    if (isNoProxy || appdata.settings['proxy'] == "direct") {
+    if (isNoProxy) {
       proxySettings = const rhttp.ProxySettings.noProxy();
     } else if (proxy != null) {
       proxySettings = rhttp.ProxySettings.proxy(proxy);
+    } else if (appdata.settings['proxy'] == "direct") {
+      proxySettings = const rhttp.ProxySettings.noProxy();
     } else {
       proxySettings = null;
     }

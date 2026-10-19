@@ -1,0 +1,13 @@
+.git
+**/.git
+.dart_tool
+**/.dart_tool
+build
+**/build
+node_modules
+**/node_modules
+.idea
+**/.idea
+.codegraph
+*.log
+nul

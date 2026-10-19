@@ -13,6 +13,7 @@ import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/i18n/i18n_utils.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:kostori/network/proxy.dart';
 
 /// 结构化输出，供外部脚本解析
 void cliPrint(Map<String, dynamic> data) {
@@ -80,8 +81,22 @@ Future<void> runHeadlessMode(List<String> args) async {
 
   final apiKey = _stringArg(args, '--api-key');
   final adminKey = _stringArg(args, '--admin-key');
+  final proxyOverride = _stringArg(args, '--proxy');
+
+  // 先设置进程内代理，再初始化应用。init() 可能触发 Bangumi / 配置更新
+  // 请求，这些请求也必须走部署代理。
+  if (proxyOverride != null && proxyOverride.isNotEmpty) {
+    setRuntimeProxyOverride(proxyOverride);
+    _startupLog('Headless 网络代理: 已配置（命令行）');
+  }
 
   await init();
+
+  // Headless 部署可用 --proxy 临时覆盖应用内保存的代理设置，不写回配置文件。
+  // KOSTORI_PROXY 环境变量由网络层处理，适合容器/服务管理器注入。
+  if (proxyOverride != null && proxyOverride.isNotEmpty) {
+    appdata.settings['proxy'] = proxyOverride;
+  }
 
   // 必须在 init() 之后：ApiKeyManager().init() 会从 appdata 重读并覆盖令牌
   if (apiKey != null && apiKey.isNotEmpty) {
@@ -99,9 +114,11 @@ Future<void> runHeadlessMode(List<String> args) async {
       _stringArg(args, '--lang') ?? Platform.environment['KOSTORI_LANG'];
   final normalizedLang = I18nUtils.normalizeLocale(lang);
   await I18nUtils.applyHeadlessLocale(lang);
+  final proxyConfigured = (await getProxy()) != null;
 
   final started = <String, dynamic>{
     'lang': normalizedLang,
+    'proxy': proxyConfigured,
     'fixedUserKey': ApiKeyManager().isUsingFixed,
     'fixedAdminKey': ApiKeyManager().isUsingAdminFixed,
   };
@@ -147,6 +164,7 @@ void _printStartupInfo(
   _startupLog('Kostori 无头服务已启动: $serviceName');
   _startupLog('端口: ${started['port']}   绑定: ${started['bound']}');
   _startupLog('语言: ${started['lang'] ?? 'zh_cn'}');
+  _startupLog('代理: ${started['proxy'] == true ? '已启用' : '未启用'}');
   if (started['https'] == true) _startupLog('HTTPS: 已启用');
   if (noAuth) {
     _startupLog('鉴权: 已关闭 (--no-auth)，无需令牌');

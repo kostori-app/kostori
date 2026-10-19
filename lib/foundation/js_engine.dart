@@ -312,7 +312,8 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
             // system 模式保留 dart:io 默认的 findProxyFromEnvironment
             if (proxy == null && isSystemProxy) return HttpClient();
             return HttpClient()
-              ..findProxy = (uri) => proxy == null ? "DIRECT" : "PROXY $proxy";
+              ..findProxy = (uri) =>
+                  proxy == null ? "DIRECT" : proxyForDartIo(proxy);
           },
         );
         dio.interceptors.add(CookieManagerSql());
