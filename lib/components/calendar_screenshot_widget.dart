@@ -235,8 +235,21 @@ class _StatCard extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
+                  strutStyle: const StrutStyle(
+                    fontSize: 20,
+                    height: 1.2,
+                    forceStrutHeight: true,
+                  ),
                 ),
-                Text(label, style: const TextStyle(fontSize: 11)),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 11),
+                  strutStyle: const StrutStyle(
+                    fontSize: 11,
+                    height: 1.2,
+                    forceStrutHeight: true,
+                  ),
+                ),
               ],
             ),
           ],
