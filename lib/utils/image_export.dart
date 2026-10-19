@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -519,9 +520,9 @@ abstract final class ImageExporter {
     }
   }
 
-  /// 等待离屏子树渲染稳定：先收集并预热网络图，再逐帧等到解码完成、重绘结束。
+  /// 等待离屏子树的数据完成，再收集并预热图片，最后等一帧完成重绘。
   ///
-  /// 不用固定 sleep，而是等「布局完成 + 图片进了 ImageCache + 子树报告就绪」，
+  /// 不用固定 sleep，而是等「子树数据就绪 + 图片完成首帧解码」，
   /// 因此无网络图的导出只需两帧，纯静态内容（二维码卡片、词云、年度热力图）
   /// 比原来的固定 400~500ms 快一个数量级。
   ///
@@ -533,7 +534,20 @@ abstract final class ImageExporter {
     required Duration timeout,
     bool Function()? readyWhen,
   }) async {
-    // 首帧完成后子树才完成布局，此时才能收集到其中的图片 provider
+    final deadline = DateTime.now().add(timeout);
+
+    // 先等异步数据完成，否则收集图片时只能看到骨架屏子树。
+    await WidgetsBinding.instance.endOfFrame;
+    while (readyWhen != null && !readyWhen()) {
+      if (!DateTime.now().isBefore(deadline)) {
+        Log.error('图片导出', '等待内容就绪超时，按当前已渲染结果抓帧');
+        break;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await WidgetsBinding.instance.endOfFrame;
+    }
+
+    // 数据就绪后再等一帧，确保更新后的子树已挂载。
     await WidgetsBinding.instance.endOfFrame;
 
     final boundary = boundaryKey.currentContext?.findRenderObject();
@@ -546,36 +560,26 @@ abstract final class ImageExporter {
       ...collectImageProviders(boundaryKey.currentContext),
     };
 
-    // 加载失败的图（404 / 离线）永远不会进缓存，必须从等待集合里剔除，
-    // 否则会空转到超时。precacheImage 抛错即视为失败。
-    final failed = <ImageProvider>{};
+    // 图片加载失败时保留组件的错误占位，不阻塞整张导出。
     if (providers.isNotEmpty) {
-      await Future.wait(
-        providers.map((p) async {
-          try {
-            await precacheImage(p, context);
-          } catch (_) {
-            failed.add(p);
-          }
-        }),
-      );
-    }
-    final waiting = providers.where((p) => !failed.contains(p)).toList();
-
-    final deadline = DateTime.now().add(timeout);
-    while (true) {
-      final dataReady = readyWhen == null || readyWhen();
-      final imagesReady = waiting.every((p) => imageCache.containsKey(p));
-      if (dataReady && imagesReady) break;
-      if (DateTime.now().isAfter(deadline)) {
-        Log.error('图片导出', '等待内容就绪超时，按当前已渲染结果抓帧');
-        break;
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) {
+        Log.error('图片导出', '等待图片加载超时，按当前已渲染结果抓帧');
+      } else {
+        try {
+          await Future.wait(
+            providers.map((provider) => precacheImage(provider, context)),
+          ).timeout(remaining);
+        } on TimeoutException {
+          Log.error('图片导出', '等待图片加载超时，按当前已渲染结果抓帧');
+        }
       }
-      await WidgetsBinding.instance.endOfFrame;
-      await Future.delayed(const Duration(milliseconds: 50));
     }
 
-    // 预热完成会让图片组件 setState，再等一帧让新图真正落到图层上
+    // 等待 AnimatedImage 淡入完成，避免导出半透明图片。
+    if (providers.isNotEmpty) {
+      await Future<void>.delayed(const Duration(milliseconds: 220));
+    }
     await WidgetsBinding.instance.endOfFrame;
   }
 
@@ -583,6 +587,12 @@ abstract final class ImageExporter {
   static Set<ImageProvider> collectImageProviders(BuildContext? context) {
     if (context == null) return const {};
     final result = <ImageProvider>{};
+    void addDecorationImage(Decoration? decoration) {
+      if (decoration is BoxDecoration && decoration.image != null) {
+        result.add(decoration.image!.image);
+      }
+    }
+
     void visit(Element element) {
       final widget = element.widget;
       if (widget is Image) {
@@ -590,6 +600,8 @@ abstract final class ImageExporter {
       } else if (widget is AnimatedImage) {
         result.add(widget.image);
       }
+      if (widget is Ink) addDecorationImage(widget.decoration);
+      if (widget is DecoratedBox) addDecorationImage(widget.decoration);
       element.visitChildren(visit);
     }
 
